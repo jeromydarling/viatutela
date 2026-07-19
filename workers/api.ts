@@ -461,6 +461,32 @@ api.get("/media/*", async (c) => {
     }
     return c.text("This little one seems to have wandered off.", 404);
   }
+  // thumbnail variants: ?w=240|480|960 resizes images via the Images
+  // binding (each unique source+params combo is billed once a month and
+  // cached platform-side; immutable below handles the browser). Full-size
+  // originals serve untouched.
+  const contentType = obj.httpMetadata?.contentType ?? "";
+  const w = Number(c.req.query("w") ?? 0);
+  if ([240, 480, 960].includes(w) && contentType.startsWith("image/")) {
+    try {
+      const result = await c.env.IMAGES.input(obj.body)
+        .transform({ width: w, fit: "scale-down" })
+        .output({ format: "image/webp", quality: 78 });
+      return new Response(result.image(), {
+        headers: { "Content-Type": "image/webp", "Cache-Control": "public, max-age=31536000, immutable" },
+      });
+    } catch {
+      // Images unavailable — refetch and serve the original (obj.body is spent)
+      const fresh = await c.env.MEDIA.get(key);
+      if (fresh) {
+        const headers = new Headers();
+        fresh.writeHttpMetadata(headers);
+        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        return new Response(fresh.body, { headers });
+      }
+      return c.text("This little one seems to have wandered off.", 404);
+    }
+  }
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
   headers.set("Cache-Control", "public, max-age=31536000, immutable");

@@ -656,7 +656,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                   {p.kind === "video" ? (
                     <video src={`/api/media/${p.r2_key}`} preload="metadata" muted className="w-full aspect-square object-cover rounded-xl bg-charcoal/80" />
                   ) : (
-                    <img src={`/api/media/${p.r2_key}`} alt={p.alt_text ?? ""} loading="lazy" decoding="async" className="w-full aspect-square object-cover rounded-xl" />
+                    <img src={`/api/media/${p.r2_key}?w=480`} alt={p.alt_text ?? ""} loading="lazy" decoding="async" className="w-full aspect-square object-cover rounded-xl" />
                   )}
                   {p.kind === "video" && (
                     <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-xs">🎬</span>
@@ -832,7 +832,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
               <div className="mt-4 space-y-1.5">
                 {photoNotes.map((n) => (
                   <div key={n.id} className="flex items-start gap-2 text-xs">
-                    <img src={`/api/media/${n.r2_key}`} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                    <img src={`/api/media/${n.r2_key}?w=240`} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
                     <span
                       className={`shrink-0 rounded-full px-1.5 py-0.5 font-bold ${n.score >= 70 ? "bg-meadow/15 text-meadow-deep" : n.score >= 40 ? "bg-sunflower-soft" : "bg-terracotta/15 text-terracotta-deep"}`}
                     >

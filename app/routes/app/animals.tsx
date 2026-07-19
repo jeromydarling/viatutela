@@ -128,7 +128,7 @@ export default function Animals({ loaderData }: Route.ComponentProps) {
               >
                 {a.photo_key ? (
                   <img
-                    src={`/api/media/${a.photo_key}`}
+                    src={`/api/media/${a.photo_key}?w=240`}
                     alt=""
                     className="w-16 h-16 rounded-2xl object-cover"
                     loading="lazy"

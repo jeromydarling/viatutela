@@ -13,10 +13,49 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
+/**
+ * Edge cache for anonymous public GETs. Every visitor to the marketing
+ * site, guides, and shelter adoption pages sees identical HTML — a viral
+ * adoption page should cost ~zero D1 reads. Logged-in and import
+ * sessions bypass entirely; cached copies live seconds-to-minutes so
+ * publishes and deploys propagate fast.
+ */
+function anonCacheTtl(request: Request, url: URL): number {
+  if (request.method !== "GET") return 0;
+  const cookie = request.headers.get("cookie") ?? "";
+  if (cookie.includes("vt_session") || cookie.includes("vt_import_session")) return 0;
+  if (url.search.includes("preview")) return 0;
+  const p = url.pathname;
+  if (p === "/" || p === "/import" || p === "/login" || p === "/signup" || p === "/privacy" || p === "/terms" || p.startsWith("/guides")) {
+    return 300;
+  }
+  if (p.startsWith("/adopt/") || p.startsWith("/s/") || p.startsWith("/a/") || p.startsWith("/api/feeds/")) {
+    return 60;
+  }
+  return 0;
+}
+
 export default {
   async fetch(request, env, ctx) {
     try {
-      return await handleFetch(request, env, ctx);
+      const ttl = anonCacheTtl(request, new URL(request.url));
+      if (ttl) {
+        const hit = await caches.default.match(request);
+        if (hit) return hit;
+      }
+      const resp = await handleFetch(request, env, ctx);
+      if (ttl && resp.status === 200 && !resp.headers.has("Set-Cookie")) {
+        const copy = resp.clone();
+        const headers = new Headers(copy.headers);
+        headers.set("Cache-Control", `public, s-maxage=${ttl}`);
+        ctx.waitUntil(
+          caches.default.put(
+            request,
+            new Response(copy.body, { status: copy.status, statusText: copy.statusText, headers }),
+          ),
+        );
+      }
+      return resp;
     } catch (err) {
       ctx.waitUntil(reportError(env, err, `fetch ${new URL(request.url).pathname}`));
       throw err;

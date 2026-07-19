@@ -84,7 +84,7 @@ function AnimalCard({ a, orgSlug }: { a: PortalAnimal; orgSlug: string }) {
       className="rounded-blob bg-white shadow-soft overflow-hidden hover:shadow-lift transition-shadow"
     >
       {a.photo_key ? (
-        <img src={`/api/media/${a.photo_key}`} alt={`${a.name}`} className="w-full h-52 object-cover" loading="lazy" />
+        <img src={`/api/media/${a.photo_key}?w=480`} alt={`${a.name}`} className="w-full h-52 object-cover" loading="lazy" />
       ) : (
         <div className="w-full h-52 bg-cream flex items-center justify-center">
           <Doodle className="w-24 h-24 text-charcoal-soft" />
