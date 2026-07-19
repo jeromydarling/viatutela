@@ -38,6 +38,11 @@ versus what is actually built and deployed. Updated 2026-07-19.
 | Feature | Status | Notes |
 |---|---|---|
 | Block-based website CMS (12 section types, drag-free move/add/delete forms) | ✅ | Closed section enum + passthrough; 40-section / 120KB caps enforced |
+| **5 site themes** (Meadow, Storybook, Bold, Playful, Classic) | ✅ | Whole design languages — radius, shadows, photo frames, heading treatment, section dividers (wave/scallop/paws/line), background textures. Picked in Brand Studio; AI brand-in-a-box proposes one |
+| **Live preview pane** in the page editor | ✅ | Split-screen iframe, reloads on every save, desktop/phone toggle — WYSIWYG feel without a fragile editor engine |
+| **Visual media picker** (library + animal photos) | ✅ | Every image field and the markdown toolbar can pick from uploaded media AND animals' own photos |
+| **Markdown toolbar + inline images** | ✅ | B/i/H2/list/link buttons and `![alt](url)` image embeds in prose sections |
+| **Per-section art direction** | ✅ | Background choice (default/white/tint) on every section; themed dividers auto-flow between sections |
 | Public shelter sites (`/s/:slug/:page`) with brand accent + nav editor | ✅ | Live-gated by status + `publish_at`; draft pages 404 publicly |
 | Starter-pack pages (home, about, adopt, get-involved, donate, contact) | ✅ | One click, created as drafts |
 | Media library (R2-backed, required alt text) | ✅ | 10MB/image cap |

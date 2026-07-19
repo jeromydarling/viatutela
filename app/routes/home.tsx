@@ -166,7 +166,7 @@ const FEATURE_TABS: { key: string; label: string; features: Feature[] }[] = [
     features: [
       {
         title: "A real website, designed in one conversation",
-        body: "Answer five questions and the AI designer drafts your whole site as drafts you approve — never auto-published. Build with friendly blocks, publish on your own domain with automatic SSL, and your sitemap and Google structured data come along for free.",
+        body: "Answer five questions and the AI designer drafts your whole site — then pick one of five design themes (Storybook's paper-and-tape, Bold's chunky shadows, Playful's paw-print dividers…) and edit with a live preview pane, a visual photo picker fed by your animals' own photos, and section-by-section art direction. Publish on your own domain with automatic SSL.",
         screen: WebsiteScreen,
       },
       {

@@ -26,6 +26,7 @@ const BRAND = {
   logo: { kind: "wordmark", imageUrl: null },
   wordmark: { font: "quicksand", case: "title", tracking: 30, weight: 600 },
   typography: "friendly",
+  theme: "storybook",
   tagline: "Every friend deserves a sunny landing.",
   voice:
     "Sunny, plain-spoken, and a little playful. We celebrate small victories loudly, never guilt-trip, and always talk about animals as friends with personalities — not case numbers.",

@@ -8,6 +8,7 @@ import { generateBrandProposal } from "../../../workers/lib/brand-ai";
 import {
   FONT_PAIRS,
   WORDMARK_FONTS,
+  SITE_THEMES,
   parseBrandJson,
   validateBrand,
   scrapeHomepage,
@@ -61,6 +62,7 @@ export async function action({ context, request }: Route.ActionArgs) {
       logo: { kind: str("logo_kind"), imageUrl: str("logo_image_url") || null },
       wordmark: { font: str("wm_font"), case: str("wm_case"), tracking: str("wm_tracking"), weight: str("wm_weight") },
       typography: str("typography"),
+      theme: str("theme"),
       tagline: str("tagline"),
       voice: str("voice"),
     });
@@ -335,6 +337,36 @@ export default function BrandStudio({ loaderData, actionData }: Route.ComponentP
                 ))}
               </select>
             </label>
+
+            <div>
+              <h3 className="font-semibold text-sm text-charcoal-soft uppercase tracking-wide">Site theme — the whole design language</h3>
+              <div className="mt-2 grid sm:grid-cols-2 gap-2">
+                {Object.entries(SITE_THEMES).map(([k, t]) => (
+                  <label
+                    key={k}
+                    className="flex gap-2.5 items-start rounded-2xl border-2 border-cream p-3 cursor-pointer hover:border-meadow has-[:checked]:border-meadow has-[:checked]:bg-meadow/5"
+                  >
+                    <input type="radio" name="theme" value={k} defaultChecked={shown.theme === k} className="mt-1 accent-[#2e7d54]" />
+                    <span className="min-w-0">
+                      {/* mini style swatch built from the theme's own tokens */}
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className="inline-block w-9 h-6 border"
+                          style={{
+                            borderRadius: `calc(${t.radius} / 3.5)`,
+                            boxShadow: t.cardShadow.replace(/6px 6px/, "2px 2px").replace(/0 6px 24px/, "0 2px 8px"),
+                            background: "#fff",
+                            borderColor: "#eee2d0",
+                          }}
+                        />
+                        <span className="font-semibold text-sm">{t.label}</span>
+                      </span>
+                      <span className="block text-xs text-charcoal-soft mt-0.5">{t.blurb}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <label className={labelCls}>
               Tagline

@@ -27,11 +27,98 @@ export interface Brand {
   logo: { kind: "image" | "wordmark"; imageUrl: string | null };
   wordmark: Wordmark;
   typography: string; // key into FONT_PAIRS
+  theme: string; // key into SITE_THEMES — the site's whole design language
   tagline: string;
   voice: string; // 1-2 sentences; quietly powers all AI copy
   /** legacy single accent kept in sync for older readers */
   accent: string;
 }
+
+/**
+ * Site themes — whole design languages, not color swaps. Each theme
+ * drives corner radius, shadows, photo framing, heading treatment,
+ * section dividers, and background texture on the public site.
+ */
+export interface SiteTheme {
+  label: string;
+  blurb: string;
+  radius: string; // cards
+  buttonRadius: string;
+  cardShadow: string;
+  photoFrame: string; // extra CSS for .site-photo
+  headingTransform: string;
+  headingSpacing: string;
+  divider: "none" | "wave" | "scallop" | "paws" | "line";
+  /** css background-image for the page (uses currentColor-free data URIs) */
+  pattern: (palette: BrandPalette) => string;
+}
+
+export const SITE_THEMES: Record<string, SiteTheme> = {
+  meadow: {
+    label: "Meadow — soft & sunny",
+    blurb: "Round corners, gentle shadows, a wave between sections. The classic Via Tutela warmth.",
+    radius: "2rem",
+    buttonRadius: "999px",
+    cardShadow: "0 6px 24px rgba(46,42,38,0.10)",
+    photoFrame: "",
+    headingTransform: "none",
+    headingSpacing: "0",
+    divider: "wave",
+    pattern: () => "none",
+  },
+  storybook: {
+    label: "Storybook — paper & tape",
+    blurb: "Tilted photos with white borders on warm paper, scalloped edges — like a well-loved scrapbook.",
+    radius: "0.75rem",
+    buttonRadius: "0.75rem",
+    cardShadow: "0 2px 0 rgba(46,42,38,0.14), 0 10px 24px rgba(46,42,38,0.08)",
+    photoFrame: "border: 8px solid #fff; box-shadow: 0 4px 16px rgba(46,42,38,0.18); transform: rotate(-1.2deg);",
+    headingTransform: "none",
+    headingSpacing: "0.01em",
+    divider: "scallop",
+    pattern: (p) =>
+      `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><circle cx='12' cy='12' r='1.2' fill='${p.ink}' opacity='0.05'/><circle cx='82' cy='64' r='1.2' fill='${p.ink}' opacity='0.05'/><circle cx='40' cy='110' r='1.2' fill='${p.ink}' opacity='0.05'/></svg>`)}")`,
+  },
+  bold: {
+    label: "Bold — big & bright",
+    blurb: "Sharp corners, chunky offset shadows, loud uppercase headings. Impossible to ignore.",
+    radius: "0.5rem",
+    buttonRadius: "0.5rem",
+    cardShadow: "6px 6px 0 rgba(46,42,38,0.9)",
+    photoFrame: "border: 3px solid #2e2a26;",
+    headingTransform: "uppercase",
+    headingSpacing: "0.03em",
+    divider: "line",
+    pattern: () => "none",
+  },
+  playful: {
+    label: "Playful — bouncy & bright",
+    blurb: "Extra-round everything, paw-print dividers, confetti dots. Puppy energy, professionally applied.",
+    radius: "2.5rem",
+    buttonRadius: "999px",
+    cardShadow: "0 8px 28px rgba(46,42,38,0.12)",
+    photoFrame: "transform: rotate(1deg); outline: 4px dashed rgba(0,0,0,0.06); outline-offset: 6px;",
+    headingTransform: "none",
+    headingSpacing: "0",
+    divider: "paws",
+    pattern: (p) =>
+      `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><circle cx='20' cy='30' r='3' fill='${p.accent}' opacity='0.10'/><circle cx='120' cy='90' r='2.4' fill='${p.primary}' opacity='0.10'/><circle cx='70' cy='140' r='2' fill='${p.accent}' opacity='0.10'/></svg>`)}")`,
+  },
+  classic: {
+    label: "Classic — quiet & trusted",
+    blurb: "Restrained corners, hairline rules, generous whitespace. For the established organization.",
+    radius: "0.375rem",
+    buttonRadius: "0.375rem",
+    cardShadow: "0 1px 3px rgba(46,42,38,0.10), 0 1px 2px rgba(46,42,38,0.06)",
+    photoFrame: "",
+    headingTransform: "none",
+    headingSpacing: "0.02em",
+    divider: "none",
+    pattern: () => "none",
+  },
+};
+
+export const DEFAULT_THEME = "meadow";
 
 /** Curated heading/body pairs; css value + Google Fonts family list. */
 export const FONT_PAIRS: Record<
@@ -77,6 +164,7 @@ export const DEFAULT_BRAND: Brand = {
   logo: { kind: "wordmark", imageUrl: null },
   wordmark: { font: "fredoka", case: "title", tracking: 0, weight: 600 },
   typography: "friendly",
+  theme: DEFAULT_THEME,
   tagline: "",
   voice: "Warm, plain, and joyful. Animals are friends, never inventory.",
   accent: "#4caf7d",
@@ -127,6 +215,7 @@ export function validateBrand(raw: unknown): Brand {
       weight: clampNum(wm.weight, 400, 800, d.wordmark.weight),
     },
     typography: pickKey(b.typography, FONT_PAIRS, d.typography),
+    theme: pickKey(b.theme, SITE_THEMES, d.theme),
     tagline: typeof b.tagline === "string" ? b.tagline.slice(0, 200) : "",
     voice: typeof b.voice === "string" && b.voice.trim() ? b.voice.slice(0, 500) : d.voice,
     accent: palette.accent,

@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/website.page";
 import { requireUser } from "../../lib/auth.server";
 import { newToken } from "../../../workers/lib/ids";
+import { MediaPicker, MdToolbar, type PickableImage } from "../../components/editor-tools";
 import {
   SECTION_DEFS,
   SECTION_DEF_BY_TYPE,
@@ -25,11 +27,27 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
   const media = await env.DB.prepare(
     `SELECT id, r2_key, alt FROM media WHERE org_id = ? ORDER BY created_at DESC LIMIT 100`,
   ).bind(user.org_id).all<{ id: string; r2_key: string; alt: string }>();
+  const animalPhotos = await env.DB.prepare(
+    `SELECT p.r2_key, a.name FROM animal_photos p JOIN animals a ON a.id = p.animal_id
+     WHERE p.org_id = ? AND p.kind != 'video' ORDER BY p.created_at DESC LIMIT 60`,
+  ).bind(user.org_id).all<{ r2_key: string; name: string }>();
+
+  // persistent preview token → live editing pane always has something to show
+  let previewToken = await env.CONFIG.get(`pagepreview:${page.id}`);
+  if (!previewToken) {
+    previewToken = newToken();
+    await env.CONFIG.put(`pagepreview:${page.id}`, previewToken, { expirationTtl: 30 * 24 * 3600 });
+  }
+  await env.CONFIG.put(`preview:${previewToken}`, String(page.id), { expirationTtl: 30 * 24 * 3600 });
+  const path = page.slug === "home" ? `/s/${user.slug}` : `/s/${user.slug}/${page.slug}`;
+
   return {
     page,
     sections: parseSectionsJson(page.sections),
     media: media.results,
+    animalPhotos: animalPhotos.results,
     slug: user.slug,
+    previewUrl: `${path}?preview=${previewToken}`,
   };
 }
 
@@ -168,6 +186,8 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       if (!raw) continue;
       updated[field.name] = field.kind === "number" ? Number(raw) : raw;
     }
+    const bg = String(f.get("f.bg") ?? "");
+    if (bg === "white" || bg === "tint") updated.bg = bg;
     if (def.items) {
       const count = Number(f.get("item_count") ?? 0);
       const list: Record<string, unknown>[] = [];
@@ -214,21 +234,28 @@ function Field({
   field,
   value,
   namePrefix,
-  media,
+  idBase,
+  images,
 }: {
   field: { name: string; label: string; kind: string; options?: string[]; placeholder?: string };
   value: unknown;
   namePrefix: string;
-  media: { r2_key: string; alt: string }[];
+  idBase: string;
+  images: PickableImage[];
 }) {
   const v = typeof value === "string" || typeof value === "number" ? String(value) : "";
   const name = `${namePrefix}${field.name}`;
+  const id = `${idBase}-${namePrefix}${field.name}`.replace(/[^\w-]/g, "_");
   if (field.kind === "textarea") {
+    const isMd = field.name === "md" || field.name === "a";
     return (
-      <label className="block text-sm">
-        <span className="font-semibold">{field.label}</span>
-        <textarea name={name} defaultValue={v} rows={4} placeholder={field.placeholder} className={`${inputCls} mt-1`} />
-      </label>
+      <div className="block text-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold">{field.label}</span>
+          {isMd && <MdToolbar targetId={id} images={images} />}
+        </div>
+        <textarea id={id} name={name} defaultValue={v} rows={isMd ? 6 : 4} placeholder={field.placeholder} className={`${inputCls} mt-1`} />
+      </div>
     );
   }
   if (field.kind === "select") {
@@ -245,13 +272,16 @@ function Field({
   }
   if (field.kind === "image") {
     return (
-      <label className="block text-sm">
-        <span className="font-semibold">{field.label}</span>
-        <input name={name} defaultValue={v} list="media-urls" placeholder="Paste an image URL or pick from your library" className={`${inputCls} mt-1`} />
-        {media.length === 0 && (
+      <div className="block text-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold">{field.label}</span>
+          <MediaPicker targetId={id} images={images} />
+        </div>
+        <input id={id} name={name} defaultValue={v} placeholder="Pick a photo or paste an image URL" className={`${inputCls} mt-1`} />
+        {images.length === 0 && (
           <span className="text-xs text-charcoal-soft">Tip: upload photos in the media library first.</span>
         )}
-      </label>
+      </div>
     );
   }
   return (
@@ -262,19 +292,25 @@ function Field({
   );
 }
 
+const BG_FIELD = { name: "bg", label: "Section background", kind: "select", options: ["default", "white", "tint"] };
+
 export default function PageEditor({ loaderData, actionData: rawActionData }: Route.ComponentProps) {
-  const { page, sections, media, slug } = loaderData;
+  const { page, sections, media, animalPhotos, slug, previewUrl } = loaderData;
   const actionData = rawActionData as { ok?: string; error?: string; preview?: string } | undefined;
   const viewPath = page.slug === "home" ? `/s/${slug}` : `/s/${slug}/${page.slug}`;
+  const [phone, setPhone] = useState(false);
+  const [previewNonce, setPreviewNonce] = useState(0);
+
+  const images: PickableImage[] = [
+    ...media.map((m) => ({ url: `/api/media/${m.r2_key}`, label: m.alt, group: "library" as const })),
+    ...animalPhotos.map((p) => ({ url: `/api/media/${p.r2_key}`, label: p.name, group: "animals" as const })),
+  ];
+  // page.updated_at changes on every save → the preview reloads itself
+  const previewKey = `${String(page.updated_at)}-${previewNonce}`;
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <datalist id="media-urls">
-        {media.map((m) => (
-          <option key={m.id} value={`/api/media/${m.r2_key}`}>{m.alt}</option>
-        ))}
-      </datalist>
-
+    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,44%)] xl:gap-6 xl:items-start">
+    <div className="max-w-4xl space-y-6 min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link to="/app/website" className="text-sm font-semibold text-charcoal-soft hover:text-charcoal">← Website</Link>
@@ -358,7 +394,7 @@ export default function PageEditor({ loaderData, actionData: rawActionData }: Ro
             </select>
           </label>
           <label className="block text-sm"><span className="font-semibold">Social/hero image URL</span>
-            <input name="hero_image_url" defaultValue={String(page.hero_image_url ?? "")} list="media-urls" className={`${inputCls} mt-1`} />
+            <input id="hero-image-input" name="hero_image_url" defaultValue={String(page.hero_image_url ?? "")} className={`${inputCls} mt-1`} />
           </label>
           <label className="block text-sm"><span className="font-semibold">SEO title</span>
             <input name="meta_title" defaultValue={String(page.meta_title ?? "")} className={`${inputCls} mt-1`} />
@@ -409,9 +445,10 @@ export default function PageEditor({ loaderData, actionData: rawActionData }: Ro
                 <div className="grid sm:grid-cols-2 gap-3">
                   {def.fields.map((field) => (
                     <div key={field.name} className={field.kind === "textarea" ? "sm:col-span-2" : ""}>
-                      <Field field={field} value={section[field.name]} namePrefix="f." media={media} />
+                      <Field field={field} value={section[field.name]} namePrefix="f." idBase={`s${i}`} images={images} />
                     </div>
                   ))}
+                  <Field field={BG_FIELD} value={typeof section.bg === "string" ? section.bg : "default"} namePrefix="f." idBase={`s${i}`} images={images} />
                 </div>
                 {def.items && (
                   <div className="rounded-2xl bg-cream/60 p-4 space-y-4">
@@ -422,7 +459,7 @@ export default function PageEditor({ loaderData, actionData: rawActionData }: Ro
                         <div className="grid sm:grid-cols-2 gap-2">
                           {def.items!.fields.map((field) => (
                             <div key={field.name} className={field.kind === "textarea" ? "sm:col-span-2" : ""}>
-                              <Field field={field} value={it[field.name]} namePrefix={`item.${ii}.`} media={media} />
+                              <Field field={field} value={it[field.name]} namePrefix={`item.${ii}.`} idBase={`s${i}`} images={images} />
                             </div>
                           ))}
                         </div>
@@ -437,7 +474,7 @@ export default function PageEditor({ loaderData, actionData: rawActionData }: Ro
                       <div className="grid sm:grid-cols-2 gap-2">
                         {def.items.fields.map((field) => (
                           <div key={field.name} className={field.kind === "textarea" ? "sm:col-span-2" : ""}>
-                            <Field field={field} value="" namePrefix="new_item." media={media} />
+                            <Field field={field} value="" namePrefix="new_item." idBase={`s${i}new`} images={images} />
                           </div>
                         ))}
                       </div>
@@ -482,6 +519,49 @@ export default function PageEditor({ loaderData, actionData: rawActionData }: Ro
           Add
         </button>
       </Form>
+    </div>
+
+    {/* live preview — the editor finally feels like WYSIWYG */}
+    <aside className="hidden xl:block sticky top-20">
+      <div className="rounded-blob bg-white shadow-soft p-3">
+        <div className="flex items-center gap-2 px-1 pb-2">
+          <span className="text-sm font-display font-semibold">Live preview</span>
+          <span className="text-xs text-charcoal-soft">updates on every save</span>
+          <span className="flex-1" />
+          <button
+            type="button"
+            onClick={() => setPhone(false)}
+            className={`rounded-full px-3 py-1 text-xs font-bold ${!phone ? "bg-sunflower" : "bg-cream"}`}
+          >
+            🖥 Desktop
+          </button>
+          <button
+            type="button"
+            onClick={() => setPhone(true)}
+            className={`rounded-full px-3 py-1 text-xs font-bold ${phone ? "bg-sunflower" : "bg-cream"}`}
+          >
+            📱 Phone
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewNonce((n) => n + 1)}
+            aria-label="Refresh preview"
+            className="rounded-full bg-cream px-3 py-1 text-xs font-bold"
+          >
+            ↻
+          </button>
+        </div>
+        <div className={`mx-auto overflow-hidden rounded-2xl border-2 border-cream bg-white transition-all ${phone ? "w-[390px]" : "w-full"}`}>
+          <iframe
+            key={previewKey}
+            src={previewUrl}
+            title="Page preview"
+            className="w-full border-0"
+            style={{ height: "calc(100vh - 12rem)" }}
+          />
+        </div>
+      </div>
+    </aside>
     </div>
   );
 }

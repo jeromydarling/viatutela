@@ -4,14 +4,17 @@ import type { NavLinkItem } from "../lib/site.server";
 import {
   brandFontsHref,
   FONT_PAIRS,
+  SITE_THEMES,
+  DEFAULT_THEME,
   wordmarkStyle,
   wordmarkText,
   type Brand,
 } from "../../workers/lib/brand";
 
-/** Font stylesheet + CSS variables for a branded page. Render once per page. */
+/** Fonts + palette + THEME design language for a branded page. Render once. */
 export function BrandStyle({ brand }: { brand: Brand }) {
   const pair = FONT_PAIRS[brand.typography] ?? FONT_PAIRS.friendly;
+  const theme = SITE_THEMES[brand.theme] ?? SITE_THEMES[DEFAULT_THEME];
   return (
     <>
       <link rel="stylesheet" href={brandFontsHref(brand)} />
@@ -21,16 +24,68 @@ export function BrandStyle({ brand }: { brand: Brand }) {
           --brand-accent: ${brand.palette.accent};
           --brand-ink: ${brand.palette.ink};
           --brand-bg: ${brand.palette.bg};
+          --site-radius: ${theme.radius};
+          --btn-radius: ${theme.buttonRadius};
           background: var(--brand-bg);
+          background-image: ${theme.pattern(brand.palette)};
           color: var(--brand-ink);
           font-family: ${pair.body};
         }
         .brand-scope h1, .brand-scope h2, .brand-scope h3, .brand-scope .font-display {
           font-family: ${pair.heading};
+          text-transform: ${theme.headingTransform};
+          letter-spacing: ${theme.headingSpacing};
         }
+        .brand-scope .site-card {
+          border-radius: var(--site-radius);
+          box-shadow: ${theme.cardShadow};
+          background: #fff;
+          overflow: hidden;
+        }
+        .brand-scope .site-photo {
+          border-radius: calc(var(--site-radius) * 0.75);
+          ${theme.photoFrame}
+        }
+        .brand-scope .site-btn { border-radius: var(--btn-radius); }
+        .brand-scope .site-tint { background: color-mix(in srgb, var(--brand-primary) 8%, transparent); }
+        .brand-scope .site-white { background: rgba(255,255,255,0.72); }
       `}</style>
     </>
   );
+}
+
+/** Themed divider between sections — the detail that kills the GeoCities feel. */
+export function ThemeDivider({ brand }: { brand: Brand }) {
+  const theme = SITE_THEMES[brand.theme] ?? SITE_THEMES[DEFAULT_THEME];
+  const c = brand.palette.primary;
+  switch (theme.divider) {
+    case "wave":
+      return (
+        <svg aria-hidden viewBox="0 0 1200 40" className="w-full h-6 sm:h-8" preserveAspectRatio="none">
+          <path d="M0 24 Q 150 4 300 24 T 600 24 T 900 24 T 1200 24" fill="none" stroke={c} strokeOpacity="0.22" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      );
+    case "scallop":
+      return (
+        <svg aria-hidden viewBox="0 0 1200 26" className="w-full h-5" preserveAspectRatio="none">
+          {Array.from({ length: 24 }, (_, i) => (
+            <path key={i} d={`M${i * 50} 20 a 25 16 0 0 1 50 0`} fill="none" stroke={c} strokeOpacity="0.20" strokeWidth="2.5" />
+          ))}
+        </svg>
+      );
+    case "paws":
+      return (
+        <div aria-hidden className="flex justify-center gap-6 py-2 text-xl" style={{ color: c, opacity: 0.35 }}>
+          <span className="-rotate-12">🐾</span>
+          <span className="rotate-6">🐾</span>
+          <span className="-rotate-3">🐾</span>
+        </div>
+      );
+    case "line":
+      return <hr aria-hidden className="mx-auto max-w-5xl border-t-2" style={{ borderColor: c, opacity: 0.25 }} />;
+    default:
+      return null;
+  }
 }
 
 export function BrandLogo({ orgName, brand, className }: { orgName: string; brand: Brand; className?: string }) {

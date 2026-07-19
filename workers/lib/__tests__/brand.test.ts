@@ -52,3 +52,16 @@ describe("scrapeHomepage", () => {
     expect(s.colors).not.toContain("#fefefe"); // near-white filtered
   });
 });
+
+describe("site themes", () => {
+  it("whitelists theme keys with a safe fallback", async () => {
+    const { validateBrand: vb, SITE_THEMES, DEFAULT_THEME } = await import("../brand");
+    expect(vb({ theme: "storybook" }).theme).toBe("storybook");
+    expect(vb({ theme: "vaporwave-deluxe" }).theme).toBe(DEFAULT_THEME);
+    expect(vb({}).theme).toBe(DEFAULT_THEME);
+    for (const t of Object.values(SITE_THEMES)) {
+      expect(["none", "wave", "scallop", "paws", "line"]).toContain(t.divider);
+      expect(t.pattern({ primary: "#2e7d54", accent: "#e8a13c", ink: "#2e2a26", bg: "#fff9f0" })).toBeTypeOf("string");
+    }
+  });
+});
