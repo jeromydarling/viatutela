@@ -84,6 +84,7 @@ export async function action({ context, request }: Route.ActionArgs) {
         phone: app.phone ? String(app.phone) : null,
         home_type: app.home_type ? String(app.home_type) : null,
         message: app.message ? String(app.message) : null,
+        interest: app.interest ? String(app.interest) : null,
       },
       animal: animalRow ? compactAnimal(animalRow) : null,
       others: othersRows.results.map((r) => compactAnimal(r)),
@@ -295,7 +296,13 @@ export default function Applications({ loaderData, actionData }: Route.Component
                     {String(a.email)}{a.phone ? ` · ${a.phone}` : ""}{a.home_type ? ` · ${a.home_type}` : ""}
                   </div>
                   <div className="mt-1 text-sm">
-                    wants to adopt{" "}
+                    {a.interest === "meet"
+                      ? "wants to meet"
+                      : a.interest === "foster_to_adopt"
+                        ? "wants to foster-to-adopt"
+                        : a.interest === "question"
+                          ? "has a question about"
+                          : "wants to adopt"}{" "}
                     {a.animal_id ? (
                       <Link to={`/app/animals/${a.animal_id}`} className="font-semibold text-meadow-deep hover:underline">
                         {String(a.animal_name)}

@@ -1,19 +1,38 @@
 import { Form, Link, useNavigation } from "react-router";
+import QRCode from "qrcode";
 import type { Route } from "./+types/adopt.animal";
 import { cloudflareContext } from "../cloudflare-context";
 import { getEnv } from "../lib/auth.server";
 import { newId } from "../../workers/lib/ids";
 import { sendAppEmail } from "../../workers/lib/email";
+import { ShareBar } from "../components/share-bar";
 import { CatDoodle, DogDoodle, HeartPawDoodle, PawDoodle } from "../components/doodles";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
-  return [
-    { title: `Meet ${data?.animal?.name ?? "a friend"} — ${data?.org?.name ?? ""}` },
-    { name: "description", content: data?.animal?.description ?? "This friend is looking for a home." },
+  if (!data) return [];
+  const title = `Meet ${data.animal.name} — ${data.org.name}`;
+  const description =
+    (data.animal.description ? String(data.animal.description).slice(0, 200) : null) ??
+    `${data.animal.name} is looking for a home at ${data.org.name}.`;
+  const out: Record<string, string>[] = [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:type", content: "article" },
+    { property: "og:url", content: data.shareUrl },
+    { name: "twitter:card", content: data.ogImage ? "summary_large_image" : "summary" },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
   ];
+  if (data.ogImage) {
+    out.push({ property: "og:image", content: data.ogImage });
+    out.push({ name: "twitter:image", content: data.ogImage });
+  }
+  return out;
 }
 
-export async function loader({ context, params }: Route.LoaderArgs) {
+export async function loader({ context, request, params }: Route.LoaderArgs) {
   const env = getEnv(context);
   const org = await env.DB.prepare(`SELECT id, name, slug, email, phone FROM orgs WHERE slug = ?`)
     .bind(params.slug)
@@ -28,9 +47,12 @@ export async function loader({ context, params }: Route.LoaderArgs) {
     .first<Record<string, unknown>>();
   if (!animal) throw new Response("Not found", { status: 404 });
 
-  const [photos, bonded] = await Promise.all([
-    env.DB.prepare(`SELECT r2_key FROM animal_photos WHERE animal_id = ? ORDER BY created_at LIMIT 8`)
-      .bind(animal.id).all<{ r2_key: string }>(),
+  const [media, bonded] = await Promise.all([
+    env.DB.prepare(
+      `SELECT r2_key, kind, caption FROM animal_photos WHERE animal_id = ? ORDER BY kind, created_at LIMIT 16`,
+    )
+      .bind(animal.id)
+      .all<{ r2_key: string; kind: string; caption: string | null }>(),
     animal.bonded_group_id
       ? env.DB.prepare(
           `SELECT id, name FROM animals WHERE org_id = ? AND bonded_group_id = ? AND id != ? AND is_public = 1`,
@@ -38,7 +60,23 @@ export async function loader({ context, params }: Route.LoaderArgs) {
       : Promise.resolve({ results: [] as { id: string; name: string }[] }),
   ]);
 
-  return { org, animal, photos: photos.results, bonded: bonded.results };
+  const url = new URL(request.url);
+  const shareUrl = `${url.origin}/adopt/${org.slug}/${animal.id}`;
+  const photos = media.results.filter((m) => m.kind !== "video");
+  const videos = media.results.filter((m) => m.kind === "video");
+  const ogImage = photos[0] ? `${url.origin}/api/media/${photos[0].r2_key}` : null;
+  const qrSvg = await QRCode.toString(shareUrl, { type: "svg", margin: 1, width: 160 });
+
+  return {
+    org,
+    animal,
+    photos,
+    videos,
+    bonded: bonded.results,
+    shareUrl,
+    ogImage,
+    qrSvg,
+  };
 }
 
 export async function action({ context, request, params }: Route.ActionArgs) {
@@ -58,16 +96,20 @@ export async function action({ context, request, params }: Route.ActionArgs) {
   if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     return { error: "We need your name and a real email so the rescue can reach you." };
   }
+  const interest = ["adopt", "meet", "foster_to_adopt", "question"].includes(String(f.get("interest")))
+    ? String(f.get("interest"))
+    : "adopt";
 
   await env.DB.prepare(
-    `INSERT INTO applications (id, org_id, animal_id, name, email, phone, home_type, message)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO applications (id, org_id, animal_id, name, email, phone, home_type, message, interest)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       newId("ap"), org.id, params.animalId, name, email,
       String(f.get("phone") ?? "").trim() || null,
       String(f.get("home_type") ?? "").trim() || null,
       String(f.get("message") ?? "").trim().slice(0, 2000) || null,
+      interest,
     )
     .run();
 
@@ -120,9 +162,16 @@ const inputCls =
   "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none";
 
 export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentProps) {
-  const { org, animal, photos, bonded } = loaderData;
+  const { org, animal, photos, videos, bonded, shareUrl, ogImage, qrSvg } = loaderData;
   const nav = useNavigation();
   const Doodle = animal.species === "cat" ? CatDoodle : animal.species === "dog" ? DogDoodle : PawDoodle;
+
+  const facts = [animal.breed ?? animal.species, animal.sex, ageLabel(animal.dob)].filter(Boolean).join(", ");
+  const blurb =
+    `${String(animal.name)} (${facts || "a lovely friend"}) is looking for a home at ${org.name}. ` +
+    (bonded.length > 0 ? `Bonded with ${bonded.map((b) => b.name).join(" & ")} — they go home together. ` : "") +
+    `Can you help ${String(animal.name)} find their people?`;
+  const embedSnippet = `<iframe src="${shareUrl}/embed" width="320" height="440" style="border:0;border-radius:16px;overflow:hidden" title="Adopt ${String(animal.name)}" loading="lazy"></iframe>`;
 
   return (
     <div>
@@ -140,22 +189,34 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
             <div className="space-y-3">
               <img
                 src={`/api/media/${photos[0].r2_key}`}
-                alt={String(animal.name)}
+                alt={photos[0].caption ?? String(animal.name)}
                 className="w-full rounded-blob object-cover max-h-[28rem] shadow-soft"
               />
-              {photos.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
+              {(photos.length > 1 || videos.length > 0) && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {photos.slice(1).map((p) => (
-                    <img
-                      key={p.r2_key}
-                      src={`/api/media/${p.r2_key}`}
-                      alt=""
-                      className="w-full aspect-square object-cover rounded-2xl"
-                      loading="lazy"
-                    />
+                    <a key={p.r2_key} href={`/api/media/${p.r2_key}`} target="_blank" rel="noreferrer">
+                      <img
+                        src={`/api/media/${p.r2_key}`}
+                        alt={p.caption ?? `${String(animal.name)} photo`}
+                        className="w-full aspect-square object-cover rounded-2xl hover:opacity-90"
+                        loading="lazy"
+                      />
+                    </a>
                   ))}
                 </div>
               )}
+              {videos.map((v) => (
+                <video
+                  key={v.r2_key}
+                  src={`/api/media/${v.r2_key}`}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full rounded-blob shadow-soft"
+                  aria-label={v.caption ?? `${String(animal.name)} video`}
+                />
+              ))}
             </div>
           ) : (
             <div className="rounded-blob bg-white shadow-soft h-72 flex items-center justify-center">
@@ -194,6 +255,14 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
           {Boolean(animal.description) && (
             <p className="mt-4 text-lg leading-relaxed">{String(animal.description)}</p>
           )}
+
+          <ShareBar
+            target={{ url: shareUrl, title: `Meet ${String(animal.name)}`, blurb, imageUrl: ogImage }}
+            qrSvg={qrSvg}
+            embedSnippet={embedSnippet}
+            shareKitHref={`/api/share-kit/${org.slug}/${animal.id}.zip`}
+            flyerHref={`/adopt/${org.slug}/${animal.id}/flyer`}
+          />
         </div>
 
         <div>
@@ -206,6 +275,9 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
               <p className="mt-2 text-charcoal-soft">
                 {org.name} will reach out soon. Thank you for opening your home.
               </p>
+              <p className="mt-4 text-sm text-charcoal-soft">
+                While you wait — sharing {String(animal.name)}'s page helps even more friends get found.
+              </p>
             </div>
           ) : (
             <Form method="post" className="rounded-blob bg-white shadow-lift p-8 space-y-4 sticky top-8">
@@ -213,6 +285,15 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
                 Ask about {String(animal.name)}
               </h2>
               <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+              <label className="block">
+                <span className="font-semibold text-sm">I'd like to…</span>
+                <select name="interest" className={inputCls}>
+                  <option value="adopt">Adopt {String(animal.name)}</option>
+                  <option value="meet">Meet {String(animal.name)} first</option>
+                  <option value="foster_to_adopt">Try foster-to-adopt</option>
+                  <option value="question">Just ask a question</option>
+                </select>
+              </label>
               <label className="block">
                 <span className="font-semibold text-sm">Your name *</span>
                 <input name="name" required className={inputCls} />

@@ -101,7 +101,13 @@ Worker secret** is set — that single secret activates everything below plus th
 | Feature | Status | Notes |
 |---|---|---|
 | Public adoption portal per org (`/adopt/:slug`) | ✅ | Org branding fields from Settings |
-| Public animal pages with application form | ✅ | Honeypot spam protection |
+| Public animal pages with application form | ✅ | Honeypot spam protection; "I'd like to…" intent (adopt / meet / foster-to-adopt / question) flows into the inbox and AI triage |
+| Share bar on every animal page (native share, FB, X, WhatsApp, Pinterest, Nextdoor, email, SMS, copy link/blurb, QR) | ✅ | Plain share intents, no tracking scripts |
+| Printable branded adoption flyer (`…/flyer`) | ✅ | Brand tokens + big QR; print → Save as PDF |
+| Embeddable widget (`…/embed`) with copyable iframe snippet | ✅ | For partner/community websites |
+| Downloadable share kit (photos + blurb ZIP) | ✅ | `/api/share-kit/:slug/:animalId.zip`, 30MB cap |
+| Videos on animal profiles & adoption pages | ✅ | Up to 50MB (mp4/webm/mov), plays inline on the public page |
+| OG + Twitter cards with absolute animal photo | ✅ | Links unfurl beautifully in every messenger |
 | Application inbox with approve/deny workflow | ✅ | Approve = adopter contact + adoption + status + foster close, one click |
 | Manual adoption recording | ✅ | |
 | Petfinder/Adopt-a-Pet **feed** (CSV URL) | 🟡 | Export feed in Petfinder format — not an authenticated API push; both sites can ingest scheduled feeds |
