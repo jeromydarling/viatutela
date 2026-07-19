@@ -10,7 +10,7 @@ import { seedNewOrg } from "../../workers/lib/onboarding";
 import { cloudflareContext } from "../cloudflare-context";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Sign up free — Via Tutela" }];
+  return [{ title: "Get started — Via Tutela" }];
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
@@ -68,7 +68,7 @@ export default function Signup() {
       <main className="mx-auto max-w-md px-4 py-16">
         <div className="rounded-blob bg-white shadow-lift p-8">
           <Logo className="w-16 h-16 mx-auto" />
-          <h1 className="mt-2 text-3xl font-display font-semibold text-center">Sign up free</h1>
+          <h1 className="mt-2 text-3xl font-display font-semibold text-center">Get started</h1>
           <p className="mt-1 text-center text-sm text-charcoal-soft">
             Two minutes to a working shelter platform. Free to move in — Starter is $9 a month
             plus $1 for every animal you send home.

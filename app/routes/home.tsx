@@ -217,7 +217,7 @@ const PRICING = [
     price: "$39",
     tagline: "For growing rescues who need every hand coordinated.",
     features: ["Unlimited animals", "Foster + volunteer tools", "Donor CRM + supporter email", "AI matchmaker, triage & bio writer", "Custom domain + auto SSL", "Everything in Starter"],
-    cta: "Sign up free",
+    cta: "Get started",
     highlight: true,
   },
   {
@@ -225,7 +225,7 @@ const PRICING = [
     price: "$79",
     tagline: "For shelters with a lobby, a van, and a waiting list.",
     features: ["Multi-location", "Brand + Marketing studios", "AI site designer & insights", "Petfinder sync + fundraising", "Reports & analytics", "Everything in Rescue"],
-    cta: "Sign up free",
+    cta: "Get started",
     highlight: false,
   },
   {
@@ -290,7 +290,7 @@ function FeatureTabs() {
   );
 }
 
-function MiniCta({ text, label = "Sign up free", to = "/signup" }: { text: string; label?: string; to?: string }) {
+function MiniCta({ text, label = "Get started", to = "/signup" }: { text: string; label?: string; to?: string }) {
   return (
     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
       <span className="font-display font-semibold text-lg">{text}</span>
@@ -326,7 +326,7 @@ export default function Home() {
                 to="/signup"
                 className="rounded-full bg-sunflower px-7 py-3.5 font-display font-semibold text-lg text-charcoal shadow-soft hover:shadow-lift transition-shadow"
               >
-                Sign up free
+                Get started
               </Link>
               <a
                 href="/demo"
@@ -398,7 +398,7 @@ export default function Home() {
                 to="/signup"
                 className="rounded-full bg-sunflower px-6 py-3 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"
               >
-                Give every animal this page — sign up free
+                Give every animal this page — get started
               </Link>
               <Link
                 to="/adopt/sunny-meadow-demo"
@@ -504,7 +504,7 @@ export default function Home() {
           ShelterCare insurance to adopters. And where Shelterluv charges $2 per adoption
           forever, Starter's $1 is half that — and disappears entirely on our flat tiers.
         </p>
-        <MiniCta text="Life's better in the left column." label="Sign up free" />
+        <MiniCta text="Life's better in the left column." label="Get started" />
       </section>
 
       {/* ---------- Pricing ---------- */}
@@ -614,7 +614,7 @@ export default function Home() {
               to="/signup"
               className="rounded-full bg-sunflower px-8 py-4 font-display font-semibold text-lg text-charcoal shadow-soft hover:shadow-lift transition-shadow"
             >
-              Sign up free
+              Get started
             </Link>
             <Link
               to="/import"

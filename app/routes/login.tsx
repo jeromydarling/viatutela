@@ -92,7 +92,7 @@ export default function Login() {
           <p className="mt-4 text-center text-sm text-charcoal-soft">
             New here?{" "}
             <Link to="/signup" className="font-semibold text-meadow-deep hover:underline">
-              Sign up free
+              Get started
             </Link>{" "}
             — or migrate with the{" "}
             <Link to="/import" className="font-semibold text-meadow-deep hover:underline">
