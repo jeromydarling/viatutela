@@ -83,6 +83,10 @@
 	// remoteBindings:false in vite.config keeps local dev booting; local
 	// calls fail fast and the degrade path handles it.
 	"ai": { "binding": "AI" },
+	// Static assets binding — lets the worker read its own bundled assets
+	// in-process (demo photo seeding); HTTP self-fetch is blocked on
+	// workers.dev, so this is the only reliable path.
+	"assets": { "binding": "ASSETS" },
 	// Cloudflare Images — photo studio transforms (enhance, crops). Billed
 	// per unique transformation; repeats within a month are free.
 	"images": { "binding": "IMAGES" }
