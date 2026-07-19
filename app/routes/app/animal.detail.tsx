@@ -6,6 +6,8 @@ import { AnimalFields } from "./animal.new";
 import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, summarizeNotes, writeBio, type BioPack, type HandoffPack } from "../../../workers/lib/ai-shelter";
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
+import { scheduleFollowups } from "../../../workers/lib/lifecycle";
+import { extractVetRecords, fileToVisionImage, type OcrRecord, type VisionImage } from "../../../workers/lib/ai-vision";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   return [{ title: `${data?.animal?.name ?? "Friend"} — Via Tutela` }];
@@ -175,12 +177,13 @@ export async function action({ context, request, params }: Route.ActionArgs) {
 
   if (intent === "record-adoption") {
     const contactId = str("contact_id");
+    const adoptionId = newId("ad");
     await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO adoptions (id, org_id, animal_id, contact_id, date, fee, status)
          VALUES (?, ?, ?, ?, ?, ?, 'completed')`,
       ).bind(
-        newId("ad"), user.org_id, animal.id, contactId,
+        adoptionId, user.org_id, animal.id, contactId,
         str("date") ?? new Date().toISOString().slice(0, 10),
         f.get("fee") ? Number(f.get("fee")) : null,
       ),
@@ -190,7 +193,40 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       ).bind(animal.id),
     ]);
     ctx.waitUntil(autoAdoption(env, user.org_id, String(animal.id)));
-    return { ok: "Welcome home! Adoption recorded." };
+    ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
+    return { ok: "Welcome home! Adoption recorded — check-in emails are scheduled." };
+  }
+
+  if (intent === "ai-vet-ocr") {
+    const images: VisionImage[] = [];
+    for (const file of f.getAll("records")) {
+      if (file instanceof File && file.size > 0) {
+        const img = await fileToVisionImage(file);
+        if (img) images.push(img);
+        if (images.length >= 4) break;
+      }
+    }
+    if (images.length === 0) return { error: "Add at least one photo of the records (jpg/png/webp, under 5MB)." };
+    const res = await extractVetRecords(env, { orgId: user.org_id, images });
+    if (res.error || !res.records) return { error: res.error ?? "Nothing came back." };
+    if (res.records.length === 0) return { error: "No readable medical events found in those photos." };
+    await logAiWrite(env, user.org_id, user.user_id, "vet_ocr", `animal ${animal.id}: ${res.records.length} rows`);
+    return { ok: `${res.records.length} record${res.records.length === 1 ? "" : "s"} read — review below, then add them.`, ocr: res.records };
+  }
+
+  if (intent === "ai-vet-apply") {
+    try {
+      const records = JSON.parse(str("records_json") ?? "[]") as OcrRecord[];
+      const stmts = records.slice(0, 40).map((r) =>
+        env.DB.prepare(
+          `INSERT INTO medical_records (id, org_id, animal_id, date, type, description, vet, due_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).bind(newId("md"), user.org_id, animal.id, r.date, String(r.type).slice(0, 30), String(r.description).slice(0, 500), r.vet, r.due_date),
+      );
+      if (stmts.length) await env.DB.batch(stmts);
+      return { ok: `${stmts.length} medical record${stmts.length === 1 ? "" : "s"} added to the timeline.` };
+    } catch {
+      return { error: "Couldn't apply those records — run the reader again." };
+    }
   }
 
   if (intent === "ai-bio") {
@@ -263,7 +299,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
   const { animal, photos, medical, adoptions, fosters, contacts, locations, bonded, orgSlug, aiReady } = loaderData;
   const nav = useNavigation();
   const activeFoster = fosters.find((fa) => fa.active);
-  const ai = actionData as { bioPack?: BioPack; handoff?: HandoffPack } | undefined;
+  const ai = actionData as { bioPack?: BioPack; handoff?: HandoffPack; ocr?: OcrRecord[] } | undefined;
 
   return (
     <div className="space-y-6">
@@ -452,6 +488,38 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
           </label>
           <button className="rounded-full bg-meadow text-white px-4 py-2 text-sm font-semibold">Add</button>
         </Form>
+        {aiReady && (
+          <div className="mt-3 rounded-2xl border-2 border-sky/30 bg-sky/5 p-3">
+            <Form method="post" encType="multipart/form-data" className="flex flex-wrap gap-2 items-center">
+              <input type="hidden" name="intent" value="ai-vet-ocr" />
+              <span className="text-sm font-semibold">✨ Paper records?</span>
+              <input type="file" name="records" accept="image/jpeg,image/png,image/webp" multiple required className="text-sm flex-1 w-0 min-w-40" />
+              <button disabled={nav.state !== "idle"} className="rounded-full bg-sky text-white px-4 py-1.5 text-sm font-semibold shadow-soft disabled:opacity-50">
+                {nav.state !== "idle" ? "Reading…" : "Read them in"}
+              </button>
+            </Form>
+            {ai?.ocr && ai.ocr.length > 0 && (
+              <div className="mt-2">
+                <ul className="text-sm space-y-1">
+                  {ai.ocr.map((r, i) => (
+                    <li key={i}>
+                      <strong>{r.date ?? "no date"}</strong> · {r.type} — {r.description}
+                      {r.vet && <span className="text-charcoal-soft"> ({r.vet})</span>}
+                      {r.due_date && <span className="text-terracotta-deep font-semibold"> · due {r.due_date}</span>}
+                    </li>
+                  ))}
+                </ul>
+                <Form method="post" className="mt-2">
+                  <input type="hidden" name="intent" value="ai-vet-apply" />
+                  <input type="hidden" name="records_json" value={JSON.stringify(ai.ocr)} />
+                  <button className="rounded-full bg-meadow text-white px-4 py-1.5 text-sm font-semibold shadow-soft">
+                    Add all {ai.ocr.length} to the timeline
+                  </button>
+                </Form>
+              </div>
+            )}
+          </div>
+        )}
         {medical.length === 0 ? (
           <p className="mt-4 text-charcoal-soft">No records yet.</p>
         ) : (

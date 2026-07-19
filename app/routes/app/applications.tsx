@@ -6,6 +6,7 @@ import { sendAppEmail } from "../../../workers/lib/email";
 import { logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, reviewApplication, type AppReview } from "../../../workers/lib/ai-shelter";
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
+import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Via Tutela" }];
@@ -145,11 +146,12 @@ export async function action({ context, request }: Route.ActionArgs) {
       );
     }
 
+    const adoptionId = newId("ad");
     if (app.animal_id) {
       stmts.push(
         env.DB.prepare(
           `INSERT INTO adoptions (id, org_id, animal_id, contact_id, date, status) VALUES (?, ?, ?, ?, date('now'), 'completed')`,
-        ).bind(newId("ad"), user.org_id, app.animal_id, contactId),
+        ).bind(adoptionId, user.org_id, app.animal_id, contactId),
         env.DB.prepare(`UPDATE animals SET status = 'adopted' WHERE id = ? AND org_id = ?`).bind(app.animal_id, user.org_id),
         env.DB.prepare(
           `UPDATE foster_assignments SET active = 0, end_date = date('now') WHERE animal_id = ? AND active = 1`,
@@ -157,7 +159,10 @@ export async function action({ context, request }: Route.ActionArgs) {
       );
     }
     await env.DB.batch(stmts);
-    if (app.animal_id) ctx.waitUntil(autoAdoption(env, user.org_id, String(app.animal_id)));
+    if (app.animal_id) {
+      ctx.waitUntil(autoAdoption(env, user.org_id, String(app.animal_id)));
+      ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
+    }
     ctx.waitUntil(
       sendAppEmail(env, {
         to: String(app.email),

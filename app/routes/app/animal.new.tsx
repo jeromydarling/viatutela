@@ -3,6 +3,9 @@ import type { Route } from "./+types/animal.new";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
+import { notifyWaitlist } from "../../../workers/lib/waitlist";
+import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
+import { draftFromPhotos, fileToVisionImage, type IntakeDraft, type VisionImage } from "../../../workers/lib/ai-vision";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Add a friend — Via Tutela" }];
@@ -15,12 +18,29 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   )
     .bind(user.org_id)
     .all<{ id: string; name: string }>();
-  return { locations: locations.results };
+  return { locations: locations.results, aiReady: Boolean(getAnthropic(env)) };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
   const { env, ctx, user } = await requireUser(context, request);
   const f = await request.formData();
+
+  if (String(f.get("intent")) === "ai-intake") {
+    const images: VisionImage[] = [];
+    for (const file of f.getAll("photos")) {
+      if (file instanceof File && file.size > 0) {
+        const img = await fileToVisionImage(file);
+        if (img) images.push(img);
+        if (images.length >= 4) break;
+      }
+    }
+    if (images.length === 0) return { error: "Add at least one photo (jpg/png/webp, under 5MB)." };
+    const res = await draftFromPhotos(env, { orgId: user.org_id, images, notes: String(f.get("notes") ?? "") });
+    if (res.error || !res.draft) return { error: res.error ?? "No draft came back." };
+    ctx.waitUntil(logAiWrite(env, user.org_id, user.user_id, "intake_vision", `${images.length} photos`));
+    return { draft: res.draft, ok: "Draft below — check every guess before saving. Photos aren't stored here; add them on the profile after." };
+  }
+
   const name = String(f.get("name") ?? "").trim();
   if (!name) return { error: "Every friend needs a name." };
 
@@ -57,8 +77,9 @@ export async function action({ context, request }: Route.ActionArgs) {
       .bind(locationId, id, locationId, user.org_id)
       .run();
   }
-  // off the request path: draft a launch kit for new public, available friends
+  // off the request path: launch kit + waitlist alerts for new public friends
   ctx.waitUntil(autoNewAnimal(env, user.org_id, id));
+  ctx.waitUntil(notifyWaitlist(env, user.org_id, id, new URL(request.url).origin));
   return redirect(`/app/animals/${id}`);
 }
 
@@ -165,14 +186,45 @@ export function AnimalFields({
 
 export default function NewAnimal({ loaderData, actionData }: Route.ComponentProps) {
   const nav = useNavigation();
+  const ai = actionData as { draft?: IntakeDraft; ok?: string; error?: string } | undefined;
+  const prefill = ai?.draft
+    ? {
+        name: ai.draft.suggested_name,
+        species: ai.draft.species,
+        breed: ai.draft.breed_guess,
+        sex: ["male", "female"].includes(ai.draft.sex_guess) ? ai.draft.sex_guess : "",
+        color: ai.draft.color,
+        weight: ai.draft.weight_guess,
+        description: `${ai.draft.bio}\n\n(Estimated age: ${ai.draft.estimated_age} — AI intake draft, staff-verified)`,
+      }
+    : undefined;
   return (
     <div className="max-w-3xl">
       <Link to="/app/animals" className="text-sm font-semibold text-charcoal-soft hover:text-charcoal">
         ← All friends
       </Link>
       <h1 className="mt-2 text-2xl font-display font-semibold">Add a friend</h1>
-      <Form method="post" className="mt-6 rounded-blob bg-white shadow-soft p-6">
-        <AnimalFields locations={loaderData.locations} />
+
+      {loaderData.aiReady && (
+        <section className="mt-4 rounded-blob border-2 border-sky/40 bg-sky/5 p-5">
+          <h2 className="font-display font-semibold">✨ Draft from intake photos</h2>
+          <p className="text-xs text-charcoal-soft mt-0.5">
+            Snap a few photos, add a note, and the form below prefills — species, markings, a first bio. Every guess is yours to correct.
+          </p>
+          <Form method="post" encType="multipart/form-data" className="mt-2 flex flex-wrap gap-2 items-center">
+            <input type="hidden" name="intent" value="ai-intake" />
+            <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required className="text-sm flex-1 w-0 min-w-40" />
+            <input name="notes" placeholder="Quick note (found where, temperament…)" className="flex-1 min-w-40 rounded-xl border-2 border-cream bg-white px-3 py-2 text-sm focus:border-meadow outline-none" />
+            <button disabled={nav.state !== "idle"} className="rounded-full bg-sky text-white px-5 py-2 text-sm font-display font-semibold shadow-soft disabled:opacity-50">
+              {nav.state !== "idle" ? "Looking…" : "Draft the profile"}
+            </button>
+          </Form>
+          {ai?.ok && <p className="mt-2 text-sm font-semibold text-meadow-deep">{ai.ok}</p>}
+        </section>
+      )}
+
+      <Form method="post" key={prefill ? "prefilled" : "blank"} className="mt-6 rounded-blob bg-white shadow-soft p-6">
+        <AnimalFields animal={prefill} locations={loaderData.locations} />
         {actionData?.error && (
           <p className="mt-4 font-semibold text-terracotta-deep" role="alert">{actionData.error}</p>
         )}

@@ -1,6 +1,7 @@
-import { Link } from "react-router";
+import { Form, Link } from "react-router";
 import type { Route } from "./+types/adopt";
 import { getEnv } from "../lib/auth.server";
+import { subscribeWaitlist } from "../../workers/lib/waitlist";
 import { BirdDoodle, CatDoodle, DogDoodle, PawDoodle } from "../components/doodles";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
@@ -32,6 +33,23 @@ export async function loader({ context, params }: Route.LoaderArgs) {
   return { org, animals: animals.results };
 }
 
+export async function action({ context, request, params }: Route.ActionArgs) {
+  const env = getEnv(context);
+  const f = await request.formData();
+  if (String(f.get("website") ?? "")) return { waitlist: true }; // honeypot
+  if (String(f.get("intent")) !== "waitlist") return null;
+  const org = await env.DB.prepare(`SELECT id FROM orgs WHERE slug = ?`).bind(params.slug).first<{ id: string }>();
+  if (!org) return null;
+  const ok = await subscribeWaitlist(env, {
+    orgId: org.id,
+    email: String(f.get("email") ?? ""),
+    name: String(f.get("name") ?? ""),
+    species: String(f.get("species") ?? "any"),
+    keywords: String(f.get("keywords") ?? ""),
+  });
+  return ok ? { waitlist: true } : { waitlistError: "That email doesn't look right." };
+}
+
 const SPECIES_DOODLE: Record<string, typeof DogDoodle> = {
   dog: DogDoodle,
   cat: CatDoodle,
@@ -46,8 +64,9 @@ function ageLabel(dob: string | null): string | null {
   return `${Math.floor(years)} year${years >= 2 ? "s" : ""}`;
 }
 
-export default function AdoptPortal({ loaderData }: Route.ComponentProps) {
+export default function AdoptPortal({ loaderData, actionData }: Route.ComponentProps) {
   const { org, animals } = loaderData;
+  const wl = actionData as { waitlist?: boolean; waitlistError?: string } | undefined;
   return (
     <div>
       <header className="bg-meadow text-white">
@@ -142,6 +161,39 @@ export default function AdoptPortal({ loaderData }: Route.ComponentProps) {
           </>
         )}
       </main>
+
+      <section className="mx-auto max-w-3xl px-4 sm:px-6 pb-14">
+        <div className="rounded-blob bg-white shadow-soft p-6 sm:p-8">
+          <h2 className="text-xl font-display font-semibold text-center">Waiting for someone specific? 💛</h2>
+          <p className="mt-1 text-center text-sm text-charcoal-soft">
+            Tell us who you're hoping for and we'll email you the moment a match arrives. One email per match, unsubscribe anytime.
+          </p>
+          {wl?.waitlist ? (
+            <p className="mt-4 rounded-2xl bg-meadow/15 text-meadow-deep px-4 py-3 text-center font-semibold">
+              You're on the list — we'll email you when your match walks in. 🐾
+            </p>
+          ) : (
+            <Form method="post" className="mt-4 flex flex-wrap gap-2">
+              <input type="hidden" name="intent" value="waitlist" />
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+              <input name="name" placeholder="Your name" className="flex-1 min-w-32 rounded-xl border-2 border-cream bg-cream px-3 py-2.5 text-sm focus:border-meadow outline-none" />
+              <input name="email" type="email" required placeholder="you@example.com" className="flex-1 min-w-44 rounded-xl border-2 border-cream bg-cream px-3 py-2.5 text-sm focus:border-meadow outline-none" />
+              <select name="species" className="rounded-xl border-2 border-cream bg-cream px-3 py-2.5 text-sm focus:border-meadow outline-none">
+                <option value="any">Any friend</option>
+                <option value="dog">Dog</option>
+                <option value="cat">Cat</option>
+                <option value="rabbit">Rabbit</option>
+                <option value="other">Other</option>
+              </select>
+              <input name="keywords" placeholder="senior, bonded pair, small, calm…" className="w-full rounded-xl border-2 border-cream bg-cream px-3 py-2.5 text-sm focus:border-meadow outline-none" />
+              {wl?.waitlistError && <p className="w-full text-sm font-semibold text-terracotta-deep">{wl.waitlistError}</p>}
+              <button className="w-full rounded-full bg-sunflower px-6 py-3 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow">
+                Tell me when my match arrives
+              </button>
+            </Form>
+          )}
+        </div>
+      </section>
 
       <footer className="py-8 text-center text-sm text-charcoal-soft">
         Powered by <Link to="/" className="font-semibold text-meadow-deep hover:underline">Via Tutela</Link> —
