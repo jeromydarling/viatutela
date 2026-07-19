@@ -43,7 +43,7 @@ export function SiteHeader() {
             to="/signup"
             className="rounded-full bg-sunflower px-4 py-2 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow whitespace-nowrap"
           >
-            Sign up free
+            Get started
           </Link>
           <button
             type="button"
@@ -84,7 +84,7 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               className="mt-1 rounded-full bg-sunflower px-4 py-2.5 text-center font-display font-semibold shadow-soft"
             >
-              Sign up free
+              Get started
             </Link>
           </div>
         </div>
@@ -105,7 +105,7 @@ export function SiteFooter() {
           Peace and all good things to you and your animals.
         </p>
         <div className="flex gap-4 text-sm font-semibold text-charcoal-soft">
-          <Link to="/signup" className="hover:text-charcoal">Sign up free</Link>
+          <Link to="/signup" className="hover:text-charcoal">Get started</Link>
           <Link to="/import" className="hover:text-charcoal">Free importer</Link>
           <a href="/#pricing" className="hover:text-charcoal">Pricing</a>
         </div>
