@@ -48,9 +48,11 @@ export default {
       return;
     }
     if (event.cron === "30 14 * * *") {
-      // daily: post-adoption check-ins and gotcha days
+      // daily: post-adoption check-ins, gotcha days, onboarding drip
       const { processFollowups } = await import("./lib/lifecycle");
       ctx.waitUntil(processFollowups(env, env.APP_ORIGIN));
+      const { processOnboardingEmails } = await import("./lib/onboarding");
+      ctx.waitUntil(processOnboardingEmails(env, env.APP_ORIGIN));
       return;
     }
     const { sendMedicalDigests } = await import("./lib/digest");
