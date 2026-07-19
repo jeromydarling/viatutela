@@ -2,6 +2,7 @@ import { Form } from "react-router";
 import type { Route } from "./+types/settings";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
+import { normalizePhone } from "../../../workers/lib/sms";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Settings — Via Tutela" }];
@@ -11,7 +12,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
   const [org, locations] = await Promise.all([
     env.DB.prepare(
-      `SELECT id, name, slug, plan, about, website, email, phone, address FROM orgs WHERE id = ?`,
+      `SELECT id, name, slug, plan, about, website, email, phone, address, sms_number FROM orgs WHERE id = ?`,
     ).bind(user.org_id).first<Record<string, string | null>>(),
     env.DB.prepare(
       `SELECT l.*, (SELECT COUNT(*) FROM animals a WHERE a.location_id = l.id AND a.status NOT IN ('adopted','deceased','transferred')) in_care
@@ -48,10 +49,13 @@ export async function action({ context, request }: Route.ActionArgs) {
 
   const name = str("name");
   if (!name) return { error: "Your organization needs a name." };
+  const smsRaw = str("sms_number");
+  const smsNumber = smsRaw ? normalizePhone(smsRaw) : null;
+  if (smsRaw && !smsNumber) return { error: "That SMS number doesn't look right — use a full number like (555) 010-2211." };
   await env.DB.prepare(
-    `UPDATE orgs SET name=?, about=?, website=?, email=?, phone=?, address=? WHERE id=?`,
+    `UPDATE orgs SET name=?, about=?, website=?, email=?, phone=?, address=?, sms_number=? WHERE id=?`,
   )
-    .bind(name, str("about"), str("website"), str("email"), str("phone"), str("address"), user.org_id)
+    .bind(name, str("about"), str("website"), str("email"), str("phone"), str("address"), smsNumber, user.org_id)
     .run();
   return { ok: "Saved." };
 }
@@ -98,6 +102,11 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
           <label className="block">
             <span className="font-semibold text-sm">Address</span>
             <input name="address" defaultValue={org.address ?? ""} className={inputCls} />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="font-semibold text-sm">📱 Text alerts number</span>
+            <input name="sms_number" defaultValue={(org as Record<string, string | null>).sms_number ?? ""} placeholder="(555) 010-2211 — new applications text this phone" className={inputCls} />
+            <span className="text-xs text-charcoal-soft">Delivery starts once Twilio is connected on the platform; adopters with a phone number also get a text when they're approved.</span>
           </label>
         </div>
         <button className="rounded-full bg-meadow text-white px-6 py-2.5 font-display font-semibold shadow-soft">

@@ -7,6 +7,7 @@ import { logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, reviewApplication, type AppReview } from "../../../workers/lib/ai-shelter";
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
+import { sendSms } from "../../../workers/lib/sms";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Via Tutela" }];
@@ -162,6 +163,11 @@ export async function action({ context, request }: Route.ActionArgs) {
     if (app.animal_id) {
       ctx.waitUntil(autoAdoption(env, user.org_id, String(app.animal_id)));
       ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
+    }
+    if (app.phone) {
+      ctx.waitUntil(
+        sendSms(env, String(app.phone), `🏡 Wonderful news — your application for ${animalName} was approved! ${org?.name ?? "The rescue"} will be in touch with next steps.`),
+      );
     }
     ctx.waitUntil(
       sendAppEmail(env, {
