@@ -54,6 +54,12 @@ versus what is actually built and deployed. Updated 2026-07-19.
 All run server-side on the Anthropic API, are audit-logged, and never auto-apply output
 (staff click to accept). **`ANTHROPIC_API_KEY` is set in production — every AI feature is live.**
 
+Resilience: structured-output features **fall back to Workers AI (Llama 3.3 70B)** when the
+Anthropic API is unconfigured or errors (vision + site designer stay Claude-only). Every AI call
+is **budget-gated per org per day** from the `ai_usage` table — free 150k, rescue 750k, pro 2M
+tokens/day (override with the `AI_DAILY_TOKEN_LIMIT` var); over-budget calls get a friendly
+"refills at midnight UTC" message.
+
 | Feature | Status | Notes |
 |---|---|---|
 | Adopter–animal match quiz (public, `/adopt/:slug/match`) | 🟡 | Six questions → top matches from the shelter's real available animals, with reasons. Honeypot + per-IP (5/hr) and per-org (60/hr) rate limits |

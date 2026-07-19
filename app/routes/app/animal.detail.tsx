@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../../workers/lib/ai-shelter";
 import { Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/animal.detail";
 import { requireUser } from "../../lib/auth.server";
@@ -54,7 +55,7 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
     locations: locations.results,
     bonded: bonded.results,
     orgSlug: user.slug,
-    aiReady: Boolean(getAnthropic(env)),
+    aiReady: aiAvailable(env),
   };
 }
 

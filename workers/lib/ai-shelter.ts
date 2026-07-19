@@ -93,7 +93,97 @@ export async function recordAiUsage(
   }
 }
 
-/** One structured-output call; refusal-safe, JSON-safe, never throws. */
+/** True when ANY provider (Anthropic key or Workers AI fallback) exists. */
+export function aiAvailable(env: Env): boolean {
+  return Boolean(getAnthropic(env) || (env as { AI?: unknown }).AI);
+}
+
+/**
+ * Per-org daily AI budget (total tokens/day from ai_usage). Plan-based
+ * defaults, overridable with the AI_DAILY_TOKEN_LIMIT var. A gate, not
+ * a meter — it stops runaway cost, especially on public endpoints.
+ */
+const DAILY_TOKEN_LIMITS: Record<string, number> = { free: 150_000, rescue: 750_000, pro: 2_000_000 };
+
+export async function checkAiBudget(env: Env, orgId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const override = Number((env as { AI_DAILY_TOKEN_LIMIT?: string }).AI_DAILY_TOKEN_LIMIT);
+    const row = await env.DB.prepare(
+      `SELECT o.plan, (SELECT COALESCE(SUM(u.input_tokens + u.output_tokens), 0) FROM ai_usage u
+         WHERE u.org_id = o.id AND u.created_at >= date('now')) spent
+       FROM orgs o WHERE o.id = ?`,
+    )
+      .bind(orgId)
+      .first<{ plan: string; spent: number }>();
+    if (!row) return { ok: true };
+    const limit = Number.isFinite(override) && override > 0 ? override : (DAILY_TOKEN_LIMITS[row.plan] ?? 300_000);
+    if (row.spent >= limit) {
+      return {
+        ok: false,
+        error: "Today's AI budget is used up — it refills at midnight UTC. (Plenty of kibble tomorrow.)",
+      };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: true }; // a broken meter never takes the feature down
+  }
+}
+
+/** Pure: pull the first complete JSON object out of model prose. */
+export function extractJson(text: string): string | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  return text.slice(start, end + 1);
+}
+
+const LLAMA_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+
+interface WorkersAi {
+  run(model: string, input: Record<string, unknown>): Promise<{ response?: string; usage?: { prompt_tokens?: number; completion_tokens?: number } }>;
+}
+
+/** Workers AI (Llama) fallback — keeps the lights on when Claude is down. */
+async function llamaStructured<T>(
+  env: Env,
+  prompt: string,
+  schema: Record<string, unknown>,
+  maxTokens: number,
+  track?: { orgId: string; feature: string },
+): Promise<{ data?: T; error?: string }> {
+  const ai = (env as { AI?: WorkersAi }).AI;
+  if (!ai) return { error: AI_UNAVAILABLE };
+  try {
+    const result = await ai.run(LLAMA_MODEL, {
+      messages: [
+        {
+          role: "system",
+          content: `Respond with EXACTLY ONE JSON object matching this JSON Schema, no prose, no markdown fences:\n${JSON.stringify(schema)}`,
+        },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: Math.min(maxTokens, 4000),
+    });
+    if (track) {
+      await recordAiUsage(env, track.orgId, `${track.feature}:llama`, {
+        input_tokens: result.usage?.prompt_tokens ?? 0,
+        output_tokens: result.usage?.completion_tokens ?? 0,
+      });
+    }
+    const raw = extractJson(result.response ?? "");
+    if (!raw) return { error: "The backup AI came back empty — try again." };
+    return { data: JSON.parse(raw) as T };
+  } catch (err) {
+    console.log(`[llama fallback failed] ${err instanceof Error ? err.message : err}`);
+    return { error: "The AI hit a snag — try again in a moment." };
+  }
+}
+
+/**
+ * One structured-output call; refusal-safe, JSON-safe, never throws.
+ * Budget-gated per org, and falls back to Workers AI (Llama) when the
+ * Anthropic API is unconfigured or errors.
+ */
 export async function structured<T>(
   env: Env,
   prompt: string,
@@ -101,8 +191,12 @@ export async function structured<T>(
   maxTokens: number,
   track?: { orgId: string; feature: string; system?: string },
 ): Promise<{ data?: T; error?: string }> {
+  if (track) {
+    const budget = await checkAiBudget(env, track.orgId);
+    if (!budget.ok) return { error: budget.error };
+  }
   const client = getAnthropic(env);
-  if (!client) return { error: AI_UNAVAILABLE };
+  if (!client) return llamaStructured<T>(env, prompt, schema, maxTokens, track);
   try {
     const response = await client.messages.create({
       model: MODEL,
@@ -117,8 +211,8 @@ export async function structured<T>(
     if (!out?.text) return { error: "The AI came back empty — try again." };
     return { data: JSON.parse(out.text) as T };
   } catch (err) {
-    console.log(`[ai shelter call failed] ${err instanceof Error ? err.message : err}`);
-    return { error: "The AI hit a snag — try again in a moment." };
+    console.log(`[anthropic failed, trying llama] ${err instanceof Error ? err.message : err}`);
+    return llamaStructured<T>(env, prompt, schema, maxTokens, track);
   }
 }
 

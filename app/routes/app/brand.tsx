@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../../workers/lib/ai-shelter";
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/brand";
 import { requireUser } from "../../lib/auth.server";
@@ -44,7 +45,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     orgName: org?.name ?? "",
     brand: parseBrandJson(org?.brand_json ?? null),
     media: media.results,
-    aiReady: Boolean(getAnthropic(env)),
+    aiReady: aiAvailable(env),
   };
 }
 

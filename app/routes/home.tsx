@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { SiteHeader, SiteFooter } from "../components/site";
@@ -8,13 +9,19 @@ import {
   BrandScreen,
   DonationScreen,
   FosterScreen,
+  GrantScreen,
   ImporterScreen,
+  LifecycleScreen,
   MarketingScreen,
   MatchScreen,
+  NetworkScreen,
+  PaperworkScreen,
   PortalScreen,
   ReportsScreen,
   ShareScreen,
   TriageScreen,
+  VolunteerScreen,
+  WaitlistScreen,
   WebsiteScreen,
 } from "../components/feature-screens";
 
@@ -56,69 +63,126 @@ const PAIN_RELIEF: { pain: string; relief: string }[] = [
   },
 ];
 
-const FEATURES: {
+interface Feature {
   title: string;
   body: string;
   screen: React.ComponentType;
   link?: { label: string; to: string };
-}[] = [
+}
+
+const FEATURE_TABS: { key: string; label: string; features: Feature[] }[] = [
   {
-    title: "A real website, designed in one conversation",
-    body: "Answer five questions and the AI designer drafts your whole site — home, about, adopt, donate — as drafts you approve, never auto-published. Build with friendly blocks, publish on your own domain with automatic SSL, and your sitemap and Google structured data come along for free.",
-    screen: WebsiteScreen,
+    key: "adoptions",
+    label: "🏡 Adoptions",
+    features: [
+      {
+        title: "A matchmaker that knows your actual animals",
+        body: "Adopters answer six quick questions and the AI ranks your real, currently-available friends for their home — energy, kids, other pets, experience. Bonded pairs stay together. Fewer mismatches, fewer returns, more forever homes.",
+        screen: MatchScreen,
+      },
+      {
+        title: "An inbox that triages itself",
+        body: "Every application gets a fit score, green and red flags drawn only from what the applicant actually wrote, better-fit suggestions, and a warm draft reply. AI ranks and flags — your people always make the call.",
+        screen: TriageScreen,
+      },
+      {
+        title: "Missed visitors become a waiting list",
+        body: "\"Tell me when you get a senior cat.\" Adopters subscribe on your adoption page, and the moment a matching friend arrives, they get the email — automatically, once, with a link straight to the newcomer.",
+        screen: WaitlistScreen,
+      },
+      {
+        title: "Your own adoption page, applications included",
+        body: "Every rescue gets a warm public page at your own link. Applications arrive in an inbox where one click approves, records the adoption, emails the good news — and texts it too, once Twilio is connected.",
+        screen: PortalScreen,
+      },
+      {
+        title: "Adopters who stay family",
+        body: "Day-3 check-in, week-2 photo ask, a gentle month-6 give moment, and a Gotcha Day card every year — scheduled automatically on every adoption. Returns go down; lifelong supporters go up.",
+        screen: LifecycleScreen,
+      },
+    ],
   },
   {
-    title: "A matchmaker that knows your actual animals",
-    body: "Adopters answer six quick questions and the AI ranks your real, currently-available friends for their home — energy, kids, other pets, experience. Bonded pairs stay together. Fewer mismatches, fewer returns, more forever homes.",
-    screen: MatchScreen,
+    key: "care",
+    label: "🐾 Daily care",
+    features: [
+      {
+        title: "Move in free — relationships and all",
+        body: "Upload the messy exports from your old system. Adopters stay linked to their animals, medical history follows every friend, and bonded pairs stay bonded. Flagged rows land in a tidy report instead of the void.",
+        screen: ImporterScreen,
+        link: { label: "Try the importer", to: "/import" },
+      },
+      {
+        title: "One profile per friend, one scan away",
+        body: "Photos, videos, medical timeline, foster status, microchip — all on one page. Print a kennel card with a QR code and the full profile opens on your phone, right there in the kennel aisle.",
+        screen: AnimalScreen,
+      },
+      {
+        title: "The paperwork does itself",
+        body: "Snap intake photos and the profile drafts itself — species, markings, age estimate, a first bio. Photograph the crumpled vet records that came with the transfer and they become dated medical rows with due dates. Every guess labeled, every row staff-approved.",
+        screen: PaperworkScreen,
+      },
+      {
+        title: "Fosters and people, finally in one place",
+        body: "Start and end foster stays in two clicks — animal statuses keep themselves honest. Adopters, fosters, volunteers, and donors live in one gentle CRM with their whole history.",
+        screen: FosterScreen,
+      },
+      {
+        title: "Volunteers scheduled, hours logged",
+        body: "Shifts and sign-ups in seconds — and every hour lands in the log that grant applications demand. The leaderboard is just for bragging rights.",
+        screen: VolunteerScreen,
+      },
+    ],
   },
   {
-    title: "An inbox that triages itself",
-    body: "Every application gets a fit score, green and red flags drawn only from what the applicant actually wrote, better-fit suggestions, and a warm draft reply. AI ranks and flags — your people always make the call.",
-    screen: TriageScreen,
+    key: "grow",
+    label: "💛 Money & growth",
+    features: [
+      {
+        title: "Generosity, honored properly",
+        body: "Record gifts, run campaigns with goals and progress bars, and send thank-you receipts automatically. We never take a cent of your donations.",
+        screen: DonationScreen,
+      },
+      {
+        title: "Grant applications that write themselves",
+        body: "Petco Love, Best Friends, community foundations — the AI drafts the full narrative from your real outcomes, volunteer hours, and donor numbers. It never invents a statistic; you edit and submit.",
+        screen: GrantScreen,
+      },
+      {
+        title: "Marketing that drafts itself",
+        body: "New arrival? A launch kit appears. Adoption day? A success story is waiting. Eleven channels — Facebook to press releases to Google Ad Grants — drafted in your voice, on a calendar, sent to your supporter list with polite one-click unsubscribe.",
+        screen: MarketingScreen,
+      },
+      {
+        title: "Know your numbers, love your outcomes",
+        body: "Intakes, adoptions, days-to-home, donation trends, application funnel — clear charts your board will actually read, plus AI insights that tell you which long-stay friend needs a spotlight this month.",
+        screen: ReportsScreen,
+      },
+    ],
   },
   {
-    title: "Your brand, in a box",
-    body: "Palette, typography, a typeset wordmark that never breaks, your tagline, your voice — defined once and applied to your website, emails, flyers, and a downloadable social kit any volunteer can grab. No designer needed; three answers and the AI proposes the whole identity.",
-    screen: BrandScreen,
-  },
-  {
-    title: "Marketing that drafts itself",
-    body: "New arrival? A launch kit appears. Adoption day? A success story is waiting. Eleven channels — Facebook to press releases to Google Ad Grants — drafted in your voice, on a calendar, sent to your supporter list with polite one-click unsubscribe. Nothing ever posts without you.",
-    screen: MarketingScreen,
-  },
-  {
-    title: "Move in free — relationships and all",
-    body: "Upload the messy exports from your old system. Adopters stay linked to their animals, medical history follows every friend, and bonded pairs stay bonded. Flagged rows land in a tidy report instead of the void.",
-    screen: ImporterScreen,
-    link: { label: "Try the importer", to: "/import" },
-  },
-  {
-    title: "One profile per friend, one scan away",
-    body: "Photos, medical timeline, foster status, microchip — all on one page. Print a kennel card with a QR code and the full profile opens on your phone, right there in the kennel aisle.",
-    screen: AnimalScreen,
-  },
-  {
-    title: "Your own adoption page, applications included",
-    body: "Every rescue gets a warm public page at your own link. Applications arrive in an inbox where one click approves, records the adoption, and emails the good news.",
-    screen: PortalScreen,
-  },
-  {
-    title: "Fosters and people, finally in one place",
-    body: "Start and end foster stays in two clicks — animal statuses keep themselves honest. Adopters, fosters, volunteers, and donors live in one gentle CRM with their whole history.",
-    screen: FosterScreen,
-  },
-  {
-    title: "Generosity, honored properly",
-    body: "Record gifts, run campaigns with goals and progress bars, and send thank-you receipts automatically. We never take a cent of your donations.",
-    screen: DonationScreen,
-  },
-  {
-    title: "Know your numbers, love your outcomes",
-    body: "Intakes, adoptions, days-to-home, donation trends, application funnel — clear charts your board will actually read, computed live from your data.",
-    screen: ReportsScreen,
+    key: "reach",
+    label: "🌐 Website & reach",
+    features: [
+      {
+        title: "A real website, designed in one conversation",
+        body: "Answer five questions and the AI designer drafts your whole site as drafts you approve — never auto-published. Build with friendly blocks, publish on your own domain with automatic SSL, and your sitemap and Google structured data come along for free.",
+        screen: WebsiteScreen,
+      },
+      {
+        title: "Your brand, in a box",
+        body: "Palette, typography, a typeset wordmark that never breaks, your tagline, your voice — defined once and applied to your website, emails, flyers, and a downloadable social kit any volunteer can grab.",
+        screen: BrandScreen,
+      },
+      {
+        title: "The rescue network, working together",
+        body: "Full and need space? Have room to help? One board shared by every rescue on Via Tutela — species, counts, urgency, and a contact button. The 40-message group text, retired.",
+        screen: NetworkScreen,
+      },
+    ],
   },
 ];
+
 
 const COMPARE_ROWS: [string, string, string, string, string, string][] = [
   ["Pricing", "Flat $0–$79/mo", "$2 / adoption", "“Free”*", "$75–$100/yr modular", "$99–$149/mo"],
@@ -171,6 +235,58 @@ const PRICING = [
     highlight: false,
   },
 ];
+
+function FeatureTabs() {
+  const [active, setActive] = useState(FEATURE_TABS[0].key);
+  const tab = FEATURE_TABS.find((t) => t.key === active) ?? FEATURE_TABS[0];
+  return (
+    <div>
+      <div className="mt-8 flex flex-wrap justify-center gap-2" role="tablist" aria-label="Feature areas">
+        {FEATURE_TABS.map((t) => (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={t.key === active}
+            onClick={() => setActive(t.key)}
+            className={`rounded-full px-5 py-2.5 font-display font-semibold transition-shadow ${
+              t.key === active ? "bg-sunflower shadow-lift" : "bg-white shadow-soft text-charcoal-soft hover:bg-sunflower-soft"
+            }`}
+          >
+            {t.label}
+            <span className="ml-1.5 text-xs font-bold opacity-60">{t.features.length}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-10 space-y-14">
+        {tab.features.map((f, i) => {
+          const Screen = f.screen;
+          return (
+            <div
+              key={f.title}
+              className={`grid md:grid-cols-2 gap-8 items-center ${i % 2 ? "md:[direction:rtl]" : ""}`}
+            >
+              <div className="md:[direction:ltr]">
+                <h3 className="text-2xl font-display font-semibold">{f.title}</h3>
+                <p className="mt-3 text-lg text-charcoal-soft leading-relaxed">{f.body}</p>
+                {f.link && (
+                  <Link
+                    to={f.link.to}
+                    className="inline-block mt-4 rounded-full bg-sunflower px-5 py-2.5 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
+                  >
+                    {f.link.label}
+                  </Link>
+                )}
+              </div>
+              <div className={`md:[direction:ltr] max-w-sm w-full mx-auto ${i % 2 ? "md:-rotate-1" : "md:rotate-1"}`}>
+                <Screen />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function MiniCta({ text, label = "Sign up free", to = "/signup" }: { text: string; label?: string; to?: string }) {
   return (
@@ -322,37 +438,9 @@ export default function Home() {
             Everything under one sunny roof
           </h2>
           <p className="text-center text-charcoal-soft mt-2 text-lg">
-            A peek inside — these little windows are the real app, in miniature.
+            A peek inside — these little windows are the real app, in miniature. Pick a corner of the roof:
           </p>
-          <div className="mt-12 space-y-16">
-            {FEATURES.map((f, i) => {
-              const Screen = f.screen;
-              return (
-                <div
-                  key={f.title}
-                  className={`grid md:grid-cols-2 gap-8 items-center ${
-                    i % 2 ? "md:[direction:rtl]" : ""
-                  }`}
-                >
-                  <div className="md:[direction:ltr]">
-                    <h3 className="text-2xl font-display font-semibold">{f.title}</h3>
-                    <p className="mt-3 text-lg text-charcoal-soft leading-relaxed">{f.body}</p>
-                    {f.link && (
-                      <Link
-                        to={f.link.to}
-                        className="inline-block mt-4 rounded-full bg-sunflower px-5 py-2.5 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
-                      >
-                        {f.link.label}
-                      </Link>
-                    )}
-                  </div>
-                  <div className={`md:[direction:ltr] max-w-sm w-full mx-auto ${i % 2 ? "md:-rotate-1" : "md:rotate-1"}`}>
-                    <Screen />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <FeatureTabs />
           <MiniCta text="Every window you just peeked into is included." />
         </div>
       </section>

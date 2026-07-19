@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../../workers/lib/ai-shelter";
 import { Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/website.interview";
 import { requireUser } from "../../lib/auth.server";
@@ -10,7 +11,7 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
-  return { orgName: user.org_name, hasAiKey: Boolean(getAnthropic(env)) };
+  return { orgName: user.org_name, hasAiKey: aiAvailable(env) };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
