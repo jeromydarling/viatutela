@@ -4,6 +4,7 @@ import { cloudflareContext } from "../app/cloudflare-context";
 import { resolveTenant, routeTenantPath, tenantRobots, tenantSitemap } from "./lib/tenant";
 import { reportError } from "./lib/monitor";
 import { GUIDES } from "../app/lib/guides";
+import { STATES } from "../app/lib/guide-states";
 
 export { ImportProgress } from "./import/processor";
 
@@ -71,6 +72,8 @@ function marketingSeoFile(url: URL): Response | null {
   const MARKETING_PATHS = [
     "/", "/import", "/signup", "/login", "/privacy", "/terms", "/guides",
     ...GUIDES.map((g) => `/guides/${g.slug}`),
+    "/guides/start-a-rescue",
+    ...STATES.map((s) => `/guides/start-a-rescue/${s.slug}`),
   ];
   if (url.pathname === "/robots.txt") {
     return new Response(
@@ -106,6 +109,7 @@ Pricing: Starter is $9/month plus $1 per adoption. Rescue is $39/month flat. She
 ## Guides
 
 ${GUIDES.map((g) => `- [${g.title}](${url.origin}/guides/${g.slug}): ${g.description}`).join("\n")}
+- [Start a rescue in your state](${url.origin}/guides/start-a-rescue): founder's guides for all 50 US states — incorporation, licensing, regional rescue realities
 
 Each shelter also gets public adoption pages at /adopt/<shelter> and an optional website at /s/<shelter> or their own domain.
 `,
