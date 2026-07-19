@@ -1,18 +1,17 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/import";
+import { marketingMeta } from "../lib/seo";
 import { SiteHeader, SiteFooter } from "../components/site";
 import { BirdDoodle, HeartPawDoodle } from "../components/doodles";
 
 export function meta(_: Route.MetaArgs) {
-  return [
-    { title: "Free Migration Importer — Via Tutela" },
-    {
-      name: "description",
-      content:
-        "Upload your shelter's messy CSV or Excel exports and get a clean, relationship-preserving import. Free, no account needed.",
-    },
-  ];
+  return marketingMeta({
+    title: "Free Migration Importer — Via Tutela",
+    description:
+      "Upload your shelter's messy CSV or Excel exports and get a clean, relationship-preserving import. Free, no account needed.",
+    path: "/import",
+  });
 }
 
 export default function ImportLanding() {

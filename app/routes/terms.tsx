@@ -1,11 +1,13 @@
 import type { Route } from "./+types/terms";
 import { SiteHeader, SiteFooter } from "../components/site";
+import { marketingMeta } from "../lib/seo";
 
 export function meta(_: Route.MetaArgs) {
-  return [
-    { title: "Terms of Service — Via Tutela" },
-    { name: "description", content: "The agreement between Via Tutela and your organization." },
-  ];
+  return marketingMeta({
+    title: "Terms of Service — Via Tutela",
+    description: "Fair, readable terms: your data is yours, pricing is plain, and you can leave anytime.",
+    path: "/terms",
+  });
 }
 
 const SECTIONS: { h: string; ps: string[] }[] = [

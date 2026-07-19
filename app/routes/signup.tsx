@@ -1,5 +1,6 @@
 import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import type { Route } from "./+types/signup";
+import { marketingMeta } from "../lib/seo";
 import { getEnv } from "../lib/auth.server";
 import { SiteHeader } from "../components/site";
 import { Logo } from "../components/site";
@@ -10,7 +11,11 @@ import { seedNewOrg } from "../../workers/lib/onboarding";
 import { cloudflareContext } from "../cloudflare-context";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Get started — Via Tutela" }];
+  return marketingMeta({
+    title: "Get started — Via Tutela",
+    description: "Set up your shelter on Via Tutela in minutes — $9 a month plus $1 per adoption, importer included.",
+    path: "/signup",
+  });
 }
 
 export async function action({ context, request }: Route.ActionArgs) {

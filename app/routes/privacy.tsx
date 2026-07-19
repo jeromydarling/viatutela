@@ -1,11 +1,13 @@
 import type { Route } from "./+types/privacy";
 import { SiteHeader, SiteFooter } from "../components/site";
+import { marketingMeta } from "../lib/seo";
 
 export function meta(_: Route.MetaArgs) {
-  return [
-    { title: "Privacy — Via Tutela" },
-    { name: "description", content: "How Via Tutela handles your data, plainly." },
-  ];
+  return marketingMeta({
+    title: "Privacy — Via Tutela",
+    description: "How Via Tutela handles your data, plainly: shelters own everything, we sell nothing.",
+    path: "/privacy",
+  });
 }
 
 const SECTIONS: { h: string; ps: string[] }[] = [

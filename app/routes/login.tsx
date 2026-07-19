@@ -1,5 +1,6 @@
 import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import type { Route } from "./+types/login";
+import { marketingMeta } from "../lib/seo";
 import { SiteHeader, SiteFooter, Logo } from "../components/site";
 import { getEnv } from "../lib/auth.server";
 import { getAuthedUser, loginAllowed, recordFailedLogin, sessionCookie } from "../../workers/lib/auth";
@@ -7,7 +8,11 @@ import { verifyPassword } from "../../workers/lib/password";
 import { newToken } from "../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Sign in — Via Tutela" }];
+  return marketingMeta({
+    title: "Sign in — Via Tutela",
+    description: "Sign in to your shelter's Via Tutela workspace — or take the live demo for a spin.",
+    path: "/login",
+  });
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

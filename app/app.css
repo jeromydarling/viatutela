@@ -7,7 +7,7 @@
   --color-meadow: #4caf7d;
   --color-meadow-deep: #2e7d54;
   --color-sky: #5ab6e8;
-  --color-sky-deep: #2f7fb0;
+  --color-sky-deep: #2b76a5; /* ≥4.5:1 on white for small text */
   --color-terracotta: #e07a5f;
   --color-terracotta-deep: #b85062;
   --color-cream: #fff9f0;
