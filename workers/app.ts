@@ -166,6 +166,9 @@ const handleScheduled: ExportedHandlerScheduledHandler<Env> = async (event, env,
       // keep the demo shelter fresh — visitors can change anything
       const { resetDemoData } = await import("./lib/demo");
       ctx.waitUntil(resetDemoData(env, env.APP_ORIGIN));
+      // webhook deliveries whose backoff has elapsed get another try
+      const { retryPendingDeliveries } = await import("./lib/integrations");
+      ctx.waitUntil(retryPendingDeliveries(env));
       return;
     }
     if (event.cron === "30 14 * * *") {
@@ -177,6 +180,8 @@ const handleScheduled: ExportedHandlerScheduledHandler<Env> = async (event, env,
       ctx.waitUntil(
         env.DB.prepare(`DELETE FROM sessions WHERE expires_at <= datetime('now')`).run().then(() => {}),
       );
+      const { pruneOldDeliveries } = await import("./lib/integrations");
+      ctx.waitUntil(pruneOldDeliveries(env));
       return;
     }
     const { sendMedicalDigests } = await import("./lib/digest");

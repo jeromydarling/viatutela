@@ -263,6 +263,7 @@ export async function resetDemoData(env: Env, _origin: string): Promise<void> {
   // ---- wipe (children first — every org-scoped table, or FK constraints
   // abort the whole reset; when a migration adds a table, add it here) ----
   const wipe = [
+    "webhook_deliveries", "webhooks", "api_keys",
     "shift_signups", "shifts", "waitlist_subscriptions", "followups", "grant_drafts",
     "transfer_posts", "billing_usage", "onboarding_emails",
     "marketing_assets", "marketing_campaigns", "ai_audit", "ai_usage", "email_suppression",
@@ -272,7 +273,7 @@ export async function resetDemoData(env: Env, _origin: string): Promise<void> {
   // restore org-level settings too — otherwise a visitor's tracker IDs or
   // brand edits on the demo org would outlive every reset
   wipe.push(
-    env.DB.prepare(`UPDATE orgs SET nav_json = ?, brand_json = ?, seo_json = ? WHERE id = ?`).bind(
+    env.DB.prepare(`UPDATE orgs SET nav_json = ?, brand_json = ?, seo_json = ?, ics_token = NULL WHERE id = ?`).bind(
       JSON.stringify(NAV),
       JSON.stringify(BRAND),
       JSON.stringify({ visible: true, google_verify: "", bing_verify: "", og_image: "" }),

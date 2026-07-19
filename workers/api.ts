@@ -16,6 +16,7 @@ import { normalizeRow } from "./lib/rows";
 import { toCsv } from "./lib/csv";
 import { promoteImport } from "./import/promote";
 import { AUTH_COOKIE, getAuthedUser } from "./lib/auth";
+import { buildShiftsIcs, decodeCursor, encodeCursor, verifyApiKey, type ApiKeyAuth, type IcsShift } from "./lib/integrations";
 import { hashPassword } from "./lib/password";
 import { sendAppEmail } from "./lib/email";
 
@@ -544,8 +545,10 @@ const EXPORT_TABLES: { name: string; sql: string }[] = [
   { name: "email_suppression", sql: `SELECT * FROM email_suppression WHERE org_id = ?` },
   { name: "ai_usage", sql: `SELECT * FROM ai_usage WHERE org_id = ?` },
   { name: "ai_audit", sql: `SELECT * FROM ai_audit WHERE org_id = ?` },
-  // never export password material
+  // never export password material — and never key hashes or webhook secrets
   { name: "users", sql: `SELECT id, org_id, email, name, created_at FROM users WHERE org_id = ?` },
+  { name: "api_keys", sql: `SELECT id, org_id, name, prefix, scope, created_at, last_used_at, revoked_at FROM api_keys WHERE org_id = ?` },
+  { name: "webhooks", sql: `SELECT id, org_id, url, events, active, failure_count, last_status, last_delivery_at, created_at FROM webhooks WHERE org_id = ?` },
 ];
 
 api.get("/export.zip", async (c) => {
@@ -678,6 +681,134 @@ api.get("/feeds/:slug/petfinder.csv", async (c) => {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Cache-Control": "public, max-age=300",
+    },
+  });
+});
+
+// ---------- REST API v1 (per-org API keys — Zapier/Make/n8n plumbing) ----------
+
+/** Column whitelists per resource — never SELECT *. Users/passwords and
+ * medical records are deliberately not exposed. */
+const V1_RESOURCES: Record<string, string> = {
+  animals: `SELECT id, name, species, breed, sex, dob, altered, microchip, status, kennel, color, weight,
+    description, bonded_group_id, intake_date, is_public, created_at,
+    (SELECT r2_key FROM animal_photos p WHERE p.animal_id = animals.id LIMIT 1) photo_key
+    FROM animals`,
+  contacts: `SELECT id, name, email, phone, address, roles, created_at FROM contacts`,
+  applications: `SELECT id, animal_id, name, email, phone, home_type, message, interest, status, created_at, decided_at FROM applications`,
+  donations: `SELECT id, contact_id, campaign_id, donor_name, email, amount, method, note, date, created_at FROM donations`,
+  adoptions: `SELECT id, animal_id, contact_id, date, fee, status, created_at FROM adoptions`,
+};
+
+const V1_RATE_LIMIT = 120; // requests per key per minute
+
+async function v1Auth(c: any): Promise<ApiKeyAuth | Response> {
+  const header = c.req.header("authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token) {
+    return c.json({ error: "Missing API key. Send it as: Authorization: Bearer vt_live_…" }, 401);
+  }
+  const key = await verifyApiKey(c.env, token);
+  if (!key) return c.json({ error: "That API key isn't valid — it may have been revoked." }, 401);
+
+  try {
+    const bucket = Math.floor(Date.now() / 60_000);
+    const rlKey = `akrl:${key.keyId}:${bucket}`;
+    const n = Number((await c.env.CONFIG.get(rlKey)) ?? "0") + 1;
+    if (n > V1_RATE_LIMIT) {
+      return c.json({ error: `Rate limit exceeded (${V1_RATE_LIMIT} requests/minute).` }, 429);
+    }
+    await c.env.CONFIG.put(rlKey, String(n), { expirationTtl: 120 });
+  } catch {
+    // KV hiccups never block API traffic
+  }
+
+  const lastUsed = key.lastUsedAt ? Date.parse(key.lastUsedAt.replace(" ", "T") + "Z") : 0;
+  if (!lastUsed || lastUsed < Date.now() - 300_000) {
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare(`UPDATE api_keys SET last_used_at = datetime('now') WHERE id = ?`)
+        .bind(key.keyId)
+        .run()
+        .then(() => {}),
+    );
+  }
+  return key;
+}
+
+api.get("/v1/:resource", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+
+  const resource = c.req.param("resource");
+  const base = V1_RESOURCES[resource];
+  if (!base) {
+    return c.json({ error: `Unknown resource. Available: ${Object.keys(V1_RESOURCES).join(", ")}` }, 404);
+  }
+
+  const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? "50") || 50));
+  let sql = `${base} WHERE org_id = ?`;
+  const binds: unknown[] = [key.orgId];
+
+  const since = c.req.query("since");
+  if (since) {
+    const normalized = since.replace("T", " ").replace(/Z$/, "").slice(0, 19);
+    if (!/^\d{4}-\d{2}-\d{2}/.test(normalized)) {
+      return c.json({ error: "since must be an ISO date or datetime, e.g. 2026-07-01 or 2026-07-01T12:00:00Z" }, 400);
+    }
+    sql += ` AND created_at > ?`;
+    binds.push(normalized);
+  }
+
+  const rawCursor = c.req.query("cursor");
+  if (rawCursor) {
+    const cursor = decodeCursor(rawCursor);
+    if (!cursor) return c.json({ error: "Invalid cursor." }, 400);
+    sql += ` AND (created_at < ? OR (created_at = ? AND id < ?))`;
+    binds.push(cursor.createdAt, cursor.createdAt, cursor.id);
+  }
+
+  sql += ` ORDER BY created_at DESC, id DESC LIMIT ${limit + 1}`;
+  const rows = await c.env.DB.prepare(sql).bind(...binds).all<Record<string, unknown>>();
+
+  const hasMore = rows.results.length > limit;
+  const data = rows.results.slice(0, limit);
+  if (resource === "animals") {
+    const origin = new URL(c.req.url).origin;
+    for (const row of data) {
+      row.photo_url = row.photo_key ? `${origin}/api/media/${row.photo_key}` : null;
+      delete row.photo_key;
+    }
+  }
+  const last = data[data.length - 1];
+  return c.json({
+    data,
+    next_cursor: hasMore && last ? encodeCursor(String(last.created_at), String(last.id)) : null,
+  });
+});
+
+// ---------- volunteer shifts as a calendar feed (subscribe in Google/Apple Calendar) ----------
+
+api.get("/feeds/shifts/:token", async (c) => {
+  const token = c.req.param("token").replace(/\.ics$/, "");
+  if (!/^[a-f0-9]{48}$/.test(token)) return c.text("not found", 404);
+  const org = await c.env.DB.prepare(`SELECT id, name FROM orgs WHERE ics_token = ?`)
+    .bind(token)
+    .first<{ id: string; name: string }>();
+  if (!org) return c.text("not found", 404);
+
+  const shifts = await c.env.DB.prepare(
+    `SELECT id, title, date, start_time, end_time, notes FROM shifts
+     WHERE org_id = ? AND date >= date('now', '-7 days') AND date <= date('now', '+120 days')
+     ORDER BY date, start_time LIMIT 500`,
+  )
+    .bind(org.id)
+    .all<IcsShift>();
+
+  return new Response(buildShiftsIcs(org.name, shifts.results), {
+    headers: {
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Cache-Control": "public, max-age=900",
+      "Content-Disposition": `inline; filename="shifts.ics"`,
     },
   });
 });

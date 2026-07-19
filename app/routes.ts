@@ -55,5 +55,6 @@ export default [
     route("website/domain", "routes/app/website.domain.tsx"),
     route("website/seo", "routes/app/website.seo.tsx"),
     route("settings", "routes/app/settings.tsx"),
+    route("settings/integrations", "routes/app/integrations.tsx"),
   ]),
 ] satisfies RouteConfig;

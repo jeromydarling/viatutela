@@ -6,6 +6,7 @@ import { getEnv } from "../lib/auth.server";
 import { parseSeo } from "../lib/site.server";
 import { TrackingTags } from "../components/tracking";
 import { newId } from "../../workers/lib/ids";
+import { emitEvent } from "../../workers/lib/integrations";
 import { sendAppEmail } from "../../workers/lib/email";
 import { sendSms } from "../../workers/lib/sms";
 import { ShareBar } from "../components/share-bar";
@@ -106,12 +107,13 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     ? String(f.get("interest"))
     : "adopt";
 
+  const applicationId = newId("ap");
   await env.DB.prepare(
     `INSERT INTO applications (id, org_id, animal_id, name, email, phone, home_type, message, interest)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
-      newId("ap"), org.id, params.animalId, name, email,
+      applicationId, org.id, params.animalId, name, email,
       String(f.get("phone") ?? "").trim() || null,
       String(f.get("home_type") ?? "").trim() || null,
       String(f.get("message") ?? "").trim().slice(0, 2000) || null,
@@ -123,6 +125,16 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     .bind(params.animalId)
     .first<{ name: string }>();
   const animalName = animal?.name ?? "one of our friends";
+  ctx.waitUntil(
+    emitEvent(env, ctx, org.id, "application.created", {
+      id: applicationId,
+      animal_id: params.animalId ?? null,
+      animal_name: animal?.name ?? null,
+      name,
+      email,
+      interest,
+    }),
+  );
   const origin = new URL(request.url).origin;
 
   // confirmation to the applicant + heads-up to the rescue — never blocks the response

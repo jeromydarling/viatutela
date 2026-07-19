@@ -5,6 +5,7 @@ import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
 import { notifyWaitlist } from "../../../workers/lib/waitlist";
+import { emitEvent } from "../../../workers/lib/integrations";
 import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 import { draftFromPhotos, fileToVisionImage, type IntakeDraft, type VisionImage } from "../../../workers/lib/ai-vision";
 
@@ -81,6 +82,16 @@ export async function action({ context, request }: Route.ActionArgs) {
   // off the request path: launch kit + waitlist alerts for new public friends
   ctx.waitUntil(autoNewAnimal(env, user.org_id, id));
   ctx.waitUntil(notifyWaitlist(env, user.org_id, id, new URL(request.url).origin));
+  ctx.waitUntil(
+    emitEvent(env, ctx, user.org_id, "animal.created", {
+      id,
+      name,
+      species: String(f.get("species") || "") || null,
+      breed: String(f.get("breed") || "") || null,
+      status: String(f.get("status") || "available"),
+      is_public: f.get("is_public") ? 1 : 0,
+    }),
+  );
   return redirect(`/app/animals/${id}`);
 }
 
