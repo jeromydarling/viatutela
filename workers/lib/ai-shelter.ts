@@ -75,12 +75,31 @@ export async function checkAiRateLimit(env: Env, key: string, limit: number): Pr
   }
 }
 
+/** Per-shelter usage bookkeeping — feeds quotas and a cost view later. */
+export async function recordAiUsage(
+  env: Env,
+  orgId: string,
+  feature: string,
+  usage: { input_tokens?: number; output_tokens?: number } | undefined,
+): Promise<void> {
+  try {
+    await env.DB.prepare(
+      `INSERT INTO ai_usage (id, org_id, feature, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(`aiu_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`, orgId, feature, usage?.input_tokens ?? 0, usage?.output_tokens ?? 0)
+      .run();
+  } catch (err) {
+    console.log(`[ai usage log failed] ${err instanceof Error ? err.message : err}`);
+  }
+}
+
 /** One structured-output call; refusal-safe, JSON-safe, never throws. */
-async function structured<T>(
+export async function structured<T>(
   env: Env,
   prompt: string,
   schema: Record<string, unknown>,
   maxTokens: number,
+  track?: { orgId: string; feature: string; system?: string },
 ): Promise<{ data?: T; error?: string }> {
   const client = getAnthropic(env);
   if (!client) return { error: AI_UNAVAILABLE };
@@ -89,8 +108,10 @@ async function structured<T>(
       model: MODEL,
       max_tokens: maxTokens,
       output_config: { format: { type: "json_schema", schema } },
+      ...(track?.system ? { system: track.system } : {}),
       messages: [{ role: "user", content: prompt }],
     });
+    if (track) await recordAiUsage(env, track.orgId, track.feature, response.usage);
     if (response.stop_reason === "refusal") return { error: "The AI declined that one — try rephrasing." };
     const out = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
     if (!out?.text) return { error: "The AI came back empty — try again." };

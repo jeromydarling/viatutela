@@ -5,6 +5,7 @@ import { newId } from "../../../workers/lib/ids";
 import { AnimalFields } from "./animal.new";
 import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, summarizeNotes, writeBio, type BioPack, type HandoffPack } from "../../../workers/lib/ai-shelter";
+import { autoAdoption } from "../../../workers/lib/marketing-auto";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   return [{ title: `${data?.animal?.name ?? "Friend"} — Via Tutela` }];
@@ -56,7 +57,7 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
 }
 
 export async function action({ context, request, params }: Route.ActionArgs) {
-  const { env, user } = await requireUser(context, request);
+  const { env, ctx, user } = await requireUser(context, request);
   const animal = await env.DB.prepare(`SELECT id, status FROM animals WHERE id = ? AND org_id = ?`)
     .bind(params.animalId, user.org_id)
     .first<{ id: string; status: string }>();
@@ -183,6 +184,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
         `UPDATE foster_assignments SET active = 0, end_date = date('now') WHERE animal_id = ? AND active = 1`,
       ).bind(animal.id),
     ]);
+    ctx.waitUntil(autoAdoption(env, user.org_id, String(animal.id)));
     return { ok: "Welcome home! Adoption recorded." };
   }
 

@@ -2,6 +2,7 @@ import { Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/animal.new";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
+import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Add a friend — Via Tutela" }];
@@ -18,7 +19,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
-  const { env, user } = await requireUser(context, request);
+  const { env, ctx, user } = await requireUser(context, request);
   const f = await request.formData();
   const name = String(f.get("name") ?? "").trim();
   if (!name) return { error: "Every friend needs a name." };
@@ -56,6 +57,8 @@ export async function action({ context, request }: Route.ActionArgs) {
       .bind(locationId, id, locationId, user.org_id)
       .run();
   }
+  // off the request path: draft a launch kit for new public, available friends
+  ctx.waitUntil(autoNewAnimal(env, user.org_id, id));
   return redirect(`/app/animals/${id}`);
 }
 

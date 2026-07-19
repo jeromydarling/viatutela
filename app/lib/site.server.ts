@@ -1,6 +1,7 @@
 /** Shared loader/action logic for public shelter sites. */
 
 import { parseSectionsJson, type Section } from "../../workers/lib/site-sections";
+import { parseBrandJson, type Brand } from "../../workers/lib/brand";
 import type { LiveAnimal } from "../components/site-sections";
 import { newId } from "../../workers/lib/ids";
 
@@ -14,6 +15,30 @@ export interface SiteOrg {
   website: string | null;
   nav_json: string | null;
   brand_json: string | null;
+  seo_json: string | null;
+}
+
+export interface SeoSettings {
+  visible: boolean;
+  google_verify: string;
+  bing_verify: string;
+  og_image: string;
+}
+
+export function parseSeo(json: string | null): SeoSettings {
+  const d: SeoSettings = { visible: true, google_verify: "", bing_verify: "", og_image: "" };
+  if (!json) return d;
+  try {
+    const s = JSON.parse(json) as Record<string, unknown>;
+    return {
+      visible: s.visible !== false,
+      google_verify: typeof s.google_verify === "string" ? s.google_verify.slice(0, 200) : "",
+      bing_verify: typeof s.bing_verify === "string" ? s.bing_verify.slice(0, 200) : "",
+      og_image: typeof s.og_image === "string" ? s.og_image.slice(0, 500) : "",
+    };
+  } catch {
+    return d;
+  }
 }
 
 export interface SitePage {
@@ -56,16 +81,9 @@ export function parseNav(org: SiteOrg): NavLinkItem[] {
   ];
 }
 
-export function parseBrand(org: SiteOrg): { accent: string; tagline: string } {
-  try {
-    const b = JSON.parse(org.brand_json ?? "{}");
-    return {
-      accent: typeof b.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(b.accent) ? b.accent : DEFAULT_ACCENT,
-      tagline: typeof b.tagline === "string" ? b.tagline : "",
-    };
-  } catch {
-    return { accent: DEFAULT_ACCENT, tagline: "" };
-  }
+/** Full brand tokens (palette, wordmark, typography, voice) with whitelisting. */
+export function parseBrand(org: SiteOrg): Brand {
+  return parseBrandJson(org.brand_json);
 }
 
 export async function loadSitePage(
@@ -75,7 +93,7 @@ export async function loadSitePage(
   previewToken?: string | null,
 ) {
   const org = await env.DB.prepare(
-    `SELECT id, name, slug, email, phone, address, website, nav_json, brand_json FROM orgs WHERE slug = ?`,
+    `SELECT id, name, slug, email, phone, address, website, nav_json, brand_json, seo_json FROM orgs WHERE slug = ?`,
   )
     .bind(orgSlug)
     .first<SiteOrg>();
@@ -102,7 +120,16 @@ export async function loadSitePage(
   const sections = parseSectionsJson(page.sections);
   const liveAnimals = await resolveLiveSections(env, org.id, sections);
 
-  return { org, page, sections, liveAnimals, isPreview, nav: parseNav(org), brand: parseBrand(org) };
+  return {
+    org,
+    page,
+    sections,
+    liveAnimals,
+    isPreview,
+    nav: parseNav(org),
+    brand: parseBrand(org),
+    seo: parseSeo(org.seo_json),
+  };
 }
 
 export async function resolveLiveSections(

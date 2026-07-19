@@ -63,6 +63,39 @@ Worker secret** is set — that single secret activates everything below plus th
 | Shelter insights (long-stay alerts, trends, cheap next steps) | 🟡 | On Reports; reads 12-month stats + longest-waiting friends; cached 7 days in KV, refresh anytime |
 | Handoff summaries (warm adopter paragraph + clinical vet brief) | 🟡 | On the animal profile; built from real medical records and foster notes only |
 
+## Brand Studio (identity as data)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Brand tokens (palette ×4, logo/wordmark, typography pair, tagline, voice) | ✅ | Stored once; public site, guidelines, and social kit all render from them |
+| Typeset wordmark as first-class logo (font/case/tracking/weight) | ✅ | Looks pro with zero design skills; never breaks in emails |
+| AI brand-in-a-box (3 answers → full identity proposal) | 🟡 | Every enum whitelisted server-side; applied only on click. Needs `ANTHROPIC_API_KEY` |
+| Import from old website (name, logo, dominant colors) | ✅ | Server-side fetch, 8s timeout, everything treated as untrusted |
+| Brand guidelines page + downloadable social kit (profile pic, FB cover, share card) | ✅ | SVGs rendered from tokens; volunteers self-serve |
+| Public sites render brand (fonts, palette CSS vars, wordmark header) | ✅ | Four curated Google-font pairings |
+| Per-org AI usage tracking (`ai_usage` table) | ✅ | Feature label + token counts on every tracked call |
+
+## Marketing Studio (channels, calendar, automations)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Campaigns (7 objectives, optional featured animal, key message) | ✅ | Nothing ever auto-publishes — drafts only, and the UI says so |
+| Channel catalog as data — 11 channels (FB first, IG, story, reel, X, Pinterest, email, blog, press, Google ads, Meta ads) | ✅ | Per-channel JSON contracts drive prompts AND the UI; caps enforced server-side after parsing |
+| Channel kit generation in the shelter's brand voice | 🟡 | Fan-out per selected channel. Needs `ANTHROPIC_API_KEY` |
+| Content calendar (month view, schedule/move, mark posted) | ✅ | Plus an unscheduled tray |
+| Content ideas from real data (longest-waiting, recent adoptions, season) | 🟡 | One-tap campaign starters |
+| Auto-drafted campaigns (new animal → launch kit; adoption → success story; 60d+ waiting → weekly spotlight via cron) | ✅ | Idempotent guards; shells created even without AI; never posts anywhere |
+| Supporter email (send email asset to newsletter+donor contacts) | 🟡 | HMAC unsubscribe tokens, per-org suppression table checked on every send, List-Unsubscribe one-click headers, `/unsub/:token`. Delivery needs the sender domain verified |
+| Google Ad Grants nudge ($10k/mo free nonprofit search ads) | ✅ | Draft headlines/descriptions respect the character limits |
+
+## SEO tooling
+
+| Feature | Status | Notes |
+|---|---|---|
+| Per-shelter SEO settings (visibility toggle, Google/Bing verification, default OG image) | ✅ | Hidden = noindex everywhere, for pre-launch |
+| Search Checkup (plain-language audit with one-tap fix links) | ✅ | Missing meta descriptions, photo-less adoptables, thin bios, verification, domain status — cheap SQL, no crawler |
+| AnimalShelter JSON-LD on shelter homepages | ✅ | Plus OG tags everywhere and per-tenant sitemap/robots (already live) |
+
 ## Adoption pipeline
 
 | Feature | Status | Notes |

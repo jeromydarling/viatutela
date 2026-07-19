@@ -2,7 +2,8 @@ import { Form, Link, redirect } from "react-router";
 import type { Route } from "./+types/website";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
-import { parseBrand, DEFAULT_ACCENT } from "../../lib/site.server";
+import { parseBrand } from "../../lib/site.server";
+import { parseBrandJson } from "../../../workers/lib/brand";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Website — Via Tutela" }];
@@ -144,14 +145,20 @@ export async function action({ context, request }: Route.ActionArgs) {
   }
 
   if (intent === "save-brand") {
+    // merge into the full Brand Studio tokens — never clobber them
     const accent = String(f.get("accent") ?? "").trim();
     const tagline = String(f.get("tagline") ?? "").trim();
-    const brand = {
-      accent: /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : DEFAULT_ACCENT,
-      tagline,
-    };
+    const row = await env.DB.prepare(`SELECT brand_json FROM orgs WHERE id = ?`)
+      .bind(user.org_id)
+      .first<{ brand_json: string | null }>();
+    const brand = parseBrandJson(row?.brand_json ?? null);
+    if (/^#[0-9a-fA-F]{6}$/.test(accent)) {
+      brand.palette.accent = accent.toLowerCase();
+      brand.accent = brand.palette.accent;
+    }
+    brand.tagline = tagline.slice(0, 200);
     await env.DB.prepare(`UPDATE orgs SET brand_json = ? WHERE id = ?`).bind(JSON.stringify(brand), user.org_id).run();
-    return { ok: "Brand saved." };
+    return { ok: "Brand saved — the full studio lives at Brand." };
   }
 
   if (intent === "delete-page") {
@@ -312,6 +319,16 @@ export default function Website({ loaderData, actionData }: Route.ComponentProps
             </p>
             <Link to="/app/website/domain" className="inline-block mt-3 rounded-full border-2 border-meadow px-5 py-2 text-sm font-display font-semibold text-meadow-deep hover:bg-meadow hover:text-white transition-colors">
               Domain settings
+            </Link>
+          </section>
+
+          <section className="rounded-blob bg-white shadow-soft p-6">
+            <h2 className="font-display font-semibold text-lg">SEO & Search Checkup</h2>
+            <p className="mt-1 text-sm text-charcoal-soft">
+              A plain-language checklist that gets you found on Google — green checks, one-tap fixes.
+            </p>
+            <Link to="/app/website/seo" className="inline-block mt-3 rounded-full border-2 border-sky px-5 py-2 text-sm font-display font-semibold text-sky-deep hover:bg-sky hover:text-white transition-colors">
+              Run the checkup
             </Link>
           </section>
         </div>
