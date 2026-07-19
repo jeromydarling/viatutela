@@ -1,8 +1,10 @@
 import { Form } from "react-router";
 import type { Route } from "./+types/settings";
 import { requireUser } from "../../lib/auth.server";
-import { newId } from "../../../workers/lib/ids";
+import { newId, newToken } from "../../../workers/lib/ids";
 import { normalizePhone } from "../../../workers/lib/sms";
+import { seatLimit, PLANS } from "../../../workers/lib/pricing";
+import { sendAppEmail } from "../../../workers/lib/email";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Settings — Via Tutela" }];
@@ -10,7 +12,7 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
-  const [org, locations] = await Promise.all([
+  const [org, locations, team] = await Promise.all([
     env.DB.prepare(
       `SELECT id, name, slug, plan, about, website, email, phone, address, sms_number FROM orgs WHERE id = ?`,
     ).bind(user.org_id).first<Record<string, string | null>>(),
@@ -18,13 +20,25 @@ export async function loader({ context, request }: Route.LoaderArgs) {
       `SELECT l.*, (SELECT COUNT(*) FROM animals a WHERE a.location_id = l.id AND a.status NOT IN ('adopted','deceased','transferred')) in_care
        FROM locations l WHERE l.org_id = ? ORDER BY l.active DESC, l.name`,
     ).bind(user.org_id).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      `SELECT id, email, name, invite_token IS NOT NULL AND password_hash IS NULL invited, created_at
+       FROM users WHERE org_id = ? ORDER BY created_at`,
+    ).bind(user.org_id).all<{ id: string; email: string; name: string | null; invited: number; created_at: string }>(),
   ]);
   const origin = new URL(request.url).origin;
-  return { org: org!, origin, locations: locations.results };
+  return {
+    org: org!,
+    origin,
+    locations: locations.results,
+    team: team.results,
+    seats: seatLimit(String(org?.plan ?? "starter")),
+    myUserId: user.user_id,
+    isDemo: Boolean(user.demo),
+  };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
-  const { env, user } = await requireUser(context, request);
+  const { env, ctx, user } = await requireUser(context, request);
   const f = await request.formData();
   const intent = String(f.get("intent") ?? "org");
   const str = (k: string) => String(f.get(k) ?? "").trim() || null;
@@ -47,6 +61,68 @@ export async function action({ context, request }: Route.ActionArgs) {
     return null;
   }
 
+  if (intent === "invite-member") {
+    if (user.demo) return { error: "The demo can't send invites — but this is exactly how your real team would join." };
+    const email = String(f.get("member_email") ?? "").trim().toLowerCase();
+    const memberName = str("member_name");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { error: "That email doesn't look right." };
+    const count = await env.DB.prepare(`SELECT COUNT(*) n FROM users WHERE org_id = ?`)
+      .bind(user.org_id)
+      .first<{ n: number }>();
+    const seats = seatLimit(user.plan);
+    if ((count?.n ?? 0) >= seats) {
+      return { error: `Your ${PLANS[user.plan]?.label ?? "current"} plan includes ${seats} seats — they're all filled. A bigger plan adds more.` };
+    }
+    const existing = await env.DB.prepare(`SELECT id FROM users WHERE email = ?`).bind(email).first();
+    if (existing) return { error: "That email already has a Via Tutela account." };
+    const token = newToken();
+    await env.DB.prepare(
+      `INSERT INTO users (id, org_id, email, name, invite_token, invited_by) VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(newId("u"), user.org_id, email, memberName, token, user.user_id)
+      .run();
+    const origin = new URL(request.url).origin;
+    ctx.waitUntil(
+      sendAppEmail(env, {
+        to: email,
+        subject: `${user.user_name ?? "A teammate"} invited you to ${user.org_name} on Via Tutela 🌻`,
+        heading: `Come join ${user.org_name}`,
+        paragraphs: [
+          `${user.user_name ?? user.email} added you to ${user.org_name}'s workspace on Via Tutela — the place where the whole team manages animals, adoptions, and everything around them.`,
+          `Tap the button to choose a password and step inside. This link is yours alone; if you weren't expecting it, you can simply ignore it.`,
+        ],
+        cta: { label: "Join the team", url: `${origin}/join/${token}` },
+      }).then(() => {}),
+    );
+    return {
+      ok: `Invite sent to ${email} — their seat is reserved. You can also hand them the link directly:`,
+      inviteLink: `${origin}/join/${token}`,
+    };
+  }
+
+  if (intent === "revoke-invite") {
+    await env.DB.prepare(
+      `DELETE FROM users WHERE id = ? AND org_id = ? AND invite_token IS NOT NULL AND password_hash IS NULL`,
+    )
+      .bind(str("member_id"), user.org_id)
+      .run();
+    return { ok: "Invite withdrawn." };
+  }
+
+  if (intent === "remove-member") {
+    const memberId = str("member_id");
+    if (memberId === user.user_id) return { error: "You can't remove yourself — ask a teammate to do it." };
+    const member = await env.DB.prepare(`SELECT id FROM users WHERE id = ? AND org_id = ?`)
+      .bind(memberId, user.org_id)
+      .first();
+    if (!member) return { error: "That teammate is already gone." };
+    await env.DB.batch([
+      env.DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(memberId),
+      env.DB.prepare(`DELETE FROM users WHERE id = ? AND org_id = ?`).bind(memberId, user.org_id),
+    ]);
+    return { ok: "Teammate removed — their sessions are signed out everywhere." };
+  }
+
   const name = str("name");
   if (!name) return { error: "Your organization needs a name." };
   const smsRaw = str("sms_number");
@@ -64,7 +140,8 @@ const inputCls =
   "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none";
 
 export default function Settings({ loaderData, actionData }: Route.ComponentProps) {
-  const { org, origin, locations } = loaderData;
+  const { org, origin, locations, team, seats, myUserId, isDemo } = loaderData;
+  const inviteLink = (actionData as { inviteLink?: string } | undefined)?.inviteLink;
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -113,6 +190,62 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
           Save
         </button>
       </Form>
+
+      <section className="rounded-blob bg-white shadow-soft p-6">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display font-semibold text-lg">Your team</h2>
+          <span className="rounded-full bg-sky/20 text-sky-deep text-xs font-semibold px-2 py-0.5">
+            {team.length} of {seats} seats
+          </span>
+        </div>
+        <ul className="mt-3 divide-y divide-cream text-sm">
+          {team.map((m) => (
+            <li key={m.id} className="py-2.5 flex flex-wrap items-center gap-2">
+              <span className="font-semibold">{m.name ?? m.email}</span>
+              {m.name && <span className="text-charcoal-soft">{m.email}</span>}
+              {m.id === myUserId && (
+                <span className="rounded-full bg-sunflower-soft text-xs font-semibold px-2 py-0.5">you</span>
+              )}
+              {Boolean(m.invited) && (
+                <span className="rounded-full bg-charcoal/10 text-xs font-semibold px-2 py-0.5">invited — hasn't joined yet</span>
+              )}
+              <span className="flex-1" />
+              {m.id !== myUserId && (
+                <Form method="post">
+                  <input type="hidden" name="intent" value={m.invited ? "revoke-invite" : "remove-member"} />
+                  <input type="hidden" name="member_id" value={m.id} />
+                  <button className="text-xs font-semibold text-terracotta-deep hover:underline">
+                    {m.invited ? "withdraw invite" : "remove"}
+                  </button>
+                </Form>
+              )}
+            </li>
+          ))}
+        </ul>
+        {inviteLink && (
+          <p className="mt-2 rounded-2xl bg-cream px-3 py-2 text-xs font-semibold break-all">
+            🔗 {inviteLink}
+          </p>
+        )}
+        {team.length < seats ? (
+          <Form method="post" className="mt-3 flex flex-wrap gap-2">
+            <input type="hidden" name="intent" value="invite-member" />
+            <input name="member_name" placeholder="Name (optional)" className={`${inputCls} mt-0 flex-1 min-w-32`} />
+            <input name="member_email" type="email" required placeholder="teammate@yourrescue.org" className={`${inputCls} mt-0 flex-1 min-w-48`} />
+            <button className="rounded-full bg-meadow text-white px-5 py-2 text-sm font-semibold" disabled={isDemo}>
+              Send invite
+            </button>
+          </Form>
+        ) : (
+          <p className="mt-3 text-sm text-charcoal-soft">
+            All seats are filled. Need more hands? The Rescue plan includes 10 and Shelter Pro 25.
+          </p>
+        )}
+        <p className="mt-2 text-xs text-charcoal-soft">
+          Teammates get full access to this workspace: animals, applications, website, everything.
+          {isDemo && " (Demo accounts can look but not invite.)"}
+        </p>
+      </section>
 
       <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">
         <h2 className="font-display font-semibold text-lg">Your public links</h2>

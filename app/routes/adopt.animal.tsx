@@ -337,7 +337,9 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
                 {nav.state !== "idle" ? "Sending…" : "Send application"}
               </button>
               <p className="text-xs text-charcoal-soft text-center">
-                Applying is free and doesn't commit you — it starts a conversation.
+                Applying is free and doesn't commit you — it starts a conversation. Your details go
+                to {org.name} and are handled per our{" "}
+                <a href="/privacy" className="underline hover:text-charcoal">privacy policy</a>.
               </p>
             </Form>
           )}

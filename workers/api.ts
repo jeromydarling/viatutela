@@ -459,6 +459,8 @@ api.get("/animals", async (c) => {
 
 // ---------- one-click full data export ----------
 
+// "Own your data" means ALL of it — every org-scoped table ships in the
+// export. When a migration adds an org-scoped table, add it here too.
 const EXPORT_TABLES: { name: string; sql: string }[] = [
   { name: "animals", sql: `SELECT * FROM animals WHERE org_id = ?` },
   { name: "contacts", sql: `SELECT * FROM contacts WHERE org_id = ?` },
@@ -470,6 +472,23 @@ const EXPORT_TABLES: { name: string; sql: string }[] = [
   { name: "campaigns", sql: `SELECT * FROM campaigns WHERE org_id = ?` },
   { name: "animal_photos", sql: `SELECT * FROM animal_photos WHERE org_id = ?` },
   { name: "tasks", sql: `SELECT * FROM tasks WHERE org_id = ?` },
+  { name: "locations", sql: `SELECT * FROM locations WHERE org_id = ?` },
+  { name: "pages", sql: `SELECT * FROM pages WHERE org_id = ?` },
+  { name: "media", sql: `SELECT * FROM media WHERE org_id = ?` },
+  { name: "waitlist_subscriptions", sql: `SELECT * FROM waitlist_subscriptions WHERE org_id = ?` },
+  { name: "followups", sql: `SELECT * FROM followups WHERE org_id = ?` },
+  { name: "shifts", sql: `SELECT * FROM shifts WHERE org_id = ?` },
+  { name: "shift_signups", sql: `SELECT * FROM shift_signups WHERE org_id = ?` },
+  { name: "grant_drafts", sql: `SELECT * FROM grant_drafts WHERE org_id = ?` },
+  { name: "transfer_posts", sql: `SELECT * FROM transfer_posts WHERE org_id = ?` },
+  { name: "marketing_campaigns", sql: `SELECT * FROM marketing_campaigns WHERE org_id = ?` },
+  { name: "marketing_assets", sql: `SELECT * FROM marketing_assets WHERE org_id = ?` },
+  { name: "billing_usage", sql: `SELECT * FROM billing_usage WHERE org_id = ?` },
+  { name: "email_suppression", sql: `SELECT * FROM email_suppression WHERE org_id = ?` },
+  { name: "ai_usage", sql: `SELECT * FROM ai_usage WHERE org_id = ?` },
+  { name: "ai_audit", sql: `SELECT * FROM ai_audit WHERE org_id = ?` },
+  // never export password material
+  { name: "users", sql: `SELECT id, org_id, email, name, created_at FROM users WHERE org_id = ?` },
 ];
 
 api.get("/export.zip", async (c) => {

@@ -9,13 +9,18 @@ export interface Plan {
   label: string;
   monthlyCents: number;
   perAdoptionCents: number; // 0 = flat tier
+  seats: number; // team members allowed (marketing: Starter promises 2)
 }
 
 export const PLANS: Record<string, Plan> = {
-  starter: { key: "starter", label: "Starter", monthlyCents: 900, perAdoptionCents: 100 },
-  rescue: { key: "rescue", label: "Rescue", monthlyCents: 3900, perAdoptionCents: 0 },
-  pro: { key: "pro", label: "Shelter Pro", monthlyCents: 7900, perAdoptionCents: 0 },
+  starter: { key: "starter", label: "Starter", monthlyCents: 900, perAdoptionCents: 100, seats: 2 },
+  rescue: { key: "rescue", label: "Rescue", monthlyCents: 3900, perAdoptionCents: 0, seats: 10 },
+  pro: { key: "pro", label: "Shelter Pro", monthlyCents: 7900, perAdoptionCents: 0, seats: 25 },
 };
+
+export function seatLimit(planKey: string): number {
+  return (PLANS[planKey] ?? PLANS.starter).seats;
+}
 
 /** What a month costs on a plan at a given adoption volume, in cents. */
 export function monthlyCostCents(planKey: string, adoptionsPerMonth: number): number {

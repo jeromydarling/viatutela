@@ -32,3 +32,37 @@ export function sessionCookie(token: string, maxAge = 30 * 24 * 3600): string {
 export function clearSessionCookie(): string {
   return `${AUTH_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
 }
+
+// ---------- login rate limiting ----------
+
+export const LOGIN_ATTEMPT_LIMIT = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+function loginRlKey(ip: string, email: string): string {
+  return `lrl:${ip}:${email}:${Math.floor(Date.now() / LOGIN_WINDOW_MS)}`;
+}
+
+/**
+ * True when this ip+email pair still has attempts left in the current
+ * 15-minute window. Fails open on KV trouble — a broken limiter should
+ * never lock every shelter out.
+ */
+export async function loginAllowed(env: Env, ip: string, email: string): Promise<boolean> {
+  try {
+    const n = Number((await env.CONFIG.get(loginRlKey(ip, email))) ?? "0");
+    return n < LOGIN_ATTEMPT_LIMIT;
+  } catch {
+    return true;
+  }
+}
+
+/** Count a FAILED attempt (successful logins never consume the budget). */
+export async function recordFailedLogin(env: Env, ip: string, email: string): Promise<void> {
+  try {
+    const key = loginRlKey(ip, email);
+    const n = Number((await env.CONFIG.get(key)) ?? "0");
+    await env.CONFIG.put(key, String(n + 1), { expirationTtl: 1800 });
+  } catch {
+    // best effort
+  }
+}

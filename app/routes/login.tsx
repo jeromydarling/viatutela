@@ -2,7 +2,7 @@ import { Form, Link, redirect, useActionData, useNavigation } from "react-router
 import type { Route } from "./+types/login";
 import { SiteHeader, SiteFooter, Logo } from "../components/site";
 import { getEnv } from "../lib/auth.server";
-import { getAuthedUser, sessionCookie } from "../../workers/lib/auth";
+import { getAuthedUser, loginAllowed, recordFailedLogin, sessionCookie } from "../../workers/lib/auth";
 import { verifyPassword } from "../../workers/lib/password";
 import { newToken } from "../../workers/lib/ids";
 
@@ -24,6 +24,11 @@ export async function action({ context, request }: Route.ActionArgs) {
   const password = String(form.get("password") ?? "");
   if (!email || !password) return { error: "Email and password, please." };
 
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  if (!(await loginAllowed(env, ip, email))) {
+    return { error: "Too many tries in a row — take a breath and try again in about 15 minutes." };
+  }
+
   const user = await env.DB.prepare(
     `SELECT id, password_hash, password_salt FROM users WHERE email = ?`,
   )
@@ -31,10 +36,14 @@ export async function action({ context, request }: Route.ActionArgs) {
     .first<{ id: string; password_hash: string | null; password_salt: string | null }>();
 
   if (!user || !user.password_hash || !user.password_salt) {
+    await recordFailedLogin(env, ip, email);
     return { error: "We don't recognize that email and password together." };
   }
   const ok = await verifyPassword(password, user.password_hash, user.password_salt);
-  if (!ok) return { error: "We don't recognize that email and password together." };
+  if (!ok) {
+    await recordFailedLogin(env, ip, email);
+    return { error: "We don't recognize that email and password together." };
+  }
 
   const token = newToken();
   const expires = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
