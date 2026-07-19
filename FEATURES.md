@@ -104,6 +104,18 @@ Worker secret** is set — that single secret activates everything below plus th
 | Self-healing | ✅ | Seeds itself on first visit; cron resets all demo data every 6 hours so visitors can change anything |
 | Entry points | ✅ | Marketing hero button + login page |
 
+## Growth wave (waitlist, lifecycle, volunteers, grants, vision, network)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Interest waitlist + arrival alerts | ✅ | Public form on every adoption portal ("tell me when you get a senior cat"); new matching arrivals email subscribers automatically (suppression-aware, unsubscribe links, once per subscription) |
+| Post-adoption lifecycle | ✅ | Day-3 / week-2 / month-6 check-ins + yearly Gotcha Day note with a gentle give ask; scheduled on every adoption, drained by daily cron, gotcha re-arms annually |
+| Volunteer scheduling + hour log | ✅ | Shifts, sign-ups, auto-computed hours, 12-month totals and leaderboard — the hour log grant applications require |
+| Grant-writer AI (`/app/grants`) | 🟡 | Drafts full funder narratives (need, program, outcomes, budget, sustainability) from real D1 stats incl. logged volunteer hours; drafts saved for editing. Needs `ANTHROPIC_API_KEY` |
+| Intake vision (photos → draft profile) | 🟡 | Snap intake photos → species/breed/color/age guesses + first bio, prefilled into the add-friend form; every guess staff-reviewed. Needs key |
+| Vet-record OCR (paper → medical rows) | 🟡 | Photograph paper records → structured, dated medical rows with due dates; reviewed before applying. Needs key |
+| Cross-shelter transfer network (`/app/network`) | ✅ | Every Via Tutela rescue shares one board: need-space / have-space posts with urgency, species, counts; 14-day expiry; the network-effect feature |
+
 ## Adoption pipeline
 
 | Feature | Status | Notes |

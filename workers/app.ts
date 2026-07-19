@@ -47,6 +47,12 @@ export default {
       ctx.waitUntil(resetDemoData(env, env.APP_ORIGIN));
       return;
     }
+    if (event.cron === "30 14 * * *") {
+      // daily: post-adoption check-ins and gotcha days
+      const { processFollowups } = await import("./lib/lifecycle");
+      ctx.waitUntil(processFollowups(env, env.APP_ORIGIN));
+      return;
+    }
     const { sendMedicalDigests } = await import("./lib/digest");
     ctx.waitUntil(sendMedicalDigests(env, env.APP_ORIGIN));
     const { autoLongStaySpotlights } = await import("./lib/marketing-auto");
