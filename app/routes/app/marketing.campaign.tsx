@@ -1,4 +1,4 @@
-import { aiAvailable } from "../../../workers/lib/ai-shelter";
+import { aiAvailable } from "../../../workers/lib/ai-flags";
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/marketing.campaign";
 import { requireUser } from "../../lib/auth.server";

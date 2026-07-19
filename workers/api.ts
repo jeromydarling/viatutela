@@ -463,7 +463,7 @@ api.get("/media/*", async (c) => {
   }
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
-  headers.set("Cache-Control", "public, max-age=86400");
+  headers.set("Cache-Control", "public, max-age=31536000, immutable");
   return new Response(obj.body, { headers });
 });
 

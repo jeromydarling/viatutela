@@ -94,9 +94,7 @@ export async function recordAiUsage(
 }
 
 /** True when ANY provider (Anthropic key or Workers AI fallback) exists. */
-export function aiAvailable(env: Env): boolean {
-  return Boolean(getAnthropic(env) || (env as { AI?: unknown }).AI);
-}
+export { aiAvailable } from "./ai-flags";
 
 /**
  * Per-org daily AI budget (total tokens/day from ai_usage). Plan-based

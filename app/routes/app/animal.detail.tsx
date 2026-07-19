@@ -1,4 +1,4 @@
-import { aiAvailable } from "../../../workers/lib/ai-shelter";
+import { aiAvailable } from "../../../workers/lib/ai-flags";
 import { Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/animal.detail";
 import { requireUser } from "../../lib/auth.server";
@@ -148,7 +148,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
         ? (type.includes("webm") ? "webm" : type.includes("quicktime") ? "mov" : "mp4")
         : (type.includes("png") ? "png" : type.includes("webp") ? "webp" : "jpg");
       const key = `orgs/${user.org_id}/photos/${animal.id}-${newId("p")}.${ext}`;
-      await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: type } });
+      await env.MEDIA.put(key, file, { httpMetadata: { contentType: type } });
       await env.DB.prepare(
         `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES (?, ?, ?, ?, ?)`,
       )
@@ -656,7 +656,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                   {p.kind === "video" ? (
                     <video src={`/api/media/${p.r2_key}`} preload="metadata" muted className="w-full aspect-square object-cover rounded-xl bg-charcoal/80" />
                   ) : (
-                    <img src={`/api/media/${p.r2_key}`} alt={p.alt_text ?? ""} className="w-full aspect-square object-cover rounded-xl" />
+                    <img src={`/api/media/${p.r2_key}`} alt={p.alt_text ?? ""} loading="lazy" decoding="async" className="w-full aspect-square object-cover rounded-xl" />
                   )}
                   {p.kind === "video" && (
                     <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-xs">🎬</span>

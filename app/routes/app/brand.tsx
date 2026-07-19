@@ -1,4 +1,4 @@
-import { aiAvailable } from "../../../workers/lib/ai-shelter";
+import { aiAvailable } from "../../../workers/lib/ai-flags";
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/brand";
 import { requireUser } from "../../lib/auth.server";
@@ -127,7 +127,7 @@ export async function action({ context, request }: Route.ActionArgs) {
     if (!type.startsWith("image/")) return { error: "That doesn't look like an image." };
     const ext = type.includes("png") ? "png" : type.includes("webp") ? "webp" : type.includes("svg") ? "svg" : "jpg";
     const key = `orgs/${user.org_id}/site/logo-${newId("m")}.${ext}`;
-    await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: type } });
+    await env.MEDIA.put(key, file, { httpMetadata: { contentType: type } });
     await env.DB.prepare(`INSERT INTO media (id, org_id, r2_key, alt) VALUES (?, ?, ?, ?)`)
       .bind(newId("md"), user.org_id, key, "logo")
       .run();
