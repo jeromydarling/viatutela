@@ -5,6 +5,18 @@ import { Logo } from "../../components/site";
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
+  // demo self-heal: a signed-in demo session must never see an empty
+  // workspace (e.g. mid-reset, or after a manual wipe) — reseed on sight
+  if (user.demo) {
+    const { isDemoSeeded, resetDemoData } = await import("../../../workers/lib/demo");
+    try {
+      if (!(await isDemoSeeded(env))) {
+        await resetDemoData(env, new URL(request.url).origin);
+      }
+    } catch (err) {
+      console.log(`[demo self-heal failed] ${err instanceof Error ? err.message : err}`);
+    }
+  }
   const newApps = await env.DB.prepare(
     `SELECT COUNT(*) n FROM applications WHERE org_id = ? AND status = 'new'`,
   )
