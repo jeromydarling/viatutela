@@ -108,8 +108,8 @@ export default function People({ loaderData, actionData }: Route.ComponentProps)
 
       <div className="mt-4 grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Form method="get" className="flex gap-2">
-            <input name="q" defaultValue={params.get("q") ?? ""} placeholder="Search people…" className={`${inputCls} flex-1 bg-white`} />
+          <Form method="get" className="flex flex-wrap gap-2">
+            <input name="q" defaultValue={params.get("q") ?? ""} placeholder="Search people…" className={`${inputCls} flex-1 min-w-36 bg-white`} />
             <select name="role" defaultValue={params.get("role") ?? ""} className={`${inputCls} bg-white`}>
               <option value="">All roles</option>
               {ROLE_OPTIONS.map((r) => (

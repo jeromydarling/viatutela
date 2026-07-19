@@ -355,7 +355,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
             </div>
             <Form method="post" encType="multipart/form-data" className="mt-3 flex gap-2 items-center">
               <input type="hidden" name="intent" value="upload-photo" />
-              <input type="file" name="photo" accept="image/*,video/mp4,video/webm,video/quicktime" required className="text-sm flex-1" />
+              <input type="file" name="photo" accept="image/*,video/mp4,video/webm,video/quicktime" required className="text-sm flex-1 w-0" />
               <button className="rounded-full bg-sunflower px-4 py-2 text-sm font-semibold shadow-soft">
                 Upload
               </button>
@@ -391,9 +391,9 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                     </option>
                   ))}
                 </select>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <input name="start_date" type="date" className={inputCls} />
-                  <input name="notes" placeholder="Notes" className={`${inputCls} flex-1`} />
+                  <input name="notes" placeholder="Notes" className={`${inputCls} flex-1 min-w-32`} />
                 </div>
                 <button className="rounded-full bg-meadow text-white px-4 py-2 text-sm font-semibold">
                   Send to foster
@@ -424,7 +424,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                     <option key={ct.id} value={ct.id}>{ct.name}</option>
                   ))}
                 </select>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <input name="date" type="date" className={inputCls} />
                   <input name="fee" type="number" min="0" step="0.01" placeholder="Fee $" className={`${inputCls} w-28`} />
                 </div>

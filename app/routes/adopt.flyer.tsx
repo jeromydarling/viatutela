@@ -127,7 +127,7 @@ export default function AdoptFlyer({ loaderData }: Route.ComponentProps) {
           </p>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 20, background: brand.palette.bg, borderRadius: 24, padding: 18 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20, background: brand.palette.bg, borderRadius: 24, padding: 18 }}>
           <div
             style={{ width: 130, flexShrink: 0, background: "#fff", borderRadius: 14, padding: 8 }}
             dangerouslySetInnerHTML={{ __html: qrSvg }}

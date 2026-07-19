@@ -91,10 +91,14 @@ export default function Login() {
           </Form>
           <p className="mt-4 text-center text-sm text-charcoal-soft">
             New here?{" "}
-            <Link to="/import" className="font-semibold text-meadow-deep hover:underline">
-              Start with a free import
+            <Link to="/signup" className="font-semibold text-meadow-deep hover:underline">
+              Sign up free
             </Link>{" "}
-            — your account is created when you keep the data.
+            — or migrate with the{" "}
+            <Link to="/import" className="font-semibold text-meadow-deep hover:underline">
+              free importer
+            </Link>
+            .
           </p>
           <div className="mt-4 border-t border-cream pt-4 text-center">
             <a
