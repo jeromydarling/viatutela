@@ -10,6 +10,14 @@ import {
   PawDoodle,
   WolfDoodle,
 } from "../components/doodles";
+import {
+  AnimalScreen,
+  DonationScreen,
+  FosterScreen,
+  ImporterScreen,
+  PortalScreen,
+  ReportsScreen,
+} from "../components/feature-screens";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -46,6 +54,45 @@ const PAIN_RELIEF: { pain: string; relief: string }[] = [
   {
     pain: "“We pay for five different tools.”",
     relief: "One platform: animals, adoptions, fosters, donors, website.",
+  },
+];
+
+const FEATURES: {
+  title: string;
+  body: string;
+  screen: React.ComponentType;
+  link?: { label: string; to: string };
+}[] = [
+  {
+    title: "Move in free — relationships and all",
+    body: "Upload the messy exports from your old system. Adopters stay linked to their animals, medical history follows every friend, and bonded pairs stay bonded. Flagged rows land in a tidy report instead of the void.",
+    screen: ImporterScreen,
+    link: { label: "Try the importer", to: "/import" },
+  },
+  {
+    title: "One profile per friend, one scan away",
+    body: "Photos, medical timeline, foster status, microchip — all on one page. Print a kennel card with a QR code and the full profile opens on your phone, right there in the kennel aisle.",
+    screen: AnimalScreen,
+  },
+  {
+    title: "Your own adoption page, applications included",
+    body: "Every rescue gets a warm public page at your own link. Applications arrive in an inbox where one click approves, records the adoption, and emails the good news.",
+    screen: PortalScreen,
+  },
+  {
+    title: "Fosters and people, finally in one place",
+    body: "Start and end foster stays in two clicks — animal statuses keep themselves honest. Adopters, fosters, volunteers, and donors live in one gentle CRM with their whole history.",
+    screen: FosterScreen,
+  },
+  {
+    title: "Generosity, honored properly",
+    body: "Record gifts, run campaigns with goals and progress bars, and send thank-you receipts automatically. We never take a cent of your donations.",
+    screen: DonationScreen,
+  },
+  {
+    title: "Know your numbers, love your outcomes",
+    body: "Intakes, adoptions, days-to-home, donation trends, application funnel — clear charts your board will actually read, computed live from your data.",
+    screen: ReportsScreen,
   },
 ];
 
@@ -162,6 +209,47 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ---------- Features with mini screenshots ---------- */}
+      <section id="features" className="bg-white/70 py-16 scroll-mt-20 overflow-hidden">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-display font-semibold text-center">
+            Everything under one sunny roof
+          </h2>
+          <p className="text-center text-charcoal-soft mt-2 text-lg">
+            A peek inside — these little windows are the real app, in miniature.
+          </p>
+          <div className="mt-12 space-y-16">
+            {FEATURES.map((f, i) => {
+              const Screen = f.screen;
+              return (
+                <div
+                  key={f.title}
+                  className={`grid md:grid-cols-2 gap-8 items-center ${
+                    i % 2 ? "md:[direction:rtl]" : ""
+                  }`}
+                >
+                  <div className="md:[direction:ltr]">
+                    <h3 className="text-2xl font-display font-semibold">{f.title}</h3>
+                    <p className="mt-3 text-lg text-charcoal-soft leading-relaxed">{f.body}</p>
+                    {f.link && (
+                      <Link
+                        to={f.link.to}
+                        className="inline-block mt-4 rounded-full bg-sunflower px-5 py-2.5 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
+                      >
+                        {f.link.label}
+                      </Link>
+                    )}
+                  </div>
+                  <div className={`md:[direction:ltr] max-w-sm w-full mx-auto ${i % 2 ? "md:-rotate-1" : "md:rotate-1"}`}>
+                    <Screen />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 

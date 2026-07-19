@@ -10,6 +10,9 @@ export function SiteHeader() {
           Via&nbsp;Tutela
         </Link>
         <nav className="flex items-center gap-2 sm:gap-4 text-sm font-semibold">
+          <a href="/#features" className="hidden sm:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
+            Features
+          </a>
           <a href="/#savings" className="hidden sm:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
             Savings
           </a>
