@@ -5,8 +5,8 @@
  */
 
 // The launch domain. Canonicals, OG URLs, and JSON-LD all point here —
-// attach viatutela.com to the Worker (Custom Domains) so they resolve.
-export const SITE_ORIGIN = "https://viatutela.com";
+// attach viatutela.pet to the Worker (Custom Domains) so they resolve.
+export const SITE_ORIGIN = "https://viatutela.pet";
 
 export const SITE_NAME = "Tutela";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/art/meadow.webp`;

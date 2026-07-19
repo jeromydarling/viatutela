@@ -18,37 +18,6 @@ import { newToken } from "./ids";
 export const DEMO_SLUG = "sunny-meadow-demo";
 export const DEMO_EMAIL = "demo@viatutela.app";
 
-/**
- * Read a bundled art file. The ASSETS binding serves the worker's own
- * static assets in-process — an HTTP fetch of our own hostname is blocked
- * by the runtime (error 1042), which is exactly how a whole reseed once
- * came back photoless. HTTP against the request origin remains only as a
- * dev-environment fallback, and responses must actually be images.
- */
-async function fetchArt(env: Env, origin: string, name: string): Promise<Response | null> {
-  const path = `/art/${name}.webp`;
-  const assets = (env as { ASSETS?: Fetcher }).ASSETS;
-  if (assets) {
-    try {
-      const resp = await assets.fetch(new Request(`https://assets.internal${path}`));
-      if (resp.ok && looksLikeImage(resp)) return resp;
-    } catch {
-      // fall through
-    }
-  }
-  try {
-    const resp = await fetch(`${origin}${path}`);
-    if (resp.ok && looksLikeImage(resp)) return resp;
-  } catch {
-    // best-effort only
-  }
-  return null;
-}
-
-function looksLikeImage(resp: Response): boolean {
-  const type = resp.headers.get("content-type") ?? "";
-  return type.startsWith("image/") || type === "application/octet-stream";
-}
 export const DEMO_PASSWORD = "sunflower";
 const ORG = "org_demo_sunnymeadow";
 const USER = "u_demo_sunnymeadow";
@@ -288,7 +257,7 @@ function days(n: number): string {
 }
 
 /** Wipe and re-seed everything owned by the demo org (org + login persist). */
-export async function resetDemoData(env: Env, origin: string): Promise<void> {
+export async function resetDemoData(env: Env, _origin: string): Promise<void> {
   await ensureDemoOrg(env);
 
   // ---- wipe (children first — every org-scoped table, or FK constraints
@@ -588,34 +557,22 @@ export async function resetDemoData(env: Env, origin: string): Promise<void> {
   HISTORY_NAMES.forEach((_, i) => {
     if (HISTORY_ART[i]) art.push([`dm_an_h${i}`, HISTORY_ART[i], 100 + i]);
   });
-  for (const [animalId, name, i] of art) {
-    try {
-      const key = `orgs/${ORG}/photos/dm_${name}-${animalId}.webp`;
-      const exists = await env.MEDIA.head(key);
-      if (!exists) {
-        const resp = await fetchArt(env, origin, name);
-        if (!resp) continue;
-        await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
-      }
-      await env.DB.prepare(
-        `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES (?, ?, ?, ?, 'photo')`,
-      ).bind(`dm_ph_${i}`, ORG, animalId, key).run();
-    } catch (err) {
-      console.log(`[demo photo skipped] ${name}: ${err instanceof Error ? err.message : err}`);
-    }
-  }
-  // bonded-pair extra photo for Biscuit — row only if the object is real
+  // Rows only, in a single batch — R2 objects materialize lazily on first
+  // view via /api/media (per-request subrequest budgets are tight; a seed
+  // that touched R2 33 times once died five photos in).
   try {
-    const key = `orgs/${ORG}/photos/dm_demo-bonded.webp`;
-    if (!(await env.MEDIA.head(key))) {
-      const resp = await fetchArt(env, origin, "demo-bonded");
-      if (!resp) return;
-      await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
-    }
-    await env.DB.prepare(
-      `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES ('dm_ph_bonded', ?, 'dm_an_biscuit', ?, 'photo')`,
-    ).bind(ORG, key).run();
-  } catch {
-    // fine without it
+    const photoStmts = art.map(([animalId, name, i]) =>
+      env.DB.prepare(
+        `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES (?, ?, ?, ?, 'photo')`,
+      ).bind(`dm_ph_${i}`, ORG, animalId, `orgs/${ORG}/photos/dm_${name}-${animalId}.webp`),
+    );
+    photoStmts.push(
+      env.DB.prepare(
+        `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES ('dm_ph_bonded', ?, 'dm_an_biscuit', ?, 'photo')`,
+      ).bind(ORG, `orgs/${ORG}/photos/dm_demo-bonded.webp`),
+    );
+    await env.DB.batch(photoStmts);
+  } catch (err) {
+    console.log(`[demo photos failed] ${err instanceof Error ? err.message : err}`);
   }
 }

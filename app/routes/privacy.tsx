@@ -57,7 +57,7 @@ const SECTIONS: { h: string; ps: string[] }[] = [
   {
     h: "Questions",
     ps: [
-      "Write to privacy@viatutela.com — a human reads it. If we ever make a meaningful change to this policy, we'll email every account before it takes effect.",
+      "Write to privacy@viatutela.pet — a human reads it. If we ever make a meaningful change to this policy, we'll email every account before it takes effect.",
     ],
   },
 ];

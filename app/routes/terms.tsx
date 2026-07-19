@@ -55,7 +55,7 @@ const SECTIONS: { h: string; ps: string[] }[] = [
   },
   {
     h: "Questions",
-    ps: ["Write to hello@viatutela.com. These terms were last updated July 2026; meaningful changes get emailed to every account 30 days before they apply."],
+    ps: ["Write to hello@viatutela.pet. These terms were last updated July 2026; meaningful changes get emailed to every account 30 days before they apply."],
   },
 ];
 

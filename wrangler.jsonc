@@ -27,9 +27,11 @@
 		 * onboarded in Cloudflare Email Service (dash -> Email -> Sending).
 		 * Until the domain is verified, sends fail softly and are logged.
 		 */
-		"EMAIL_FROM": "Tutela <no-reply@viatutela.com>",
+		"EMAIL_FROM": "Tutela <no-reply@viatutela.pet>",
 		/** Public origin used in emails sent outside a request (cron digests). */
-		"APP_ORIGIN": "https://viatutela.com"
+		"APP_ORIGIN": "https://viatutela.pet",
+		/** Hosts that are the platform itself (skip tenant lookup). */
+		"PLATFORM_HOSTS": "viatutela.pet"
 	},
 	/**
 	 * Cloudflare Email Service — app email (application confirmations,
