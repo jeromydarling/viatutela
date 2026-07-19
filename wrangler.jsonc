@@ -82,5 +82,8 @@
 	// Workers AI — Llama fallback when the Anthropic API is unavailable.
 	// remoteBindings:false in vite.config keeps local dev booting; local
 	// calls fail fast and the degrade path handles it.
-	"ai": { "binding": "AI" }
+	"ai": { "binding": "AI" },
+	// Cloudflare Images — photo studio transforms (enhance, crops). Billed
+	// per unique transformation; repeats within a month are free.
+	"images": { "binding": "IMAGES" }
 }

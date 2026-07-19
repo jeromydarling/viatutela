@@ -50,10 +50,10 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
 
   const [media, bonded] = await Promise.all([
     env.DB.prepare(
-      `SELECT r2_key, kind, caption FROM animal_photos WHERE animal_id = ? ORDER BY kind, created_at LIMIT 16`,
+      `SELECT r2_key, kind, caption, alt_text FROM animal_photos WHERE animal_id = ? ORDER BY kind, created_at LIMIT 16`,
     )
       .bind(animal.id)
-      .all<{ r2_key: string; kind: string; caption: string | null }>(),
+      .all<{ r2_key: string; kind: string; caption: string | null; alt_text: string | null }>(),
     animal.bonded_group_id
       ? env.DB.prepare(
           `SELECT id, name FROM animals WHERE org_id = ? AND bonded_group_id = ? AND id != ? AND is_public = 1`,
@@ -193,7 +193,7 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
             <div className="space-y-3">
               <img
                 src={`/api/media/${photos[0].r2_key}`}
-                alt={photos[0].caption ?? String(animal.name)}
+                alt={photos[0].alt_text ?? photos[0].caption ?? String(animal.name)}
                 className="w-full rounded-blob object-cover max-h-[28rem] shadow-soft"
               />
               {(photos.length > 1 || videos.length > 0) && (
@@ -202,7 +202,7 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
                     <a key={p.r2_key} href={`/api/media/${p.r2_key}`} target="_blank" rel="noreferrer">
                       <img
                         src={`/api/media/${p.r2_key}`}
-                        alt={p.caption ?? `${String(animal.name)} photo`}
+                        alt={p.alt_text ?? p.caption ?? `${String(animal.name)} photo`}
                         className="w-full aspect-square object-cover rounded-2xl hover:opacity-90"
                         loading="lazy"
                       />
