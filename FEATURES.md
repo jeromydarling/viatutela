@@ -33,6 +33,22 @@ versus what is actually built and deployed. Updated 2026-07-19.
 | Multi-location | ✅ | Locations managed in Settings; assign on profiles, filter the list, census in Reports |
 | Reports & analytics | ✅ | 12-month intake/adoption/donation charts, census by status/species/location, avg days-to-adoption, application funnel |
 
+## Shelter websites (block CMS, AI designer, custom domains)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Block-based website CMS (12 section types, drag-free move/add/delete forms) | ✅ | Closed section enum + passthrough; 40-section / 120KB caps enforced |
+| Public shelter sites (`/s/:slug/:page`) with brand accent + nav editor | ✅ | Live-gated by status + `publish_at`; draft pages 404 publicly |
+| Starter-pack pages (home, about, adopt, get-involved, donate, contact) | ✅ | One click, created as drafts |
+| Media library (R2-backed, required alt text) | ✅ | 10MB/image cap |
+| Preview links (tokenized, 7-day expiry, noindex) | ✅ | KV-backed |
+| Scheduled publishing (`publish_at`) | ✅ | |
+| Per-tenant sitemap.xml + robots.txt | ✅ | Published pages + adoptable animals |
+| AI site designer (interview → full draft site) | 🟡 | Fully coded (Anthropic API, drafts only, audit-logged). **Activation: set `ANTHROPIC_API_KEY` Worker secret.** Degrades to a friendly message until then |
+| AI inline rewrites (warmer/punchier/shorter) + SEO meta drafting | 🟡 | Same activation lever |
+| Custom domains (CNAME + auto-SSL via Cloudflare for SaaS) | 🟡 | Save/normalize/DNS-check/self-activation all built; runs in **manual mode** until Cloudflare for SaaS is enabled and `CF_API_TOKEN` (zone-scoped) + `CF_ZONE_ID` + `CUSTOM_DOMAIN_TARGET` are set |
+| Tenant isolation on custom domains (staff app/login/API blocked) | ✅ | Only the public site surface is served on shelter hosts |
+
 ## Adoption pipeline
 
 | Feature | Status | Notes |
@@ -98,3 +114,5 @@ versus what is actually built and deployed. Updated 2026-07-19.
 2. **Volunteer scheduling** (shifts, sign-ups)
 3. **SMS** — blocked on provider decision (e.g. Twilio)
 4. **Petfinder/Adopt-a-Pet API push** (feed URL already works for scheduled ingestion)
+5. **AI activation** — set `ANTHROPIC_API_KEY` Worker secret to light up the site designer, rewrites, and SEO drafting
+6. **Custom-domain automation** — enable Cloudflare for SaaS, then set `CF_API_TOKEN`/`CF_ZONE_ID`/`CUSTOM_DOMAIN_TARGET` (works in manual mode today)

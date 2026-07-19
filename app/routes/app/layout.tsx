@@ -20,6 +20,7 @@ const NAV = [
   { to: "/app/applications", label: "Applications" },
   { to: "/app/fosters", label: "Fosters" },
   { to: "/app/donations", label: "Donations" },
+  { to: "/app/website", label: "Website" },
   { to: "/app/reports", label: "Reports" },
   { to: "/app/settings", label: "Settings" },
 ];
