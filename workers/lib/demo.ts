@@ -320,6 +320,46 @@ export async function resetDemoData(env: Env, _origin: string): Promise<void> {
     );
   });
 
+  // ---- volunteer shifts: a living schedule + a year of logged hours ----
+  const SHIFTS: [string, string, string, string | null, string | null, number][] = [
+    // [id, title, date-offset, start, end, slots]
+    ["dm_sh_1", "Morning kennels & walks", "+1 days", "08:00", "10:00", 4],
+    ["dm_sh_2", "Adoption event — Big Sky Feed lot", "+3 days", "10:00", "14:00", 6],
+    ["dm_sh_3", "Kitten room deep clean", "+6 days", "17:00", "19:00", 3],
+    ["dm_sh_p1", "Morning kennels & walks", "-7 days", "08:00", "10:00", 4],
+    ["dm_sh_p2", "Vaccine clinic day", "-30 days", "09:00", "13:00", 5],
+    ["dm_sh_p3", "Spring adoption fair", "-75 days", "10:00", "15:00", 6],
+  ];
+  for (const [id, title, offset, start, end, slots] of SHIFTS) {
+    stmts.push(
+      env.DB.prepare(
+        `INSERT INTO shifts (id, org_id, title, date, start_time, end_time, slots) VALUES (?, ?, ?, date('now', ?), ?, ?, ?)`,
+      ).bind(id, ORG, title, offset, start, end, slots),
+    );
+  }
+  // signups: upcoming shifts partly filled, past shifts feed hours + leaderboard
+  // contacts: 0 Clare, 4 Maya, 11 Priya (volunteer-role contacts)
+  const SIGNUPS: [string, string, string, number, number][] = [
+    // [id, shift_id, contact_id, hours, created-days-ago]
+    ["dm_sg_1", "dm_sh_1", "dm_ct_0", 2, 1],
+    ["dm_sg_2", "dm_sh_1", "dm_ct_4", 2, 0],
+    ["dm_sg_3", "dm_sh_2", "dm_ct_11", 4, 2],
+    ["dm_sg_4", "dm_sh_p1", "dm_ct_0", 2, 7],
+    ["dm_sg_5", "dm_sh_p1", "dm_ct_4", 2, 7],
+    ["dm_sg_6", "dm_sh_p2", "dm_ct_0", 4, 30],
+    ["dm_sg_7", "dm_sh_p2", "dm_ct_11", 4, 30],
+    ["dm_sg_8", "dm_sh_p3", "dm_ct_4", 5, 75],
+    ["dm_sg_9", "dm_sh_p3", "dm_ct_0", 5, 75],
+    ["dm_sg_10", "dm_sh_p3", "dm_ct_11", 5, 75],
+  ];
+  for (const [id, shiftId, contactId, hours, ago] of SIGNUPS) {
+    stmts.push(
+      env.DB.prepare(
+        `INSERT INTO shift_signups (id, org_id, shift_id, contact_id, hours, created_at) VALUES (?, ?, ?, ?, ?, datetime('now', ?))`,
+      ).bind(id, ORG, shiftId, contactId, hours, days(ago)),
+    );
+  }
+
   // ---- medical ----
   const med: [string, number, string, string, string | null, number | null][] = [
     // [animal, daysAgo, type, description, vet, dueInDays(null=none)]
