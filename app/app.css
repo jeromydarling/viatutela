@@ -1,0 +1,66 @@
+@import "tailwindcss" source(".");
+
+@theme {
+  /* Via Tutela palette — warm, sunny, earthy-joyful */
+  --color-sunflower: #f6c445;
+  --color-sunflower-soft: #fbe3a3;
+  --color-meadow: #4caf7d;
+  --color-meadow-deep: #2e7d54;
+  --color-sky: #5ab6e8;
+  --color-sky-deep: #2f7fb0;
+  --color-terracotta: #e07a5f;
+  --color-terracotta-deep: #b85062;
+  --color-cream: #fff9f0;
+  --color-charcoal: #2e2a26;
+  --color-charcoal-soft: #5c554d;
+
+  --font-display: "Fredoka", "Baloo 2", ui-rounded, system-ui, sans-serif;
+  --font-body: "Nunito", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-blob: 2rem;
+  --shadow-soft: 0 6px 24px -8px rgb(46 42 38 / 0.18);
+  --shadow-lift: 0 12px 32px -10px rgb(46 42 38 / 0.25);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-charcoal);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
+
+/* gentle motion for doodles */
+@keyframes vt-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes vt-wiggle {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+@keyframes vt-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vt-float { animation: vt-float 5s ease-in-out infinite; }
+.vt-wiggle { animation: vt-wiggle 6s ease-in-out infinite; }
+.vt-fade-up { animation: vt-fade-up 0.6s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .vt-float, .vt-wiggle, .vt-fade-up {
+    animation: none;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

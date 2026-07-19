@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+  # Deploys are handled by Cloudflare Workers Builds (the Worker app is
+  # connected to this repository): pushes to the production branch deploy
+  # to viatutela.workers.dev, other branches get preview builds.
+  # D1 migrations: run `npm run db:migrate:remote` with a CLOUDFLARE_API_TOKEN
+  # when the schema changes (see README).

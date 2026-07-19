@@ -1,0 +1,58 @@
+/**
+ * Via Tutela — Cloudflare Worker configuration.
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "viatutela",
+	"compatibility_date": "2026-07-01",
+	"main": "./workers/app.ts",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"vars": {
+		"APP_ENV": "production"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "viatutela",
+			"database_id": "ce7c5241-60de-464e-876d-fa18d66c1f7d",
+			"migrations_dir": "./migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "viatutela-media"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "CONFIG",
+			"id": "c4f0fac3b31d48f4b2e04ccdabec9ebe"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "IMPORT_PROGRESS",
+				"class_name": "ImportProgress"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["ImportProgress"]
+		}
+	]
+	/**
+	 * Workers AI — re-enable when the first AI feature lands.
+	 * (The binding proxies to remote in `vite dev`, which requires
+	 * credentials; nothing in v1 uses it yet.)
+	 */
+	// "ai": { "binding": "AI" }
+}
