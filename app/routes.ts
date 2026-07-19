@@ -5,6 +5,7 @@ export default [
   route("import", "routes/import.tsx"),
   route("import/:jobId", "routes/import.job.tsx"),
   route("login", "routes/login.tsx"),
+  route("demo", "routes/demo.tsx"),
   route("unsub/:token", "routes/unsub.tsx"),
   route("logout", "routes/logout.tsx"),
 

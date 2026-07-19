@@ -31,6 +31,11 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
   const { user, newApps } = loaderData;
   return (
     <div className="min-h-screen flex flex-col">
+      {Boolean(user.demo) && (
+        <div className="bg-sunflower text-charcoal text-center text-sm font-semibold py-1.5 px-4">
+          🌻 You're exploring the demo shelter — click anything, change anything. It resets itself every six hours.
+        </div>
+      )}
       <header className="sticky top-0 z-40 bg-cream/95 backdrop-blur border-b border-sunflower-soft">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 flex items-center justify-between h-14">
           <Link to="/app" className="flex items-center gap-2 font-display font-semibold text-lg truncate">

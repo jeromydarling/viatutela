@@ -96,6 +96,14 @@ Worker secret** is set — that single secret activates everything below plus th
 | Search Checkup (plain-language audit with one-tap fix links) | ✅ | Missing meta descriptions, photo-less adoptables, thin bios, verification, domain status — cheap SQL, no crawler |
 | AnimalShelter JSON-LD on shelter homepages | ✅ | Plus OG tags everywhere and per-tenant sitemap/robots (already live) |
 
+## Live demo
+
+| Feature | Status | Notes |
+|---|---|---|
+| One-click demo at `/demo` (no signup) | ✅ | Auto-login into "Sunny Meadow Rescue" — a demo-flagged org with rich seeded content: 32 animals (bonded pair, long-stayers, foster glow-ups), a year of adoptions/donations for the charts, applications with a pre-canned AI review, published website, brand tokens, marketing campaigns mid-flight, pre-canned AI insights |
+| Self-healing | ✅ | Seeds itself on first visit; cron resets all demo data every 6 hours so visitors can change anything |
+| Entry points | ✅ | Marketing hero button + login page |
+
 ## Adoption pipeline
 
 | Feature | Status | Notes |

@@ -197,12 +197,16 @@ export default function Home() {
                 Try the free importer
               </Link>
               <a
-                href="#savings"
+                href="/demo"
                 className="rounded-full border-2 border-meadow px-7 py-3.5 font-display font-semibold text-lg text-meadow-deep hover:bg-meadow hover:text-white transition-colors"
               >
-                See how much you'd save
+                🌻 Take the live demo for a spin
               </a>
             </div>
+            <p className="mt-3 text-sm text-charcoal-soft">
+              The demo drops you inside a real rescue — animals, applications, campaigns — no signup.{" "}
+              <a href="#savings" className="font-semibold text-meadow-deep hover:underline">Or see how much you'd save →</a>
+            </p>
           </div>
           <div className="relative" aria-hidden="true">
             <img

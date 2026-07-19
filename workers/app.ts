@@ -40,7 +40,13 @@ export default {
     return requestHandler(request, context);
   },
 
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
+    if (event.cron === "15 */6 * * *") {
+      // keep the demo shelter fresh — visitors can change anything
+      const { resetDemoData } = await import("./lib/demo");
+      ctx.waitUntil(resetDemoData(env, env.APP_ORIGIN));
+      return;
+    }
     const { sendMedicalDigests } = await import("./lib/digest");
     ctx.waitUntil(sendMedicalDigests(env, env.APP_ORIGIN));
     const { autoLongStaySpotlights } = await import("./lib/marketing-auto");
