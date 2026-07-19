@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../../workers/lib/ai-shelter";
 import { Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/marketing";
 import { requireUser } from "../../lib/auth.server";
@@ -27,7 +28,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   )
     .bind(user.org_id)
     .all<{ id: string; name: string }>();
-  return { campaigns: campaigns.results, animals: animals.results, aiReady: Boolean(getAnthropic(env)) };
+  return { campaigns: campaigns.results, animals: animals.results, aiReady: aiAvailable(env) };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {

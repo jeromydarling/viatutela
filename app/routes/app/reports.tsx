@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../../workers/lib/ai-shelter";
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/reports";
 import { requireUser } from "../../lib/auth.server";
@@ -94,7 +95,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 
   return {
     insights,
-    aiReady: Boolean(getAnthropic(env)),
+    aiReady: aiAvailable(env),
     months,
     intakes: series(intakes.results),
     adoptions: series(adoptions.results),

@@ -415,6 +415,162 @@ export function MarketingScreen() {
   );
 }
 
+/* ---------- waitlist alerts ---------- */
+
+export function WaitlistScreen() {
+  return (
+    <BrowserFrame url="happypawsrescue.org/adopt" className="vt-float">
+      <div className="rounded-xl bg-white shadow-soft p-2 text-center">
+        <p className="text-[9px] font-display font-bold">Waiting for someone specific? 💛</p>
+        <div className="mt-1 flex gap-1 justify-center text-[8px]">
+          <span className="rounded-full bg-cream px-2 py-0.5 font-semibold">cat</span>
+          <span className="rounded-full bg-cream px-2 py-0.5 font-semibold">"senior, calm"</span>
+          <span className="rounded-full bg-sunflower px-2 py-0.5 font-bold">Tell me →</span>
+        </div>
+      </div>
+      <div className="mt-2 rounded-xl bg-meadow/10 border-2 border-meadow/30 p-2 text-[8px]">
+        <p className="font-bold">✉️ 3 weeks later…</p>
+        <p className="mt-0.5">"You asked us to tell you — meet <strong>Pearl</strong>. Senior, silk-soft, completely over drama."</p>
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        missed visitors become a warm waiting list
+      </p>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- post-adoption lifecycle ---------- */
+
+export function LifecycleScreen() {
+  return (
+    <BrowserFrame url="(your adopters' inboxes)" className="vt-float">
+      <div className="space-y-1.5 text-[8px]">
+        {[
+          ["Day 3", "How are the first days with Biscuit? 3am zoomies are normal 🐾", "sky"],
+          ["Week 2", "We'd love a photo — happy updates fuel this work", "meadow"],
+          ["Month 6", "Half a year already 💛 (a gentle first give ask)", "sun"],
+          ["1 year", "Happy Gotcha Day, Biscuit! 🎉", "terra"],
+        ].map(([when, text, tone]) => (
+          <div key={when as string} className="rounded-xl bg-white shadow-soft px-2 py-1.5 flex items-center gap-1.5">
+            <Chip tone={tone as string}>{when as string}</Chip>
+            <span className="min-w-0 truncate font-semibold">{text as string}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        scheduled on every adoption — returns down, donors up
+      </p>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- volunteers ---------- */
+
+export function VolunteerScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/volunteers" className="vt-float">
+      <div className="grid grid-cols-2 gap-1.5">
+        <MiniStat n="1,204" label="volunteer hours (12 mo)" />
+        <MiniStat n="23" label="active volunteers" />
+      </div>
+      <div className="mt-2 rounded-xl bg-white shadow-soft p-2 text-[8px]">
+        <div className="flex items-center gap-1.5">
+          <span className="font-display font-bold text-[9px]">Saturday adoption event</span>
+          <Chip tone="meadow">4/4 filled</Chip>
+        </div>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {["Clare", "Anthony", "Maya", "Priya"].map((n) => (
+            <span key={n} className="rounded-full bg-cream px-1.5 py-0.5 font-semibold">{n}</span>
+          ))}
+        </div>
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        the hour log every grant application asks for — kept automatically
+      </p>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- grant writer ---------- */
+
+export function GrantScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/grants" className="vt-float">
+      <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
+        <div className="flex items-center gap-1"><span className="font-display font-bold text-[9px]">Petco Love · $10,000</span><Chip tone="sky">✨ drafted</Chip></div>
+        <p className="mt-1 text-charcoal-soft leading-tight">"## Statement of Need — In the last twelve months our foothills community brought us <strong>212 animals</strong>; we found homes for <strong>196</strong> in a median of <strong>19 days</strong>…"</p>
+      </div>
+      <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+        <MiniStat n="96" label="adoptions cited" />
+        <MiniStat n="1,204" label="vol. hours cited" />
+        <MiniStat n="6" label="sections written" />
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        your real numbers, funder-ready — never invented
+      </p>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- intake vision + vet OCR ---------- */
+
+export function PaperworkScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/animals/new" className="vt-float">
+      <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
+        <div className="flex items-center gap-1.5">
+          <span className="w-8 h-8 rounded-lg bg-cream flex items-center justify-center text-sm">📸</span>
+          <div>
+            <p className="font-bold">3 intake photos + "found on Route 9"</p>
+            <p className="text-charcoal-soft">→ species, markings, age guess, first bio — prefilled</p>
+          </div>
+        </div>
+      </div>
+      <div className="mt-1.5 rounded-xl bg-white shadow-soft p-2 text-[8px]">
+        <div className="flex items-center gap-1.5">
+          <span className="w-8 h-8 rounded-lg bg-cream flex items-center justify-center text-sm">📄</span>
+          <div>
+            <p className="font-bold">Photo of crumpled paper vet records</p>
+            <p className="text-charcoal-soft">→ "2025-11-02 · vaccine · DHPP (Nobivac) · due 2026-11-02"</p>
+          </div>
+        </div>
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        every guess labeled a guess · staff approve before anything saves
+      </p>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- transfer network ---------- */
+
+export function NetworkScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/network" className="vt-float">
+      <div className="space-y-1.5 text-[8px]">
+        <div className="rounded-xl bg-white shadow-soft p-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="rounded-full bg-terracotta/15 text-terracotta-deep px-1.5 py-0.5 font-bold">NEEDS SPACE</span>
+            <span className="font-display font-bold text-[9px]">Larkspur County AC</span>
+            <Chip tone="terra">urgent</Chip>
+          </div>
+          <p className="mt-0.5">3 cats — kitten season hit hard. Can anyone take a litter?</p>
+        </div>
+        <div className="rounded-xl bg-white shadow-soft p-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="rounded-full bg-meadow/20 text-meadow-deep px-1.5 py-0.5 font-bold">HAS SPACE</span>
+            <span className="font-display font-bold text-[9px]">Sunny Meadow Rescue</span>
+          </div>
+          <p className="mt-0.5">Two open foster homes for small dogs. ✉️ Reach out</p>
+        </div>
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        one board, every rescue on Via Tutela — the group text, retired
+      </p>
+    </BrowserFrame>
+  );
+}
+
 /* ---------- 6. reports ---------- */
 
 export function ReportsScreen() {

@@ -78,11 +78,9 @@
 			"tag": "v1",
 			"new_sqlite_classes": ["ImportProgress"]
 		}
-	]
-	/**
-	 * Workers AI — re-enable when the first AI feature lands.
-	 * (The binding proxies to remote in `vite dev`, which requires
-	 * credentials; nothing in v1 uses it yet.)
-	 */
-	// "ai": { "binding": "AI" }
+	],
+	// Workers AI — Llama fallback when the Anthropic API is unavailable.
+	// remoteBindings:false in vite.config keeps local dev booting; local
+	// calls fail fast and the degrade path handles it.
+	"ai": { "binding": "AI" }
 }

@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../../workers/lib/ai-shelter";
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/marketing.campaign";
 import { requireUser } from "../../lib/auth.server";
@@ -67,7 +68,7 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
   )
     .bind(params.campaignId)
     .all<Record<string, unknown>>();
-  return { campaign, assets: assets.results, aiReady: Boolean(getAnthropic(env)) };
+  return { campaign, assets: assets.results, aiReady: aiAvailable(env) };
 }
 
 export async function action({ context, request, params }: Route.ActionArgs) {

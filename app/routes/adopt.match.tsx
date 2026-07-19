@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../workers/lib/ai-shelter";
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/adopt.match";
 import { getEnv } from "../lib/auth.server";
@@ -23,7 +24,7 @@ export async function loader({ context, params }: Route.LoaderArgs) {
   )
     .bind(org.id)
     .first<{ n: number }>();
-  return { org, available: count?.n ?? 0, aiReady: Boolean(getAnthropic(env)) };
+  return { org, available: count?.n ?? 0, aiReady: aiAvailable(env) };
 }
 
 interface MatchView {

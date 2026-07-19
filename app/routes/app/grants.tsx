@@ -1,3 +1,4 @@
+import { aiAvailable } from "../../../workers/lib/ai-shelter";
 import { Form, useNavigation } from "react-router";
 import type { Route } from "./+types/grants";
 import { requireUser } from "../../lib/auth.server";
@@ -18,7 +19,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     .bind(user.org_id)
     .all<Record<string, string>>();
   const stats = await gatherGrantStats(env, user.org_id);
-  return { drafts: drafts.results, stats, aiReady: Boolean(getAnthropic(env)) };
+  return { drafts: drafts.results, stats, aiReady: aiAvailable(env) };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
