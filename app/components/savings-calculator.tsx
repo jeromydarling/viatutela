@@ -1,20 +1,13 @@
 import { useMemo, useState } from "react";
+import { monthlyCostCents, recommendPlan, PLANS } from "../../workers/lib/pricing";
 
 /**
  * Interactive savings calculator.
  * Defaults bake in the mid-size shelter example: ~40 adoptions/month,
  * a stitched stack of per-adoption fees + separate foster & donor tools.
+ * Tier recommendation = cheapest for the volume (Starter $9 + $1/adoption
+ * beats the $39 flat tier until ~30 adoptions/month).
  */
-
-const TIERS = [
-  { name: "Little Nest (Free)", monthly: 0, maxAdoptions: 5 },
-  { name: "Rescue", monthly: 39, maxAdoptions: 25 },
-  { name: "Shelter Pro", monthly: 79, maxAdoptions: Infinity },
-];
-
-function tierFor(adoptionsPerMonth: number) {
-  return TIERS.find((t) => adoptionsPerMonth <= t.maxAdoptions) ?? TIERS[TIERS.length - 1];
-}
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -26,10 +19,14 @@ export function SavingsCalculator() {
 
   const result = useMemo(() => {
     const currentAnnual = adoptions * 12 * perAdoptionFee + otherToolsMonthly * 12;
-    const tier = tierFor(adoptions);
-    const viaTutelaAnnual = tier.monthly * 12;
+    const plan = recommendPlan(adoptions);
+    const viaTutelaAnnual = (monthlyCostCents(plan.key, adoptions) * 12) / 100;
     const savings = Math.max(0, currentAnnual - viaTutelaAnnual);
-    return { currentAnnual, viaTutelaAnnual, savings, tier };
+    const tierName =
+      plan.key === "starter"
+        ? `Starter ($9 + $1 × ${adoptions} adoptions)`
+        : `${plan.label} ($${plan.monthlyCents / 100}/mo flat)`;
+    return { currentAnnual, viaTutelaAnnual, savings, tierName, plan };
   }, [adoptions, perAdoptionFee, otherToolsMonthly]);
 
   return (
@@ -89,7 +86,7 @@ export function SavingsCalculator() {
             </div>
           </div>
           <div className="rounded-2xl bg-cream p-4">
-            <div className="text-sm font-semibold text-charcoal-soft">{result.tier.name}</div>
+            <div className="text-sm font-semibold text-charcoal-soft">{result.tierName}</div>
             <div className="text-2xl font-display font-semibold text-meadow-deep">
               {fmt(result.viaTutelaAnnual)}/yr
             </div>
@@ -101,7 +98,9 @@ export function SavingsCalculator() {
           <div className="text-sm font-semibold">every year</div>
         </div>
         <p className="text-sm text-charcoal-soft">
-          Flat pricing, no per-adoption fees, no cut of your donations. Ever.
+          {result.plan.key === "starter"
+            ? `At your volume, Starter is the cheapest way in — and if you ever pass ~${(PLANS.rescue.monthlyCents - PLANS.starter.monthlyCents) / PLANS.starter.perAdoptionCents} adoptions a month, the flat $39 tier takes over automatically in this math. Never a cut of your donations.`
+            : "At your volume the flat tier wins — unlimited adoptions, one predictable bill, never a cut of your donations."}
         </p>
       </div>
     </div>

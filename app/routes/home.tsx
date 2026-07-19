@@ -185,7 +185,7 @@ const FEATURE_TABS: { key: string; label: string; features: Feature[] }[] = [
 
 
 const COMPARE_ROWS: [string, string, string, string, string, string][] = [
-  ["Pricing", "Flat $0–$79/mo", "$2 / adoption", "“Free”*", "$75–$100/yr modular", "$99–$149/mo"],
+  ["Pricing", "Starter $9/mo + $1/adoption; flat $39–$79 tiers above", "$2 / adoption", "“Free”*", "$75–$100/yr modular", "$99–$149/mo"],
   ["Takes a cut of your fees/donations", "No", "No", "Indirect (insurance/chip)", "No", "No"],
   ["Data strings attached", "None", "None", "Microchip + insurance push", "None", "None"],
   ["One-click full data export", "Yes", "Partial", "Limited", "Partial", "Partial"],
@@ -203,18 +203,20 @@ const COMPARE_ROWS: [string, string, string, string, string, string][] = [
 
 const PRICING = [
   {
-    name: "Little Nest",
-    price: "$0",
-    tagline: "For solo fosters and tiny rescues — free forever, with our whole heart.",
-    features: ["Up to 25 animals", "Free importer", "Adoption pages with share superpowers", "Website builder", "Kennel QR cards", "One-click export"],
-    cta: "Sign up free",
+    name: "Starter",
+    price: "$9",
+    priceNote: "+ $1 per adoption",
+    tagline: "Start for next to nothing. Free to move in, $9 a month plus $1 for every animal you send home.",
+    features: ["Free importer", "Animal management", "Adoption portal", "Basic donor CRM", "Mobile kennel QR", "Up to 2 staff seats"],
+    cta: "Get started",
     highlight: false,
+    footnote: "The migration importer is always free — no account needed to try it.",
   },
   {
     name: "Rescue",
     price: "$39",
     tagline: "For growing rescues who need every hand coordinated.",
-    features: ["Unlimited animals", "Foster + volunteer tools", "Donor CRM + supporter email", "AI matchmaker, triage & bio writer", "Custom domain + auto SSL", "Everything in Little Nest"],
+    features: ["Unlimited animals", "Foster + volunteer tools", "Donor CRM + supporter email", "AI matchmaker, triage & bio writer", "Custom domain + auto SSL", "Everything in Starter"],
     cta: "Sign up free",
     highlight: true,
   },
@@ -334,7 +336,7 @@ export default function Home() {
               </a>
             </div>
             <p className="mt-3 text-sm text-charcoal-soft">
-              No credit card, free forever for small rescues. Migrating?{" "}
+              Free to move in — Starter is $9/mo plus $1 per adoption sent home. Migrating?{" "}
               <Link to="/import" className="font-semibold text-meadow-deep hover:underline">
                 The free importer keeps every relationship →
               </Link>
@@ -499,7 +501,8 @@ export default function Home() {
         </div>
         <p className="mt-3 text-sm text-charcoal-soft">
           *PetPoint is “free” only if the shelter promotes 24PetWatch microchips +
-          ShelterCare insurance to adopters.
+          ShelterCare insurance to adopters. And where Shelterluv charges $2 per adoption
+          forever, Starter's $1 is half that — and disappears entirely on our flat tiers.
         </p>
         <MiniCta text="Life's better in the left column." label="Sign up free" />
       </section>
@@ -511,7 +514,7 @@ export default function Home() {
             Simple, flat, generous.
           </h2>
           <p className="text-center text-charcoal-soft mt-2 text-lg">
-            No per-adoption fees. No cut of donations. No strings on your data.
+            Tiny at the start, flat as you grow. No cut of donations. No strings on your data.
           </p>
           <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {PRICING.map((tier) => (
@@ -528,6 +531,9 @@ export default function Home() {
                   <span className="text-4xl font-display font-bold">{tier.price}</span>
                   {tier.price.startsWith("$") && (
                     <span className="text-charcoal-soft font-semibold">/mo</span>
+                  )}
+                  {"priceNote" in tier && tier.priceNote && (
+                    <span className="block text-sm font-semibold text-charcoal-soft">{tier.priceNote}</span>
                   )}
                 </div>
                 <p className={`text-sm ${tier.highlight ? "text-charcoal" : "text-charcoal-soft"}`}>
@@ -551,6 +557,9 @@ export default function Home() {
                 >
                   {tier.cta}
                 </Link>
+                {"footnote" in tier && tier.footnote && (
+                  <p className="text-xs text-charcoal-soft text-center">{tier.footnote}</p>
+                )}
               </div>
             ))}
           </div>

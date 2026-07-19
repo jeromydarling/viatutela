@@ -8,6 +8,7 @@ import { compactAnimal, reviewApplication, type AppReview } from "../../../worke
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 import { sendSms } from "../../../workers/lib/sms";
+import { recordAdoptionUsage } from "../../../workers/lib/billing";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Via Tutela" }];
@@ -163,6 +164,7 @@ export async function action({ context, request }: Route.ActionArgs) {
     if (app.animal_id) {
       ctx.waitUntil(autoAdoption(env, user.org_id, String(app.animal_id)));
       ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
+      ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
     }
     if (app.phone) {
       ctx.waitUntil(

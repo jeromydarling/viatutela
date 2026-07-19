@@ -103,7 +103,7 @@ export function aiAvailable(env: Env): boolean {
  * defaults, overridable with the AI_DAILY_TOKEN_LIMIT var. A gate, not
  * a meter — it stops runaway cost, especially on public endpoints.
  */
-const DAILY_TOKEN_LIMITS: Record<string, number> = { free: 150_000, rescue: 750_000, pro: 2_000_000 };
+const DAILY_TOKEN_LIMITS: Record<string, number> = { starter: 150_000, free: 150_000, rescue: 750_000, pro: 2_000_000 };
 
 export async function checkAiBudget(env: Env, orgId: string): Promise<{ ok: boolean; error?: string }> {
   try {

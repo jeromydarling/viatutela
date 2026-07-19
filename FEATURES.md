@@ -126,6 +126,16 @@ tokens/day (override with the `AI_DAILY_TOKEN_LIMIT` var); over-budget calls get
 | Vet-record OCR (paper → medical rows) | 🟡 | Photograph paper records → structured, dated medical rows with due dates; reviewed before applying. Needs key |
 | Cross-shelter transfer network (`/app/network`) | ✅ | Every Via Tutela rescue shares one board: need-space / have-space posts with urgency, species, counts; 14-day expiry; the network-effect feature |
 
+## Pricing & billing
+
+| Feature | Status | Notes |
+|---|---|---|
+| Starter tier: $9/mo + $1 per adoption | ✅ | New entry tier (replaces Free); signup creates `plan='starter'`; upper tiers (Rescue $39, Shelter Pro $79, Custom) unchanged; importer stays free & no-signup |
+| Single pricing source of truth (`workers/lib/pricing.ts`) | ✅ | Integer cents; pricing cards, calculator, and billing all read from it |
+| Savings calculator crossover math | ✅ | Recommends cheapest tier by volume — Starter until 30 adoptions/mo (9+30=39), flat tier after |
+| Adoption usage ledger (`billing_usage`) | ✅ | $1/adoption logged on finalization for Starter orgs only; UNIQUE(adoption_id) makes double-billing impossible; demo + flat tiers never bill |
+| Stripe sync ($9 recurring + metered usage) | 🟡 | Ledger is Stripe-ready (`stripe_synced_at` column); wiring lands when the Stripe connector is authorized and webhook slots free up |
+
 ## SMS (Twilio)
 
 | Feature | Status | Notes |
