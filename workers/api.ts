@@ -1,5 +1,5 @@
 /**
- * Via Tutela API — Hono app mounted at /api/* inside the Worker.
+ * Tutela API — Hono app mounted at /api/* inside the Worker.
  */
 
 import { Hono } from "hono";
@@ -403,7 +403,7 @@ api.post("/import/:jobId/claim", async (c) => {
     sendAppEmail(c.env, {
       to: emailNorm,
       subject: "Welcome home — your rescue has a new roof 🏡",
-      heading: `Welcome to Via Tutela, ${org_name.trim()}`,
+      heading: `Welcome to Tutela, ${org_name.trim()}`,
       paragraphs: [
         `Every one of your ${promoted.animals} friend${promoted.animals === 1 ? "" : "s"} made it across safely — records, relationships, bonded pairs and all.`,
         `Your workspace is ready whenever you are. Move in at your own pace; we'll carry any more boxes you find.`,
@@ -507,7 +507,7 @@ api.get("/export.zip", async (c) => {
     files[`${table.name}.csv`] = strToU8(csv);
   }
   files["README.txt"] = strToU8(
-    `Via Tutela full export for ${user.org_name}\n` +
+    `Tutela full export for ${user.org_name}\n` +
       `Exported ${new Date().toISOString()}\n\n` +
       `Every table you own, in plain CSV. This data is yours — no strings attached.\n` +
       `Photo files referenced in animal_photos.csv can be fetched at /api/media/<r2_key>.\n`,

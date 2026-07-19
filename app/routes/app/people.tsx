@@ -4,7 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "People — Via Tutela" }];
+  return [{ title: "People — Tutela" }];
 }
 
 const ROLE_OPTIONS = ["adopter", "foster", "volunteer", "donor", "staff", "vet"];

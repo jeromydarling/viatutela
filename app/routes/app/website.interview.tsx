@@ -6,7 +6,7 @@ import { newId } from "../../../workers/lib/ids";
 import { generateStarterSite, getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "AI site designer — Via Tutela" }];
+  return [{ title: "AI site designer — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

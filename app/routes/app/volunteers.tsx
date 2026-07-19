@@ -4,7 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Volunteers — Via Tutela" }];
+  return [{ title: "Volunteers — Tutela" }];
 }
 
 function hoursBetween(start: string | null, end: string | null): number {

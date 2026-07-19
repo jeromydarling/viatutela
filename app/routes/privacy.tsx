@@ -4,8 +4,8 @@ import { marketingMeta } from "../lib/seo";
 
 export function meta(_: Route.MetaArgs) {
   return marketingMeta({
-    title: "Privacy — Via Tutela",
-    description: "How Via Tutela handles your data, plainly: shelters own everything, we sell nothing.",
+    title: "Privacy — Tutela",
+    description: "How Tutela handles your data, plainly: shelters own everything, we sell nothing.",
     path: "/privacy",
   });
 }
@@ -57,7 +57,7 @@ const SECTIONS: { h: string; ps: string[] }[] = [
   {
     h: "Questions",
     ps: [
-      "Write to privacy@viatutela.app — a human reads it. If we ever make a meaningful change to this policy, we'll email every account before it takes effect.",
+      "Write to privacy@viatutela.com — a human reads it. If we ever make a meaningful change to this policy, we'll email every account before it takes effect.",
     ],
   },
 ];

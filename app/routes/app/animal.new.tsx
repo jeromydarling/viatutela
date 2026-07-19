@@ -9,7 +9,7 @@ import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 import { draftFromPhotos, fileToVisionImage, type IntakeDraft, type VisionImage } from "../../../workers/lib/ai-vision";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Add a friend — Via Tutela" }];
+  return [{ title: "Add a friend — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

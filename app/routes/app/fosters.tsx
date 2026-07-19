@@ -4,7 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Fosters — Via Tutela" }];
+  return [{ title: "Fosters — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

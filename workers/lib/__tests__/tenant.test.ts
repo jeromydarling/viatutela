@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { isPlatformHost } from "../domains";
 import { routeTenantPath } from "../tenant";
 
-const env = { PLATFORM_HOSTS: "viatutela.app" } as unknown as Env;
+const env = { PLATFORM_HOSTS: "viatutela.com" } as unknown as Env;
 
 describe("isPlatformHost", () => {
   it("never lets platform hosts fall into the custom-domain path", () => {
     expect(isPlatformHost("viatutela.jdoe.workers.dev", env)).toBe(true);
     expect(isPlatformHost("localhost", env)).toBe(true);
-    expect(isPlatformHost("viatutela.app", env)).toBe(true);
-    expect(isPlatformHost("www.viatutela.app", env)).toBe(true);
+    expect(isPlatformHost("viatutela.com", env)).toBe(true);
+    expect(isPlatformHost("www.viatutela.com", env)).toBe(true);
   });
   it("treats shelter domains as non-platform", () => {
     expect(isPlatformHost("happypawsrescue.org", env)).toBe(false);

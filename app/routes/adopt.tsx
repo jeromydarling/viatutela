@@ -15,7 +15,7 @@ import { BirdDoodle, CatDoodle, DogDoodle, PawDoodle } from "../components/doodl
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   return [
-    { title: `Adopt from ${data?.org?.name ?? "a rescue"} — Via Tutela` },
+    { title: `Adopt from ${data?.org?.name ?? "a rescue"} — Tutela` },
     { name: "description", content: `Meet the animals waiting for homes at ${data?.org?.name ?? "this rescue"}.` },
   ];
 }
@@ -319,7 +319,7 @@ export default function AdoptPortal({ loaderData, actionData }: Route.ComponentP
       </section>
 
       <footer className="py-8 text-center text-sm text-charcoal-soft">
-        Powered by <Link to="/" className="font-semibold text-meadow-deep hover:underline">Via Tutela</Link> —
+        Powered by <Link to="/" className="font-semibold text-meadow-deep hover:underline">Tutela</Link> —
         peace and all good things to you and your animals.
       </footer>
     </div>

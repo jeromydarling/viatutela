@@ -8,7 +8,7 @@ import { BrandStyle, PreviewBanner, ShelterSiteFooter, ShelterSiteHeader } from 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   if (!data) return [];
   const title = data.page.meta_title || `${data.page.title} — ${data.org.name}`;
-  const description = data.page.meta_description || data.page.subtitle || `${data.org.name} on Via Tutela`;
+  const description = data.page.meta_description || data.page.subtitle || `${data.org.name} on Tutela`;
   const out: Record<string, string>[] = [
     { title },
     { name: "description", content: description },

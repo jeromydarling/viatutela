@@ -8,7 +8,7 @@ import { gatherGrantStats, writeGrantDraft } from "../../../workers/lib/ai-grant
 import { Markdown } from "../../components/markdown";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Grant writer — Via Tutela" }];
+  return [{ title: "Grant writer — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

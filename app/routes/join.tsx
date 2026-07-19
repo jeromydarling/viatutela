@@ -7,7 +7,7 @@ import { hashPassword } from "../../workers/lib/password";
 import { newToken } from "../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Join your team — Via Tutela" }];
+  return [{ title: "Join your team — Tutela" }];
 }
 
 async function findInvite(env: Env, token: string) {

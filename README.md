@@ -1,4 +1,4 @@
-# Via Tutela
+# Tutela
 
 **Every animal deserves a way home.** The all-in-one platform for shelters,
 rescues, and fosters — move in free, keep your data, keep your money.

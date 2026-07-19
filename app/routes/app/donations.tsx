@@ -5,7 +5,7 @@ import { newId } from "../../../workers/lib/ids";
 import { sendAppEmail } from "../../../workers/lib/email";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Donations — Via Tutela" }];
+  return [{ title: "Donations — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
@@ -87,7 +87,7 @@ export async function action({ context, request }: Route.ActionArgs) {
           heading: "Thank you for your generosity",
           paragraphs: [
             `${donorName ?? "Friend"}, your gift of ${amount.toLocaleString("en-US", { style: "currency", currency: "USD" })} to ${user.org_name} has been received with gratitude.`,
-            `It goes straight to the animals — Via Tutela doesn't take a cent.`,
+            `It goes straight to the animals — Tutela doesn't take a cent.`,
             `Keep this note for your records.`,
           ],
         }),

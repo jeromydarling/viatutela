@@ -79,7 +79,7 @@ Section types and their fields (all fields are strings unless noted):
 - events_strip: heading, items: [{date, title, place, text}]
 - newsletter_signup: heading, text`;
 
-  const prompt = `You are designing the complete starter website for an animal shelter on the Via Tutela platform. Voice: warm, plain, generous, joyful — animals are "friends," never inventory. No religious language.
+  const prompt = `You are designing the complete starter website for an animal shelter on the Tutela platform. Voice: warm, plain, generous, joyful — animals are "friends," never inventory. No religious language.
 
 Shelter details from their interview:
 - Name: ${a.shelter_name}

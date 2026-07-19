@@ -9,8 +9,8 @@ import { newToken } from "../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
   return marketingMeta({
-    title: "Sign in — Via Tutela",
-    description: "Sign in to your shelter's Via Tutela workspace — or take the live demo for a spin.",
+    title: "Sign in — Tutela",
+    description: "Sign in to your shelter's Tutela workspace — or take the live demo for a spin.",
     path: "/login",
   });
 }

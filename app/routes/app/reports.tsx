@@ -6,7 +6,7 @@ import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, shelterInsights, type Insights } from "../../../workers/lib/ai-shelter";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Reports — Via Tutela" }];
+  return [{ title: "Reports — Tutela" }];
 }
 
 interface MonthRow {

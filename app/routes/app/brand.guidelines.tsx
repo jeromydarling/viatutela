@@ -4,7 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { FONT_PAIRS, WORDMARK_FONTS, parseBrandJson, wordmarkStyle, wordmarkText, type Brand } from "../../../workers/lib/brand";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Brand guidelines — Via Tutela" }];
+  return [{ title: "Brand guidelines — Tutela" }];
 }
 
 const STUDIO_FONTS =

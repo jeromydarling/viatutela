@@ -55,7 +55,7 @@ function renderHtml(mail: AppEmail): string {
 <html><body style="margin:0;padding:0;background:#fff9f0;font-family:'Nunito',Verdana,sans-serif;color:#2e2a26;">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
     <div style="background:#ffffff;border-radius:28px;padding:32px;box-shadow:0 6px 24px rgba(46,42,38,0.12);">
-      <div style="font-weight:800;font-size:18px;color:#2e7d54;margin-bottom:18px;">Via Tutela</div>
+      <div style="font-weight:800;font-size:18px;color:#2e7d54;margin-bottom:18px;">Tutela</div>
       <h1 style="font-size:24px;margin:0 0 16px 0;">${esc(mail.heading)}</h1>
       ${body}
       ${cta}
@@ -70,7 +70,7 @@ function renderHtml(mail: AppEmail): string {
 function renderText(mail: AppEmail): string {
   const lines = [mail.heading, "", ...mail.paragraphs];
   if (mail.cta) lines.push("", `${mail.cta.label}: ${mail.cta.url}`);
-  lines.push("", "— Via Tutela", "Peace and all good things to you and your animals.");
+  lines.push("", "— Tutela", "Peace and all good things to you and your animals.");
   return lines.join("\n");
 }
 

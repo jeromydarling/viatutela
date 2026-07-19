@@ -9,7 +9,7 @@ import { contentIdeas, OBJECTIVES, type ContentIdea } from "../../../workers/lib
 import { daysBetween } from "../../../workers/lib/ai-shelter";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Marketing Studio — Via Tutela" }];
+  return [{ title: "Marketing Studio — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

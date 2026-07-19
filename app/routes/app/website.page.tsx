@@ -15,7 +15,7 @@ import {
 import { draftMeta, rewriteText, logAiWrite } from "../../../workers/lib/ai";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
-  return [{ title: `Edit ${data?.page?.title ?? "page"} — Via Tutela` }];
+  return [{ title: `Edit ${data?.page?.title ?? "page"} — Tutela` }];
 }
 
 export async function loader({ context, request, params }: Route.LoaderArgs) {

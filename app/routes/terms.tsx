@@ -4,7 +4,7 @@ import { marketingMeta } from "../lib/seo";
 
 export function meta(_: Route.MetaArgs) {
   return marketingMeta({
-    title: "Terms of Service — Via Tutela",
+    title: "Terms of Service — Tutela",
     description: "Fair, readable terms: your data is yours, pricing is plain, and you can leave anytime.",
     path: "/terms",
   });
@@ -14,7 +14,7 @@ const SECTIONS: { h: string; ps: string[] }[] = [
   {
     h: "The agreement",
     ps: [
-      "By creating an account you agree to these terms on behalf of your organization. Via Tutela is a platform for animal shelters, rescues, and foster networks to manage animals, adoptions, supporters, and their public presence.",
+      "By creating an account you agree to these terms on behalf of your organization. Tutela is a platform for animal shelters, rescues, and foster networks to manage animals, adoptions, supporters, and their public presence.",
     ],
   },
   {
@@ -55,7 +55,7 @@ const SECTIONS: { h: string; ps: string[] }[] = [
   },
   {
     h: "Questions",
-    ps: ["Write to hello@viatutela.app. These terms were last updated July 2026; meaningful changes get emailed to every account 30 days before they apply."],
+    ps: ["Write to hello@viatutela.com. These terms were last updated July 2026; meaningful changes get emailed to every account 30 days before they apply."],
   },
 ];
 

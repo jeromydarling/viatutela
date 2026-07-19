@@ -7,7 +7,7 @@ import { BirdDoodle, HeartPawDoodle } from "../components/doodles";
 
 export function meta(_: Route.MetaArgs) {
   return marketingMeta({
-    title: "Free Migration Importer — Via Tutela",
+    title: "Free Migration Importer — Tutela",
     description:
       "Upload your shelter's messy CSV or Excel exports and get a clean, relationship-preserving import. Free, no account needed.",
     path: "/import",
@@ -50,7 +50,7 @@ export default function ImportLanding() {
       <main className="mx-auto max-w-4xl px-4 sm:px-6 py-16">
         <div className="text-center vt-fade-up">
           <h1 className="text-4xl sm:text-5xl font-display font-semibold">
-            Move in free. <span className="text-meadow-deep">We'll carry the boxes.</span>
+            The importer is free. <span className="text-meadow-deep">We'll carry the boxes.</span>
           </h1>
           <p className="mt-4 text-lg text-charcoal-soft max-w-2xl mx-auto">
             Upload the CSV or Excel exports from your current system — animals,

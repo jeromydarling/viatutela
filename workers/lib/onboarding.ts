@@ -62,7 +62,7 @@ function onboardingCopy(
   switch (kind) {
     case "day1":
       return {
-        subject: `Your first 10 minutes with Via Tutela 🌻`,
+        subject: `Your first 10 minutes with Tutela 🌻`,
         heading: `Welcome, ${name} — the nest is ready`,
         paragraphs: [
           `${orgName} already has a website drafted (really — six pages, waiting in Website), and a short to-do list on your dashboard walks you through the rest.`,
@@ -84,7 +84,7 @@ function onboardingCopy(
     default:
       return {
         subject: `One week in — time to make it official 💛`,
-        heading: `A week of ${orgName} on Via Tutela`,
+        heading: `A week of ${orgName} on Tutela`,
         paragraphs: [
           `When you're ready to look established: connect your own domain (Website → Domain), pick a site theme in the Brand Studio, and let the Marketing Studio draft your first launch posts — it writes in your voice and never posts without you.`,
           `And when grant season comes, the Grant writer turns your real numbers into a funder-ready draft. Your numbers are already accumulating.`,
@@ -115,7 +115,7 @@ export async function processOnboardingEmails(env: Env, appOrigin: string): Prom
           to: email,
           subject: copy.subject,
           heading: copy.heading,
-          paragraphs: [...copy.paragraphs, `— Via Tutela · unsubscribe from these tips: ${unsub}`],
+          paragraphs: [...copy.paragraphs, `— Tutela · unsubscribe from these tips: ${unsub}`],
           cta: copy.cta,
           headers: { "List-Unsubscribe": `<${unsub}>` },
         });
