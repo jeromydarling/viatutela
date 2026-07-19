@@ -222,6 +222,199 @@ export function DonationScreen() {
   );
 }
 
+/* ---------- adoption page share superpowers ---------- */
+
+export function ShareScreen() {
+  return (
+    <BrowserFrame url="happypawsrescue.org/adopt/biscuit" className="vt-float">
+      <div className="flex gap-2">
+        <div className="w-14 h-14 rounded-xl bg-white shadow-soft flex items-center justify-center shrink-0 relative">
+          <DogDoodle className="w-10 h-10 text-charcoal" />
+          <span className="absolute -bottom-1 -right-1 rounded-full bg-white shadow text-[7px] px-1">🎬</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-display font-bold leading-tight">Biscuit</p>
+          <p className="text-[8px] text-charcoal-soft">terrier mix · 4 yrs · loves squeaky toys</p>
+          <div className="mt-0.5 flex flex-wrap gap-1">
+            <Chip tone="terra">♥ bonded with Waffle</Chip>
+            <Chip>video plays inline</Chip>
+          </div>
+        </div>
+      </div>
+      <div className="mt-2 rounded-xl bg-sunflower-soft/70 p-1.5">
+        <p className="text-[8px] font-bold">Sharing is a superpower 💛</p>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {["↗ Share", "📘", "✖️", "💬", "📌", "🏘️", "✉️", "📱", "🔗", "▦ QR"].map((s) => (
+            <span key={s} className="rounded-full bg-white shadow-soft px-1.5 py-0.5 text-[8px] font-bold">{s}</span>
+          ))}
+        </div>
+      </div>
+      <div className="mt-1.5 flex gap-1">
+        <span className="flex-1 rounded-full bg-white shadow-soft px-1.5 py-1 text-[8px] font-bold text-center">🖨️ Print flyer</span>
+        <span className="flex-1 rounded-full bg-white shadow-soft px-1.5 py-1 text-[8px] font-bold text-center">📦 Share kit</span>
+        <span className="flex-1 rounded-full bg-white shadow-soft px-1.5 py-1 text-[8px] font-bold text-center">{"</>"} Embed</span>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- website builder / AI site designer ---------- */
+
+export function WebsiteScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/website" className="vt-float">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-display font-semibold">Your website</p>
+        <Chip tone="sky">✨ AI drafted 6 pages</Chip>
+      </div>
+      <div className="mt-1.5 space-y-1">
+        {[
+          ["Home", "hero · adoptable grid · newsletter", "meadow", "live"],
+          ["About", "your story, written from your interview", "meadow", "live"],
+          ["Donate", "cta band · faq", "sun", "draft"],
+        ].map(([t, s, tone, st]) => (
+          <div key={t} className="rounded-xl bg-white shadow-soft px-2 py-1 flex items-center gap-1.5 text-[8px]">
+            <span className="font-display font-bold text-[9px]">{t}</span>
+            <span className="text-charcoal-soft truncate">{s}</span>
+            <span className="ml-auto"><Chip tone={tone}>{st}</Chip></span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 rounded-xl bg-white shadow-soft px-2 py-1.5 flex items-center gap-1.5 text-[8px] font-semibold">
+        <span>🌐</span>
+        <span>happypawsrescue.org</span>
+        <span className="ml-auto"><Chip tone="meadow">SSL active</Chip></span>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- AI matchmaker quiz ---------- */
+
+export function MatchScreen() {
+  return (
+    <BrowserFrame url="happypawsrescue.org/adopt/match" className="vt-float">
+      <p className="text-[10px] font-display font-semibold text-center">Your matches 💛</p>
+      <div className="mt-1.5 space-y-1.5">
+        {[
+          ["Mochi", CatDoodle, "92% match", "quiet apartment approved — Mochi naps professionally"],
+          ["Clover", PawDoodle, "84% match", "gentle with kids, happy with your weekend hikes"],
+        ].map(([name, D, score, why]) => {
+          const Doodle = D as typeof CatDoodle;
+          return (
+            <div key={name as string} className="rounded-xl bg-white shadow-soft p-1.5 flex gap-1.5 items-center">
+              <Doodle className="w-8 h-8 shrink-0 text-terracotta-deep" />
+              <div className="min-w-0">
+                <p className="text-[9px] font-display font-bold flex items-center gap-1">
+                  {name as string} <Chip tone="meadow">{score as string}</Chip>
+                </p>
+                <p className="text-[7.5px] text-charcoal-soft leading-tight">{why as string}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        6 questions → their real available animals, ranked
+      </p>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- AI application triage ---------- */
+
+export function TriageScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/applications" className="vt-float">
+      <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
+        <div className="flex items-center gap-1.5">
+          <span className="font-display font-bold text-[9px]">Frances B.</span>
+          <span className="text-charcoal-soft">wants to meet Mochi</span>
+        </div>
+        <div className="mt-1 flex items-center gap-1">
+          <Chip tone="meadow">fit 86/100</Chip>
+          <Chip tone="sky">✨ AI review</Chip>
+        </div>
+        <div className="mt-1 grid grid-cols-2 gap-1 text-[7.5px] font-semibold">
+          <div className="text-meadow-deep">✓ vet reference given</div>
+          <div className="text-meadow-deep">✓ works from home</div>
+          <div className="text-terracotta-deep">⚑ landlord approval not mentioned</div>
+          <div className="text-charcoal-soft">✉️ draft reply ready</div>
+        </div>
+      </div>
+      <div className="mt-1.5 rounded-xl bg-white shadow-soft px-2 py-1.5 text-[8px] font-semibold flex items-center gap-1">
+        <span>🐾</span> Possibly better fit: <span className="text-sky-deep font-bold">Pearl</span>
+        <span className="text-charcoal-soft">— calmer, litter-trained</span>
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        AI ranks and flags — your people always decide
+      </p>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- brand studio ---------- */
+
+export function BrandScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/brand" className="vt-float">
+      <p className="text-[10px] font-display font-semibold">Brand Studio</p>
+      <div className="mt-1.5 flex gap-1.5">
+        {["#2e7d54", "#f6a445", "#2e2a26", "#fff6ea"].map((c) => (
+          <div key={c} className="flex-1 rounded-lg shadow-soft overflow-hidden">
+            <div className="h-6" style={{ background: c }} />
+            <div className="bg-white text-center text-[6.5px] font-bold py-0.5">{c}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 rounded-xl bg-white shadow-soft p-2 text-center">
+        <p className="font-display font-bold text-sm" style={{ color: "#2e7d54", letterSpacing: "0.04em" }}>
+          Happy Paws Rescue
+        </p>
+        <p className="text-[7px] text-charcoal-soft italic">every friend deserves a sunny landing</p>
+      </div>
+      <div className="mt-1.5 flex gap-1 text-[8px] font-bold">
+        <span className="flex-1 rounded-full bg-sunflower-soft px-1.5 py-1 text-center">✨ 3 answers → identity</span>
+        <span className="flex-1 rounded-full bg-sunflower-soft px-1.5 py-1 text-center">📦 social kit</span>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+/* ---------- marketing studio ---------- */
+
+export function MarketingScreen() {
+  return (
+    <BrowserFrame url="viatutela.app/app/marketing" className="vt-float">
+      <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
+        <div className="flex items-center gap-1">
+          <span className="font-display font-bold text-[9px]">Meet Trailmix!</span>
+          <Chip tone="sky">auto-drafted</Chip>
+        </div>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {["📘 Facebook", "📸 Instagram", "🎞️ Story", "📰 Press", "✉️ Email", "🔎 Ad Grants"].map((c) => (
+            <span key={c} className="rounded-full bg-cream px-1.5 py-0.5 font-bold">{c}</span>
+          ))}
+        </div>
+      </div>
+      <div className="mt-1.5 rounded-xl bg-white shadow-soft p-2">
+        <p className="text-[8px] font-bold">July calendar</p>
+        <div className="mt-1 grid grid-cols-7 gap-0.5">
+          {Array.from({ length: 21 }, (_, i) => (
+            <span
+              key={i}
+              className={`h-3 rounded-sm ${[2, 5, 9, 12, 16, 19].includes(i) ? "bg-meadow/70" : "bg-cream"}`}
+            />
+          ))}
+        </div>
+      </div>
+      <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
+        drafts itself on adoptions & new arrivals — you press post
+      </p>
+    </BrowserFrame>
+  );
+}
+
 /* ---------- 6. reports ---------- */
 
 export function ReportsScreen() {
