@@ -276,8 +276,8 @@ export default function Website({ loaderData, actionData }: Route.ComponentProps
             <input type="hidden" name="intent" value="save-nav" />
             {navRows.map((l, i) => (
               <div key={i} className="flex gap-2">
-                <input name={`nav.${i}.label`} defaultValue={l.label} placeholder="Label" className={`${inputCls} w-32`} />
-                <input name={`nav.${i}.href`} defaultValue={l.href} placeholder={`/s/${slug}/about`} className={`${inputCls} flex-1`} />
+                <input name={`nav.${i}.label`} defaultValue={l.label} placeholder="Label" className={`${inputCls} w-24 sm:w-32`} />
+                <input name={`nav.${i}.href`} defaultValue={l.href} placeholder={`/s/${slug}/about`} className={`${inputCls} flex-1 min-w-0`} />
               </div>
             ))}
             <button className="rounded-full bg-meadow text-white px-5 py-2 text-sm font-semibold">Save navigation</button>

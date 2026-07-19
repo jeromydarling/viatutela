@@ -143,7 +143,7 @@ const PRICING = [
     price: "$0",
     tagline: "For solo fosters and tiny rescues — free forever, with our whole heart.",
     features: ["Up to 25 animals", "Free importer", "Adoption pages with share superpowers", "Website builder", "Kennel QR cards", "One-click export"],
-    cta: "Start free",
+    cta: "Sign up free",
     highlight: false,
   },
   {
@@ -151,7 +151,7 @@ const PRICING = [
     price: "$39",
     tagline: "For growing rescues who need every hand coordinated.",
     features: ["Unlimited animals", "Foster + volunteer tools", "Donor CRM + supporter email", "AI matchmaker, triage & bio writer", "Custom domain + auto SSL", "Everything in Little Nest"],
-    cta: "Move in free",
+    cta: "Sign up free",
     highlight: true,
   },
   {
@@ -159,7 +159,7 @@ const PRICING = [
     price: "$79",
     tagline: "For shelters with a lobby, a van, and a waiting list.",
     features: ["Multi-location", "Brand + Marketing studios", "AI site designer & insights", "Petfinder sync + fundraising", "Reports & analytics", "Everything in Rescue"],
-    cta: "Move in free",
+    cta: "Sign up free",
     highlight: false,
   },
   {
@@ -171,6 +171,20 @@ const PRICING = [
     highlight: false,
   },
 ];
+
+function MiniCta({ text, label = "Sign up free", to = "/signup" }: { text: string; label?: string; to?: string }) {
+  return (
+    <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
+      <span className="font-display font-semibold text-lg">{text}</span>
+      <Link
+        to={to}
+        className="rounded-full bg-sunflower px-5 py-2.5 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow whitespace-nowrap"
+      >
+        {label}
+      </Link>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -191,10 +205,10 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
-                to="/import"
+                to="/signup"
                 className="rounded-full bg-sunflower px-7 py-3.5 font-display font-semibold text-lg text-charcoal shadow-soft hover:shadow-lift transition-shadow"
               >
-                Try the free importer
+                Sign up free
               </Link>
               <a
                 href="/demo"
@@ -204,8 +218,10 @@ export default function Home() {
               </a>
             </div>
             <p className="mt-3 text-sm text-charcoal-soft">
-              The demo drops you inside a real rescue — animals, applications, campaigns — no signup.{" "}
-              <a href="#savings" className="font-semibold text-meadow-deep hover:underline">Or see how much you'd save →</a>
+              No credit card, free forever for small rescues. Migrating?{" "}
+              <Link to="/import" className="font-semibold text-meadow-deep hover:underline">
+                The free importer keeps every relationship →
+              </Link>
             </p>
           </div>
           <div className="relative" aria-hidden="true">
@@ -228,7 +244,7 @@ export default function Home() {
       </section>
 
       {/* ---------- Spotlight: the adoption page ---------- */}
-      <section className="bg-meadow py-16 overflow-hidden">
+      <section id="spotlight" className="bg-meadow py-16 overflow-hidden scroll-mt-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 grid md:grid-cols-2 gap-10 items-center">
           <div className="max-w-sm w-full mx-auto md:order-2 md:-rotate-1">
             <ShareScreen />
@@ -259,6 +275,20 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to="/signup"
+                className="rounded-full bg-sunflower px-6 py-3 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"
+              >
+                Give every animal this page — sign up free
+              </Link>
+              <Link
+                to="/adopt/sunny-meadow-demo"
+                className="rounded-full border-2 border-white/70 px-6 py-3 font-display font-semibold text-white hover:bg-white hover:text-meadow-deep transition-colors"
+              >
+                See a live one →
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -282,6 +312,7 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <MiniCta text="The relief part is free to try." />
       </section>
 
       {/* ---------- Features with mini screenshots ---------- */}
@@ -322,6 +353,7 @@ export default function Home() {
               );
             })}
           </div>
+          <MiniCta text="Every window you just peeked into is included." />
         </div>
       </section>
 
@@ -339,6 +371,7 @@ export default function Home() {
           <div className="mt-10">
             <SavingsCalculator />
           </div>
+          <MiniCta text="Keep the two grand — the animals have plans for it." />
         </div>
       </section>
 
@@ -380,6 +413,7 @@ export default function Home() {
           *PetPoint is “free” only if the shelter promotes 24PetWatch microchips +
           ShelterCare insurance to adopters.
         </p>
+        <MiniCta text="Life's better in the left column." label="Sign up free" />
       </section>
 
       {/* ---------- Pricing ---------- */}
@@ -420,7 +454,7 @@ export default function Home() {
                   ))}
                 </ul>
                 <Link
-                  to="/import"
+                  to={tier.price.startsWith("$") ? "/signup" : "/import"}
                   className={`text-center rounded-full px-4 py-2.5 font-display font-semibold transition-shadow ${
                     tier.highlight
                       ? "bg-charcoal text-cream hover:shadow-lift"
@@ -474,15 +508,24 @@ export default function Home() {
             Move in free. We'll carry the boxes.
           </h2>
           <p className="mt-4 text-lg text-white/90">
-            Bring every animal, every adopter, every bonded pair — our importer
-            keeps the relationships intact. No account needed to try it.
+            Two minutes to a working shelter platform — and if you're coming from
+            another system, the importer brings every animal, adopter, and bonded
+            pair along with the relationships intact.
           </p>
-          <Link
-            to="/import"
-            className="inline-block mt-8 rounded-full bg-sunflower px-8 py-4 font-display font-semibold text-lg text-charcoal shadow-soft hover:shadow-lift transition-shadow"
-          >
-            Start your free import
-          </Link>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Link
+              to="/signup"
+              className="rounded-full bg-sunflower px-8 py-4 font-display font-semibold text-lg text-charcoal shadow-soft hover:shadow-lift transition-shadow"
+            >
+              Sign up free
+            </Link>
+            <Link
+              to="/import"
+              className="rounded-full border-2 border-white/70 px-8 py-4 font-display font-semibold text-lg text-white hover:bg-white hover:text-meadow-deep transition-colors"
+            >
+              Start with an import
+            </Link>
+          </div>
         </div>
       </section>
 

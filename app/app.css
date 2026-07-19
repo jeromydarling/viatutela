@@ -64,3 +64,10 @@ h1, h2, h3, .font-display {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Mobile safety: file inputs have huge intrinsic widths and never shrink
+   on their own — without this they silently force horizontal page scroll. */
+input[type="file"] {
+  max-width: 100%;
+  min-width: 0;
+}

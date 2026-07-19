@@ -262,7 +262,7 @@ export default function BrandStudio({ loaderData, actionData }: Route.ComponentP
             <p className="text-xs text-charcoal-soft mt-1">No logo file? Skip this — the typeset wordmark looks great everywhere and never breaks in emails.</p>
             <Form method="post" encType="multipart/form-data" className="mt-3 flex gap-2 items-center">
               <input type="hidden" name="intent" value="upload-logo" />
-              <input type="file" name="logo" accept="image/*" required className="text-sm flex-1" />
+              <input type="file" name="logo" accept="image/*" required className="text-sm flex-1 w-0" />
               <button disabled={busy} className="rounded-full bg-sunflower px-4 py-2 text-sm font-semibold shadow-soft disabled:opacity-50">Upload</button>
             </Form>
             {brand.logo.imageUrl && (

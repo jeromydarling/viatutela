@@ -187,13 +187,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
         <section className="rounded-blob bg-white shadow-soft p-6">
           <h2 className="font-display font-semibold text-xl">To-do</h2>
-          <Form method="post" className="mt-3 flex gap-2">
+          <Form method="post" className="mt-3 flex flex-wrap gap-2">
             <input type="hidden" name="intent" value="add-task" />
             <input
               name="title"
               placeholder="Add something to remember…"
               required
-              className="flex-1 rounded-xl border-2 border-cream bg-cream px-3 py-2 text-sm focus:border-meadow outline-none"
+              className="flex-1 min-w-40 rounded-xl border-2 border-cream bg-cream px-3 py-2 text-sm focus:border-meadow outline-none"
             />
             <input
               name="due_date"
