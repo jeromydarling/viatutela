@@ -3,6 +3,8 @@ import type { Route } from "./+types/animal.detail";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 import { AnimalFields } from "./animal.new";
+import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
+import { compactAnimal, summarizeNotes, writeBio, type BioPack, type HandoffPack } from "../../../workers/lib/ai-shelter";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   return [{ title: `${data?.animal?.name ?? "Friend"} — Via Tutela` }];
@@ -49,6 +51,7 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
     locations: locations.results,
     bonded: bonded.results,
     orgSlug: user.slug,
+    aiReady: Boolean(getAnthropic(env)),
   };
 }
 
@@ -183,6 +186,53 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     return { ok: "Welcome home! Adoption recorded." };
   }
 
+  if (intent === "ai-bio") {
+    const full = await env.DB.prepare(`SELECT * FROM animals WHERE id = ?`).bind(animal.id).first<Record<string, unknown>>();
+    const org = await env.DB.prepare(`SELECT name FROM orgs WHERE id = ?`).bind(user.org_id).first<{ name: string }>();
+    const med = await env.DB.prepare(
+      `SELECT type, description FROM medical_records WHERE animal_id = ? ORDER BY date DESC LIMIT 10`,
+    ).bind(animal.id).all<{ type: string | null; description: string | null }>();
+    const medicalNote = med.results.length
+      ? med.results.map((m) => [m.type, m.description].filter(Boolean).join(": ")).join("; ").slice(0, 600)
+      : null;
+    const res = await writeBio(env, {
+      animal: compactAnimal(full ?? {}),
+      facts: String(f.get("facts") ?? ""),
+      orgName: org?.name ?? "the rescue",
+      medicalNote,
+    });
+    if (res.error || !res.pack) return { error: res.error ?? "The bio writer came back empty." };
+    await logAiWrite(env, user.org_id, user.user_id, "bio_pack", `animal ${animal.id}`);
+    return { ok: "Fresh copy below — use what you like.", bioPack: res.pack };
+  }
+
+  if (intent === "ai-bio-apply") {
+    const bio = String(f.get("bio") ?? "").trim();
+    if (!bio) return { error: "Nothing to apply." };
+    await env.DB.prepare(`UPDATE animals SET description = ? WHERE id = ? AND org_id = ?`)
+      .bind(bio.slice(0, 4000), animal.id, user.org_id)
+      .run();
+    return { ok: "Bio saved to the profile." };
+  }
+
+  if (intent === "ai-summary") {
+    const full = await env.DB.prepare(`SELECT * FROM animals WHERE id = ?`).bind(animal.id).first<Record<string, unknown>>();
+    const med = await env.DB.prepare(
+      `SELECT date, type, description, vet, due_date FROM medical_records WHERE animal_id = ? ORDER BY date DESC LIMIT 60`,
+    ).bind(animal.id).all<{ date: string | null; type: string | null; description: string | null; vet: string | null; due_date: string | null }>();
+    const fosterRows = await env.DB.prepare(
+      `SELECT notes FROM foster_assignments WHERE animal_id = ? AND notes IS NOT NULL AND notes != '' ORDER BY created_at DESC LIMIT 20`,
+    ).bind(animal.id).all<{ notes: string }>();
+    const res = await summarizeNotes(env, {
+      animal: compactAnimal(full ?? {}),
+      medical: med.results,
+      fosterNotes: fosterRows.results.map((r) => r.notes),
+    });
+    if (res.error || !res.pack) return { error: res.error ?? "The summarizer came back empty." };
+    await logAiWrite(env, user.org_id, user.user_id, "handoff_summary", `animal ${animal.id}`);
+    return { ok: "Handoff summaries ready below.", handoff: res.pack };
+  }
+
   if (intent === "delete-animal") {
     await env.DB.batch([
       env.DB.prepare(`DELETE FROM medical_records WHERE animal_id = ? AND org_id = ?`).bind(animal.id, user.org_id),
@@ -203,9 +253,10 @@ const inputCls =
   "rounded-xl border-2 border-cream bg-cream px-3 py-2 text-sm focus:border-meadow outline-none";
 
 export default function AnimalDetail({ loaderData, actionData }: Route.ComponentProps) {
-  const { animal, photos, medical, adoptions, fosters, contacts, locations, bonded, orgSlug } = loaderData;
+  const { animal, photos, medical, adoptions, fosters, contacts, locations, bonded, orgSlug, aiReady } = loaderData;
   const nav = useNavigation();
   const activeFoster = fosters.find((fa) => fa.active);
+  const ai = actionData as { bioPack?: BioPack; handoff?: HandoffPack } | undefined;
 
   return (
     <div className="space-y-6">
@@ -434,6 +485,88 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </section>
+
+      {/* AI helpers */}
+      <section className="rounded-blob bg-white shadow-soft p-6">
+        <h2 className="font-display font-semibold text-xl">✨ AI helpers</h2>
+        {!aiReady ? (
+          <p className="mt-3 text-sm text-charcoal-soft">
+            The AI helpers need an Anthropic API key on the Worker — once it's set, this section writes bios,
+            Petfinder blurbs, social posts, and adopter/vet handoff summaries from {String(animal.name)}'s real records.
+          </p>
+        ) : (
+          <div className="mt-4 grid lg:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-display font-semibold">Write the adoption bio</h3>
+              <p className="text-xs text-charcoal-soft mt-0.5">
+                A couple of quick facts in, a bio + Petfinder blurb + social post out. Nothing is saved until you apply it.
+              </p>
+              <Form method="post" className="mt-2 space-y-2">
+                <input type="hidden" name="intent" value="ai-bio" />
+                <textarea
+                  name="facts"
+                  rows={3}
+                  maxLength={1500}
+                  placeholder={`e.g. loves squeaky toys, sits for treats, shy for the first hour, great on leash`}
+                  className={`${inputCls} w-full`}
+                />
+                <button disabled={nav.state !== "idle"} className="rounded-full bg-sky text-white px-5 py-2 text-sm font-display font-semibold shadow-soft disabled:opacity-50">
+                  {nav.state !== "idle" ? "Writing…" : "Write bio & blurbs"}
+                </button>
+              </Form>
+              {ai?.bioPack && (
+                <div className="mt-3 space-y-3 text-sm">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Adoption bio</span>
+                      <Form method="post">
+                        <input type="hidden" name="intent" value="ai-bio-apply" />
+                        <input type="hidden" name="bio" value={ai.bioPack.bio} />
+                        <button className="rounded-full bg-meadow text-white px-3 py-1 text-xs font-semibold">
+                          Use as profile bio
+                        </button>
+                      </Form>
+                    </div>
+                    <textarea readOnly defaultValue={ai.bioPack.bio} rows={6} className={`${inputCls} w-full mt-1`} onFocus={(e) => e.currentTarget.select()} />
+                  </div>
+                  <div>
+                    <span className="font-semibold">Petfinder blurb</span>
+                    <textarea readOnly defaultValue={ai.bioPack.petfinder_blurb} rows={3} className={`${inputCls} w-full mt-1`} onFocus={(e) => e.currentTarget.select()} />
+                  </div>
+                  <div>
+                    <span className="font-semibold">Social post</span>
+                    <textarea readOnly defaultValue={ai.bioPack.social_post} rows={2} className={`${inputCls} w-full mt-1`} onFocus={(e) => e.currentTarget.select()} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-display font-semibold">Handoff summaries</h3>
+              <p className="text-xs text-charcoal-soft mt-0.5">
+                Turns the medical timeline and foster notes into a warm adopter summary and a clinical vet brief.
+              </p>
+              <Form method="post" className="mt-2">
+                <input type="hidden" name="intent" value="ai-summary" />
+                <button disabled={nav.state !== "idle"} className="rounded-full bg-sky text-white px-5 py-2 text-sm font-display font-semibold shadow-soft disabled:opacity-50">
+                  {nav.state !== "idle" ? "Summarizing…" : "Summarize for adopter & vet"}
+                </button>
+              </Form>
+              {ai?.handoff && (
+                <div className="mt-3 space-y-3 text-sm">
+                  <div>
+                    <span className="font-semibold">For the new family</span>
+                    <textarea readOnly defaultValue={ai.handoff.adopter_summary} rows={6} className={`${inputCls} w-full mt-1`} onFocus={(e) => e.currentTarget.select()} />
+                  </div>
+                  <div>
+                    <span className="font-semibold">For their vet</span>
+                    <textarea readOnly defaultValue={ai.handoff.vet_brief} rows={8} className={`${inputCls} w-full mt-1`} onFocus={(e) => e.currentTarget.select()} />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </section>

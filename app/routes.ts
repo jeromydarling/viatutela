@@ -9,6 +9,7 @@ export default [
 
   // public adoption portal + QR quick lookup
   route("adopt/:slug", "routes/adopt.tsx"),
+  route("adopt/:slug/match", "routes/adopt.match.tsx"),
   route("adopt/:slug/:animalId", "routes/adopt.animal.tsx"),
   route("a/:animalId", "routes/quick.tsx"),
 

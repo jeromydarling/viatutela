@@ -3,6 +3,8 @@ import type { Route } from "./+types/applications";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 import { sendAppEmail } from "../../../workers/lib/email";
+import { logAiWrite } from "../../../workers/lib/ai";
+import { compactAnimal, reviewApplication, type AppReview } from "../../../workers/lib/ai-shelter";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Via Tutela" }];
@@ -54,6 +56,45 @@ export async function action({ context, request }: Route.ActionArgs) {
         .bind(app.animal_id)
         .first<{ name: string }>())?.name ?? "our friend"
     : "our friend";
+
+  if (intent === "ai-review") {
+    const animalRow = app.animal_id
+      ? await env.DB.prepare(`SELECT * FROM animals WHERE id = ? AND org_id = ?`)
+          .bind(app.animal_id, user.org_id)
+          .first<Record<string, unknown>>()
+      : null;
+    const othersRows = await env.DB.prepare(
+      `SELECT * FROM animals WHERE org_id = ? AND is_public = 1 AND status IN ('available','in foster')
+       AND id != COALESCE(?, '') ORDER BY intake_date LIMIT 30`,
+    )
+      .bind(user.org_id, app.animal_id ?? null)
+      .all<Record<string, unknown>>();
+    const prior = await env.DB.prepare(
+      `SELECT COUNT(*) n FROM adoptions ad JOIN contacts c ON c.id = ad.contact_id
+       WHERE ad.org_id = ? AND c.email = ?`,
+    )
+      .bind(user.org_id, app.email)
+      .first<{ n: number }>();
+
+    const res = await reviewApplication(env, {
+      application: {
+        name: String(app.name),
+        email: String(app.email),
+        phone: app.phone ? String(app.phone) : null,
+        home_type: app.home_type ? String(app.home_type) : null,
+        message: app.message ? String(app.message) : null,
+      },
+      animal: animalRow ? compactAnimal(animalRow) : null,
+      others: othersRows.results.map((r) => compactAnimal(r)),
+      priorAdoptions: prior?.n ?? 0,
+    });
+    if (res.error || !res.review) return { error: res.error ?? "The AI review didn't come back." };
+    await env.DB.prepare(`UPDATE applications SET ai_review_json = ? WHERE id = ?`)
+      .bind(JSON.stringify(res.review), appId)
+      .run();
+    ctx.waitUntil(logAiWrite(env, user.org_id, user.user_id, "application_review", `application ${appId} scored ${res.review.fit_score}`));
+    return { ok: `AI review ready for ${String(app.name)}.` };
+  }
 
   if (intent === "deny") {
     await env.DB.prepare(
@@ -138,6 +179,76 @@ const TABS = [
   ["all", "All"],
 ] as const;
 
+function parseReview(raw: unknown): AppReview | null {
+  if (typeof raw !== "string" || !raw) return null;
+  try {
+    return JSON.parse(raw) as AppReview;
+  } catch {
+    return null;
+  }
+}
+
+function ReviewCard({ review }: { review: AppReview }) {
+  const scoreTone =
+    review.fit_score >= 70
+      ? "bg-meadow/20 text-meadow-deep"
+      : review.fit_score >= 40
+        ? "bg-sunflower-soft text-charcoal"
+        : "bg-terracotta/20 text-terracotta-deep";
+  return (
+    <div className="mt-3 rounded-2xl border-2 border-sky/30 bg-sky/5 p-4 text-sm">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={`rounded-full px-2.5 py-1 font-display font-bold ${scoreTone}`}>fit {review.fit_score}/100</span>
+        <span className="text-xs text-charcoal-soft">AI review · staff decide, always</span>
+      </div>
+      <p className="mt-2">{review.summary}</p>
+      {(review.green_flags.length > 0 || review.red_flags.length > 0) && (
+        <div className="mt-2 grid sm:grid-cols-2 gap-2">
+          {review.green_flags.length > 0 && (
+            <ul className="space-y-1">
+              {review.green_flags.map((g) => (
+                <li key={g} className="text-meadow-deep">✓ {g}</li>
+              ))}
+            </ul>
+          )}
+          {review.red_flags.length > 0 && (
+            <ul className="space-y-1">
+              {review.red_flags.map((r) => (
+                <li key={r} className="text-terracotta-deep">⚑ {r}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {review.better_fits.length > 0 && (
+        <div className="mt-2">
+          <span className="font-semibold">Possibly better fits: </span>
+          {review.better_fits.map((b, i) => (
+            <span key={b.animal_id}>
+              {i > 0 && " · "}
+              <Link to={`/app/animals/${b.animal_id}`} className="font-semibold text-sky-deep hover:underline" title={b.reason}>
+                {b.name}
+              </Link>
+            </span>
+          ))}
+        </div>
+      )}
+      {review.draft_reply && (
+        <details className="mt-2">
+          <summary className="cursor-pointer font-semibold text-sky-deep">Draft reply (copy & edit)</summary>
+          <textarea
+            readOnly
+            defaultValue={review.draft_reply}
+            rows={6}
+            className="mt-2 w-full rounded-xl border-2 border-cream bg-white p-3 text-sm"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+        </details>
+      )}
+    </div>
+  );
+}
+
 export default function Applications({ loaderData, actionData }: Route.ComponentProps) {
   const { applications, counts, filter } = loaderData;
   const [, setParams] = useSearchParams();
@@ -209,8 +320,12 @@ export default function Applications({ loaderData, actionData }: Route.Component
               {Boolean(a.message) && (
                 <blockquote className="mt-3 rounded-2xl bg-cream p-4 text-sm italic">{String(a.message)}</blockquote>
               )}
+              {(() => {
+                const review = parseReview(a.ai_review_json);
+                return review ? <ReviewCard review={review} /> : null;
+              })()}
               {a.status === "new" && (
-                <div className="mt-4 flex gap-3">
+                <div className="mt-4 flex flex-wrap gap-3">
                   <Form method="post">
                     <input type="hidden" name="application_id" value={String(a.id)} />
                     <button
@@ -229,6 +344,16 @@ export default function Applications({ loaderData, actionData }: Route.Component
                       className="rounded-full border-2 border-terracotta text-terracotta-deep px-5 py-2 text-sm font-semibold hover:bg-terracotta hover:text-white transition-colors"
                     >
                       Deny
+                    </button>
+                  </Form>
+                  <Form method="post">
+                    <input type="hidden" name="application_id" value={String(a.id)} />
+                    <button
+                      name="intent"
+                      value="ai-review"
+                      className="rounded-full border-2 border-sky text-sky-deep px-5 py-2 text-sm font-semibold hover:bg-sky hover:text-white transition-colors"
+                    >
+                      {a.ai_review_json ? "Re-run AI review" : "✨ AI review"}
                     </button>
                   </Form>
                 </div>
