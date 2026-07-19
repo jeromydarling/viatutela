@@ -3,6 +3,8 @@ import QRCode from "qrcode";
 import type { Route } from "./+types/adopt.animal";
 import { cloudflareContext } from "../cloudflare-context";
 import { getEnv } from "../lib/auth.server";
+import { parseSeo } from "../lib/site.server";
+import { TrackingTags } from "../components/tracking";
 import { newId } from "../../workers/lib/ids";
 import { sendAppEmail } from "../../workers/lib/email";
 import { sendSms } from "../../workers/lib/sms";
@@ -35,10 +37,12 @@ export function meta({ loaderData: data }: Route.MetaArgs) {
 
 export async function loader({ context, request, params }: Route.LoaderArgs) {
   const env = getEnv(context);
-  const org = await env.DB.prepare(`SELECT id, name, slug, email, phone FROM orgs WHERE slug = ?`)
+  const org = await env.DB.prepare(`SELECT id, name, slug, email, phone, seo_json FROM orgs WHERE slug = ?`)
     .bind(params.slug)
     .first<Record<string, string | null>>();
   if (!org) throw new Response("Not found", { status: 404 });
+  const tracking = parseSeo(org.seo_json).tracking;
+  delete org.seo_json;
 
   const animal = await env.DB.prepare(
     `SELECT id, name, species, breed, sex, dob, altered, status, description, bonded_group_id, color, weight
@@ -77,6 +81,7 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
     shareUrl,
     ogImage,
     qrSvg,
+    tracking,
   };
 }
 
@@ -166,7 +171,7 @@ const inputCls =
   "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none";
 
 export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentProps) {
-  const { org, animal, photos, videos, bonded, shareUrl, ogImage, qrSvg } = loaderData;
+  const { org, animal, photos, videos, bonded, shareUrl, ogImage, qrSvg, tracking } = loaderData;
   const nav = useNavigation();
   const Doodle = animal.species === "cat" ? CatDoodle : animal.species === "dog" ? DogDoodle : PawDoodle;
 
@@ -179,6 +184,7 @@ export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentP
 
   return (
     <div>
+      <TrackingTags tracking={tracking} />
       <header className="bg-meadow text-white">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6">
           <Link to={`/adopt/${org.slug}`} className="font-semibold text-white/90 hover:text-white">

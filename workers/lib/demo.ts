@@ -269,6 +269,16 @@ export async function resetDemoData(env: Env, _origin: string): Promise<void> {
     "media", "pages", "applications", "adoptions", "foster_assignments", "medical_records",
     "animal_photos", "tasks", "donations", "campaigns", "contacts", "animals", "locations",
   ].map((t) => env.DB.prepare(`DELETE FROM ${t} WHERE org_id = ?`).bind(ORG));
+  // restore org-level settings too — otherwise a visitor's tracker IDs or
+  // brand edits on the demo org would outlive every reset
+  wipe.push(
+    env.DB.prepare(`UPDATE orgs SET nav_json = ?, brand_json = ?, seo_json = ? WHERE id = ?`).bind(
+      JSON.stringify(NAV),
+      JSON.stringify(BRAND),
+      JSON.stringify({ visible: true, google_verify: "", bing_verify: "", og_image: "" }),
+      ORG,
+    ),
+  );
   await env.DB.batch(wipe);
 
   const stmts: D1PreparedStatement[] = [];

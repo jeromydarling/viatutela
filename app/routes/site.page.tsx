@@ -4,6 +4,7 @@ import { handleNewsletterSignup, loadSitePage } from "../lib/site.server";
 import { RenderSections } from "../components/site-sections";
 import { Markdown } from "../components/markdown";
 import { BrandStyle, PreviewBanner, ShelterSiteFooter, ShelterSiteHeader } from "../components/site-chrome";
+import { TrackingTags } from "../components/tracking";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   if (!data) return [];
@@ -54,10 +55,11 @@ export async function action({ context, request, params }: Route.ActionArgs) {
 }
 
 export default function ShelterSitePage({ loaderData, actionData }: Route.ComponentProps) {
-  const { org, page, sections, liveAnimals, isPreview, nav, brand } = loaderData;
+  const { org, page, sections, liveAnimals, isPreview, nav, brand, seo } = loaderData;
   return (
     <div className="brand-scope min-h-screen">
       <BrandStyle brand={brand} />
+      {!isPreview && <TrackingTags tracking={seo.tracking} />}
       {page.slug === "home" && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: shelterJsonLd(org) }} />
       )}

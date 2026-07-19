@@ -4,6 +4,7 @@ import { parseSectionsJson, type Section } from "../../workers/lib/site-sections
 import { parseBrandJson, type Brand } from "../../workers/lib/brand";
 import type { LiveAnimal } from "../components/site-sections";
 import { newId } from "../../workers/lib/ids";
+import { EMPTY_TRACKING, validateTracking, type TrackingSettings } from "../../workers/lib/tracking";
 
 export interface SiteOrg {
   id: string;
@@ -23,18 +24,30 @@ export interface SeoSettings {
   google_verify: string;
   bing_verify: string;
   og_image: string;
+  tracking: TrackingSettings;
 }
 
 export function parseSeo(json: string | null): SeoSettings {
-  const d: SeoSettings = { visible: true, google_verify: "", bing_verify: "", og_image: "" };
+  const d: SeoSettings = {
+    visible: true,
+    google_verify: "",
+    bing_verify: "",
+    og_image: "",
+    tracking: { ...EMPTY_TRACKING },
+  };
   if (!json) return d;
   try {
     const s = JSON.parse(json) as Record<string, unknown>;
+    // tracking IDs are re-validated on every read — a value that somehow
+    // reached storage without matching its whitelist pattern never renders
+    const rawTracking =
+      s.tracking && typeof s.tracking === "object" ? (s.tracking as Record<string, unknown>) : {};
     return {
       visible: s.visible !== false,
       google_verify: typeof s.google_verify === "string" ? s.google_verify.slice(0, 200) : "",
       bing_verify: typeof s.bing_verify === "string" ? s.bing_verify.slice(0, 200) : "",
       og_image: typeof s.og_image === "string" ? s.og_image.slice(0, 500) : "",
+      tracking: validateTracking(rawTracking).tracking,
     };
   } catch {
     return d;

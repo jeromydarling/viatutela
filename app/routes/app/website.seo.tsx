@@ -2,6 +2,7 @@ import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/website.seo";
 import { requireUser } from "../../lib/auth.server";
 import { parseSeo } from "../../lib/site.server";
+import { TRACKER_FIELDS, validateTracking } from "../../../workers/lib/tracking";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "SEO & Search Checkup — Tutela" }];
@@ -49,15 +50,25 @@ export async function action({ context, request }: Route.ActionArgs) {
   const { env, user } = await requireUser(context, request);
   const f = await request.formData();
   if (String(f.get("intent")) !== "save") return null;
+  const { tracking, errors } = validateTracking({
+    ga4: String(f.get("ga4") ?? ""),
+    gtm: String(f.get("gtm") ?? ""),
+    meta_pixel: String(f.get("meta_pixel") ?? ""),
+    plausible: String(f.get("plausible") ?? ""),
+  });
   const seo = {
     visible: Boolean(f.get("visible")),
     google_verify: String(f.get("google_verify") ?? "").trim().slice(0, 200),
     bing_verify: String(f.get("bing_verify") ?? "").trim().slice(0, 200),
     og_image: String(f.get("og_image") ?? "").trim().slice(0, 500),
+    tracking,
   };
   await env.DB.prepare(`UPDATE orgs SET seo_json = ? WHERE id = ?`)
     .bind(JSON.stringify(seo), user.org_id)
     .run();
+  if (errors.length) {
+    return { ok: "Saved — but some tracker IDs were skipped:", errors };
+  }
   return { ok: "SEO settings saved." };
 }
 
@@ -80,7 +91,7 @@ function Check({ pass, label, children }: { pass: boolean; label: string; childr
 export default function SeoCheckup({ loaderData, actionData }: Route.ComponentProps) {
   const d = loaderData;
   const nav = useNavigation();
-  const a = actionData as { ok?: string } | undefined;
+  const a = actionData as { ok?: string; errors?: string[] } | undefined;
 
   return (
     <div className="space-y-6">
@@ -90,7 +101,14 @@ export default function SeoCheckup({ loaderData, actionData }: Route.ComponentPr
         <p className="text-sm text-charcoal-soft">Getting found on Google isn't a mystery — it's this checklist.</p>
       </div>
 
-      {a?.ok && <p className="rounded-2xl bg-meadow/15 text-meadow-deep px-4 py-2.5 font-semibold">{a.ok}</p>}
+      {a?.ok && (
+        <div className={`rounded-2xl px-4 py-2.5 font-semibold ${a.errors?.length ? "bg-terracotta/15 text-terracotta-deep" : "bg-meadow/15 text-meadow-deep"}`}>
+          {a.ok}
+          {a.errors?.map((e) => (
+            <div key={e} className="text-sm font-normal mt-1">{e}</div>
+          ))}
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="rounded-blob bg-white shadow-soft p-6">
@@ -114,6 +132,28 @@ export default function SeoCheckup({ loaderData, actionData }: Route.ComponentPr
               Default share image URL
               <input name="og_image" defaultValue={d.seo.og_image} placeholder="/api/media/orgs/…  (used when a page has no hero image)" className={`${inputCls} w-full mt-1`} list="media-urls" />
             </label>
+            <div className="pt-3 border-t border-cream">
+              <h3 className="font-display font-semibold">Analytics &amp; tracking</h3>
+              <p className="text-xs text-charcoal-soft mt-0.5">
+                Paste just the ID — we add the official snippet to your public site for you. Pasted
+                code is never accepted, so nothing unexpected can run on your pages. If you enable a
+                tracker, disclosing it in your own privacy policy is your responsibility.
+              </p>
+              <div className="mt-2 space-y-3">
+                {TRACKER_FIELDS.map((t) => (
+                  <label key={t.key} className="block text-sm font-semibold">
+                    {t.label}
+                    <input
+                      name={t.key}
+                      defaultValue={d.seo.tracking[t.key]}
+                      placeholder={t.placeholder}
+                      className={`${inputCls} w-full mt-1`}
+                    />
+                    <span className="block text-xs font-normal text-charcoal-soft mt-0.5">{t.hint}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
             <button disabled={nav.state !== "idle"} className="rounded-full bg-meadow text-white px-5 py-2 text-sm font-display font-semibold shadow-soft disabled:opacity-50">
               Save settings
             </button>
