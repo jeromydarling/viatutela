@@ -1,0 +1,19 @@
+{
+  "name": "tutela-zapier",
+  "version": "1.0.0",
+  "description": "Tutela (viatutela.pet) integration for Zapier — shelter triggers and actions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --testTimeout 20000"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "zapier-platform-core": "^17.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "private": true
+}

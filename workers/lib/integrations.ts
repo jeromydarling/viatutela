@@ -309,6 +309,57 @@ export async function pruneOldDeliveries(env: Env): Promise<void> {
   ).run();
 }
 
+// ---------- sample payloads (Zap editor needs data before any real event) ----------
+
+/**
+ * Canned samples shaped EXACTLY like each webhook's `data` payload, so
+ * field mapping in the Zapier editor matches live deliveries even on a
+ * brand-new org with no history.
+ */
+export const SAMPLE_EVENTS: Record<string, Record<string, unknown>> = {
+  "application.created": {
+    id: "ap_sample000000000000000000",
+    animal_id: "an_sample000000000000000000",
+    animal_name: "Biscuit",
+    name: "Jordan Sample",
+    email: "jordan@example.com",
+    interest: "adopt",
+  },
+  "adoption.created": {
+    id: "ad_sample000000000000000000",
+    animal_id: "an_sample000000000000000000",
+    animal_name: "Biscuit",
+    contact_id: "ct_sample000000000000000000",
+    adopter_name: "Jordan Sample",
+    date: "2026-07-01",
+  },
+  "donation.created": {
+    id: "dn_sample000000000000000000",
+    contact_id: null,
+    donor_name: "Jordan Sample",
+    email: "jordan@example.com",
+    amount: 50,
+    method: "online",
+    date: "2026-07-01",
+  },
+  "animal.created": {
+    id: "an_sample000000000000000000",
+    name: "Biscuit",
+    species: "dog",
+    breed: "beagle mix",
+    status: "available",
+    is_public: 1,
+  },
+  "volunteer.signup": {
+    id: "sg_sample000000000000000000",
+    shift_id: "sh_sample000000000000000000",
+    shift_title: "Morning kennels & walks",
+    shift_date: "2026-07-01",
+    contact_id: "ct_sample000000000000000000",
+    volunteer_name: "Jordan Sample",
+  },
+};
+
 // ---------- ICS calendar feed ----------
 
 function icsEscape(text: string): string {
