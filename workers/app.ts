@@ -3,6 +3,7 @@ import { api } from "./api";
 import { cloudflareContext } from "../app/cloudflare-context";
 import { resolveTenant, routeTenantPath, tenantRobots, tenantSitemap } from "./lib/tenant";
 import { reportError } from "./lib/monitor";
+import { GUIDES } from "../app/lib/guides";
 
 export { ImportProgress } from "./import/processor";
 
@@ -67,7 +68,10 @@ const handleFetch: ExportedHandlerFetchHandler<Env> = async (request, env, ctx) 
 /** robots.txt / sitemap.xml / llms.txt for the marketing site itself
  * (shelter tenant domains get their own via routeTenantPath). */
 function marketingSeoFile(url: URL): Response | null {
-  const MARKETING_PATHS = ["/", "/import", "/signup", "/login", "/privacy", "/terms"];
+  const MARKETING_PATHS = [
+    "/", "/import", "/signup", "/login", "/privacy", "/terms", "/guides",
+    ...GUIDES.map((g) => `/guides/${g.slug}`),
+  ];
   if (url.pathname === "/robots.txt") {
     return new Response(
       `User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api\n\nSitemap: ${url.origin}/sitemap.xml\n`,
@@ -98,6 +102,10 @@ Pricing: Starter is $9/month plus $1 per adoption. Rescue is $39/month flat. She
 - [Get started](${url.origin}/signup): create a shelter workspace
 - [Live demo](${url.origin}/demo): a fully seeded demo shelter, no signup
 - [Privacy](${url.origin}/privacy) and [Terms](${url.origin}/terms): plain-language policies — shelters own their data
+
+## Guides
+
+${GUIDES.map((g) => `- [${g.title}](${url.origin}/guides/${g.slug}): ${g.description}`).join("\n")}
 
 Each shelter also gets public adoption pages at /adopt/<shelter> and an optional website at /s/<shelter> or their own domain.
 `,
