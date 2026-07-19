@@ -12,6 +12,17 @@ import { recordAdoptionUsage } from "../../../workers/lib/billing";
 import { notifyWaitlist } from "../../../workers/lib/waitlist";
 import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
 import { extractVetRecords, fileToVisionImage, type OcrRecord, type VisionImage } from "../../../workers/lib/ai-vision";
+import {
+  applyAdjustments,
+  clampAdjustments,
+  describeAdjustments,
+  isNoop,
+  makeSocialCrops,
+  r2ToVisionImage,
+  reviewPhotos,
+  suggestEnhancement,
+  type Adjustments,
+} from "../../../workers/lib/photo-studio";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   return [{ title: `${data?.animal?.name ?? "Friend"} — Via Tutela` }];
@@ -25,8 +36,16 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
   if (!animal) throw new Response("Not found", { status: 404 });
 
   const [photos, medical, adoptions, fosters, contacts, locations, bonded] = await Promise.all([
-    env.DB.prepare(`SELECT id, r2_key, kind FROM animal_photos WHERE animal_id = ? ORDER BY created_at`)
-      .bind(animal.id).all<{ id: string; r2_key: string; kind: string }>(),
+    env.DB.prepare(
+      `SELECT id, r2_key, kind, original_key, enhance_json, alt_text, ai_photo_json
+       FROM animal_photos WHERE animal_id = ? ORDER BY created_at`,
+    )
+      .bind(animal.id)
+      .all<{
+        id: string; r2_key: string; kind: string;
+        original_key: string | null; enhance_json: string | null;
+        alt_text: string | null; ai_photo_json: string | null;
+      }>(),
     env.DB.prepare(`SELECT * FROM medical_records WHERE animal_id = ? ORDER BY date DESC, created_at DESC`)
       .bind(animal.id).all<Record<string, unknown>>(),
     env.DB.prepare(
@@ -139,17 +158,164 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     return { ok: "Nothing uploaded." };
   }
 
-  if (intent === "delete-photo") {
-    const photo = await env.DB.prepare(
-      `SELECT id, r2_key FROM animal_photos WHERE id = ? AND org_id = ? AND animal_id = ?`,
+  const getPhoto = (id: string | null) =>
+    env.DB.prepare(
+      `SELECT id, r2_key, original_key, kind, alt_text FROM animal_photos WHERE id = ? AND org_id = ? AND animal_id = ?`,
     )
-      .bind(str("photo_id"), user.org_id, animal.id)
-      .first<{ id: string; r2_key: string }>();
+      .bind(id, user.org_id, animal.id)
+      .first<{ id: string; r2_key: string; original_key: string | null; kind: string; alt_text: string | null }>();
+  const previewPrefix = `orgs/${user.org_id}/photos/previews/`;
+
+  if (intent === "delete-photo") {
+    const photo = await getPhoto(str("photo_id"));
     if (photo) {
       await env.DB.prepare(`DELETE FROM animal_photos WHERE id = ?`).bind(photo.id).run();
       await env.MEDIA.delete(photo.r2_key);
+      if (photo.original_key && photo.original_key !== photo.r2_key) await env.MEDIA.delete(photo.original_key);
     }
     return { ok: "Photo removed." };
+  }
+
+  if (intent === "make-lead-photo") {
+    const photo = await getPhoto(str("photo_id"));
+    if (!photo) return { error: "That photo seems to be gone." };
+    await env.DB.prepare(
+      `UPDATE animal_photos SET created_at = (SELECT datetime(MIN(created_at), '-1 second') FROM animal_photos WHERE animal_id = ?)
+       WHERE id = ? AND org_id = ?`,
+    )
+      .bind(animal.id, photo.id, user.org_id)
+      .run();
+    return { ok: "That one leads now — first photo on the adoption page, website, and feeds." };
+  }
+
+  if (intent === "ai-photo-enhance") {
+    const photo = await getPhoto(str("photo_id"));
+    if (!photo || photo.kind !== "photo") return { error: "Pick a photo to enhance." };
+    const srcKey = photo.original_key ?? photo.r2_key;
+    const image = await r2ToVisionImage(env, srcKey);
+    if (!image) return { error: "Couldn't read that photo — try re-uploading it." };
+    const res = await suggestEnhancement(env, { orgId: user.org_id, image });
+    if (res.error || !res.suggestion) return { error: res.error ?? "No suggestion came back." };
+    const s = res.suggestion;
+    if (s.alt_text && !photo.alt_text) {
+      await env.DB.prepare(`UPDATE animal_photos SET alt_text = ? WHERE id = ?`).bind(s.alt_text, photo.id).run();
+    }
+    if (isNoop(s.adjustments)) return { ok: `No touch-ups needed. ${s.rationale}` };
+    const previewKey = `${previewPrefix}${photo.id}-${newId("pv")}.jpg`;
+    const applied = await applyAdjustments(env, srcKey, previewKey, s.adjustments);
+    if (!applied) return { error: "The photo editor isn't available right now — try again in a moment." };
+    return {
+      enhance: {
+        photoId: photo.id,
+        srcKey,
+        previewKey,
+        adjustments: s.adjustments,
+        rationale: s.rationale,
+        summary: describeAdjustments(s.adjustments),
+      },
+    };
+  }
+
+  if (intent === "photo-enhance-apply") {
+    const photo = await getPhoto(str("photo_id"));
+    if (!photo || photo.kind !== "photo") return { error: "That photo seems to be gone." };
+    let adj: Adjustments = {};
+    try {
+      adj = clampAdjustments(JSON.parse(String(f.get("adjustments") ?? "{}")));
+    } catch {
+      return { error: "Those adjustments didn't survive the trip — try enhancing again." };
+    }
+    if (isNoop(adj)) return { error: "Nothing to apply." };
+    const srcKey = photo.original_key ?? photo.r2_key;
+    const destKey = `orgs/${user.org_id}/photos/enh-${photo.id}-${newId("e")}.jpg`;
+    const ok = await applyAdjustments(env, srcKey, destKey, adj);
+    if (!ok) return { error: "The photo editor isn't available right now — try again in a moment." };
+    if (photo.original_key && photo.r2_key !== photo.original_key) {
+      ctx.waitUntil(env.MEDIA.delete(photo.r2_key)); // superseded derivative
+    }
+    const preview = str("preview_key");
+    if (preview?.startsWith(previewPrefix)) ctx.waitUntil(env.MEDIA.delete(preview));
+    await env.DB.prepare(`UPDATE animal_photos SET r2_key = ?, original_key = ?, enhance_json = ? WHERE id = ? AND org_id = ?`)
+      .bind(destKey, srcKey, JSON.stringify(adj), photo.id, user.org_id)
+      .run();
+    await logAiWrite(env, user.org_id, user.user_id, "photo_enhance", `photo ${photo.id}: ${describeAdjustments(adj)}`);
+    return { ok: "Enhanced version accepted — it's what everyone sees now. The original is safe; revert anytime. ✨" };
+  }
+
+  if (intent === "photo-enhance-discard") {
+    const preview = str("preview_key");
+    if (preview?.startsWith(previewPrefix)) await env.MEDIA.delete(preview);
+    return { ok: "Kept the original — it was already them at their best." };
+  }
+
+  if (intent === "photo-enhance-revert") {
+    const photo = await getPhoto(str("photo_id"));
+    if (!photo?.original_key) return { error: "That photo is already the original." };
+    if (photo.r2_key !== photo.original_key) ctx.waitUntil(env.MEDIA.delete(photo.r2_key));
+    await env.DB.prepare(
+      `UPDATE animal_photos SET r2_key = original_key, original_key = NULL, enhance_json = NULL WHERE id = ? AND org_id = ?`,
+    )
+      .bind(photo.id, user.org_id)
+      .run();
+    return { ok: "Back to the original photo, everywhere." };
+  }
+
+  if (intent === "ai-photo-review") {
+    const rows = await env.DB.prepare(
+      `SELECT id, r2_key FROM animal_photos WHERE animal_id = ? AND org_id = ? AND kind = 'photo' ORDER BY created_at LIMIT 8`,
+    )
+      .bind(animal.id, user.org_id)
+      .all<{ id: string; r2_key: string }>();
+    if (rows.results.length < 2) return { error: "Add at least two photos and I'll pick the strongest." };
+    const images: VisionImage[] = [];
+    const ids: string[] = [];
+    for (const p of rows.results) {
+      const img = await r2ToVisionImage(env, p.r2_key);
+      if (img) {
+        images.push(img);
+        ids.push(p.id);
+      }
+    }
+    if (images.length < 2) return { error: "Couldn't read those photos — try re-uploading them." };
+    const res = await reviewPhotos(env, { orgId: user.org_id, images });
+    if (res.error || !res.reviews || !res.bestIndex) return { error: res.error ?? "No review came back." };
+    const bestId = ids[res.bestIndex - 1];
+    const stmts = res.reviews
+      .filter((r) => ids[r.index - 1])
+      .map((r) =>
+        env.DB.prepare(
+          `UPDATE animal_photos SET ai_photo_json = ?, alt_text = COALESCE(alt_text, ?) WHERE id = ? AND org_id = ?`,
+        ).bind(
+          JSON.stringify({ score: r.score, tip: r.tip, best: ids[r.index - 1] === bestId }),
+          r.alt_text || null,
+          ids[r.index - 1],
+          user.org_id,
+        ),
+      );
+    if (stmts.length) await env.DB.batch(stmts);
+    await logAiWrite(env, user.org_id, user.user_id, "photo_review", `animal ${animal.id}: ${images.length} photos`);
+    return { ok: "Photo review done — scores and tips are under each photo, and ⭐ marks the suggested lead. Alt text was drafted for accessibility too." };
+  }
+
+  if (intent === "ai-photo-crops") {
+    const photo = await getPhoto(str("photo_id"));
+    if (!photo || photo.kind !== "photo") return { error: "Pick a photo to crop." };
+    const image = await r2ToVisionImage(env, photo.r2_key);
+    if (!image) return { error: "Couldn't read that photo — try re-uploading it." };
+    const res = await suggestEnhancement(env, { orgId: user.org_id, image });
+    if (res.error || !res.suggestion) return { error: res.error ?? "The AI hit a snag — try again in a moment." };
+    if (!photo.alt_text && res.suggestion.alt_text) {
+      await env.DB.prepare(`UPDATE animal_photos SET alt_text = ? WHERE id = ?`).bind(res.suggestion.alt_text, photo.id).run();
+    }
+    const crops = await makeSocialCrops(
+      env,
+      photo.r2_key,
+      `orgs/${user.org_id}/photos/crops/${photo.id}-${newId("cr")}`,
+      res.suggestion.focal,
+    );
+    if (!crops.length) return { error: "The photo editor isn't available right now — try again in a moment." };
+    await logAiWrite(env, user.org_id, user.user_id, "photo_crops", `photo ${photo.id}`);
+    return { ok: "Three social-ready crops, centered on their face — tap to download.", crops };
   }
 
   if (intent === "add-medical") {
@@ -320,7 +486,27 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
   const { animal, photos, medical, adoptions, fosters, contacts, locations, bonded, orgSlug, aiReady } = loaderData;
   const nav = useNavigation();
   const activeFoster = fosters.find((fa) => fa.active);
-  const ai = actionData as { bioPack?: BioPack; handoff?: HandoffPack; ocr?: OcrRecord[] } | undefined;
+  const ai = actionData as
+    | {
+        bioPack?: BioPack;
+        handoff?: HandoffPack;
+        ocr?: OcrRecord[];
+        enhance?: { photoId: string; srcKey: string; previewKey: string; adjustments: Adjustments; rationale: string; summary: string };
+        crops?: { label: string; key: string }[];
+      }
+    | undefined;
+  const photoNotes = photos
+    .map((p) => {
+      if (!p.ai_photo_json) return null;
+      try {
+        const parsed = JSON.parse(p.ai_photo_json) as { score: number; tip: string; best: boolean };
+        return { id: p.id, r2_key: p.r2_key, ...parsed };
+      } catch {
+        return null;
+      }
+    })
+    .filter((n): n is { id: string; r2_key: string; score: number; tip: string; best: boolean } => n !== null);
+  const leadPhotoId = photos[0]?.id;
 
   return (
     <div className="space-y-6">
@@ -404,30 +590,172 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
         </section>
 
         <div className="lg:col-span-2 space-y-6">
-          {/* photos */}
+          {/* photos + photo studio */}
           <section className="rounded-blob bg-white shadow-soft p-6">
-            <h2 className="font-display font-semibold text-xl">Photos</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-display font-semibold text-xl">Photos</h2>
+              {aiReady && photos.filter((p) => p.kind === "photo").length >= 2 && (
+                <Form method="post">
+                  <input type="hidden" name="intent" value="ai-photo-review" />
+                  <button
+                    disabled={nav.state !== "idle"}
+                    className="rounded-full bg-sunflower-soft px-3 py-1.5 text-xs font-display font-semibold shadow-soft disabled:opacity-50"
+                    title="AI scores every photo, suggests which should lead, and drafts alt text"
+                  >
+                    {nav.state !== "idle" ? "Looking…" : "✨ Review photos"}
+                  </button>
+                </Form>
+              )}
+            </div>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {photos.map((p) => (
                 <div key={p.id} className="relative group">
                   {p.kind === "video" ? (
                     <video src={`/api/media/${p.r2_key}`} preload="metadata" muted className="w-full aspect-square object-cover rounded-xl bg-charcoal/80" />
                   ) : (
-                    <img src={`/api/media/${p.r2_key}`} alt="" className="w-full aspect-square object-cover rounded-xl" />
+                    <img src={`/api/media/${p.r2_key}`} alt={p.alt_text ?? ""} className="w-full aspect-square object-cover rounded-xl" />
                   )}
                   {p.kind === "video" && (
                     <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-xs">🎬</span>
                   )}
-                  <Form method="post" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <input type="hidden" name="intent" value="delete-photo" />
-                    <input type="hidden" name="photo_id" value={p.id} />
-                    <button aria-label="Remove photo" className="w-6 h-6 rounded-full bg-white/90 text-terracotta-deep font-bold text-xs shadow">
-                      ✕
-                    </button>
-                  </Form>
+                  {p.original_key && (
+                    <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-xs" title="Enhanced — original kept, revert anytime">
+                      ✨
+                    </span>
+                  )}
+                  <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                    {aiReady && p.kind === "photo" && (
+                      <>
+                        <Form method="post">
+                          <input type="hidden" name="intent" value="ai-photo-enhance" />
+                          <input type="hidden" name="photo_id" value={p.id} />
+                          <button
+                            aria-label="Suggest an enhancement"
+                            title="AI suggests a gentle touch-up — you approve before anything changes"
+                            disabled={nav.state !== "idle"}
+                            className="w-6 h-6 rounded-full bg-white/90 text-xs shadow disabled:opacity-50"
+                          >
+                            ✨
+                          </button>
+                        </Form>
+                        <Form method="post">
+                          <input type="hidden" name="intent" value="ai-photo-crops" />
+                          <input type="hidden" name="photo_id" value={p.id} />
+                          <button
+                            aria-label="Cut social media crops"
+                            title="Cut square, portrait, and wide crops centered on their face"
+                            disabled={nav.state !== "idle"}
+                            className="w-6 h-6 rounded-full bg-white/90 text-xs shadow disabled:opacity-50"
+                          >
+                            📐
+                          </button>
+                        </Form>
+                      </>
+                    )}
+                    {p.original_key && (
+                      <Form method="post">
+                        <input type="hidden" name="intent" value="photo-enhance-revert" />
+                        <input type="hidden" name="photo_id" value={p.id} />
+                        <button
+                          aria-label="Revert to the original photo"
+                          title="Back to the untouched original"
+                          className="w-6 h-6 rounded-full bg-white/90 text-xs shadow"
+                        >
+                          ↺
+                        </button>
+                      </Form>
+                    )}
+                    <Form method="post">
+                      <input type="hidden" name="intent" value="delete-photo" />
+                      <input type="hidden" name="photo_id" value={p.id} />
+                      <button aria-label="Remove photo" className="w-6 h-6 rounded-full bg-white/90 text-terracotta-deep font-bold text-xs shadow">
+                        ✕
+                      </button>
+                    </Form>
+                  </div>
                 </div>
               ))}
             </div>
+
+            {ai?.enhance && (
+              <div className="mt-4 rounded-2xl bg-cream p-4">
+                <p className="font-display font-semibold text-sm">✨ Suggested touch-up — your call</p>
+                <p className="mt-1 text-sm text-charcoal-soft">{ai.enhance.rationale}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-semibold text-charcoal-soft">
+                  <div>
+                    <img src={`/api/media/${ai.enhance.srcKey}`} alt="Before" className="w-full aspect-square object-cover rounded-xl" />
+                    <p className="mt-1">Before</p>
+                  </div>
+                  <div>
+                    <img src={`/api/media/${ai.enhance.previewKey}`} alt="After" className="w-full aspect-square object-cover rounded-xl" />
+                    <p className="mt-1">After · {ai.enhance.summary}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="photo-enhance-apply" />
+                    <input type="hidden" name="photo_id" value={ai.enhance.photoId} />
+                    <input type="hidden" name="adjustments" value={JSON.stringify(ai.enhance.adjustments)} />
+                    <input type="hidden" name="preview_key" value={ai.enhance.previewKey} />
+                    <button
+                      disabled={nav.state !== "idle"}
+                      className="rounded-full bg-meadow text-white px-4 py-2 text-sm font-display font-semibold shadow-soft disabled:opacity-50"
+                    >
+                      Use the enhanced version
+                    </button>
+                  </Form>
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="photo-enhance-discard" />
+                    <input type="hidden" name="preview_key" value={ai.enhance.previewKey} />
+                    <button className="rounded-full border-2 border-charcoal/20 px-4 py-2 text-sm font-semibold text-charcoal-soft">
+                      Keep the original
+                    </button>
+                  </Form>
+                </div>
+                <p className="mt-2 text-xs text-charcoal-soft">
+                  Tone and sharpness only — never generative. The original stays saved either way.
+                </p>
+              </div>
+            )}
+
+            {ai?.crops && (
+              <div className="mt-4 rounded-2xl bg-cream p-4">
+                <p className="font-display font-semibold text-sm">📐 Social crops — tap to download</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {ai.crops.map((c) => (
+                    <a key={c.key} href={`/api/media/${c.key}`} download className="block text-center group/crop">
+                      <img src={`/api/media/${c.key}`} alt={c.label} className="w-full rounded-xl object-cover group-hover/crop:opacity-80" />
+                      <span className="mt-1 block text-[11px] font-semibold text-charcoal-soft leading-tight">{c.label}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {photoNotes.length > 0 && (
+              <div className="mt-4 space-y-1.5">
+                {photoNotes.map((n) => (
+                  <div key={n.id} className="flex items-start gap-2 text-xs">
+                    <img src={`/api/media/${n.r2_key}`} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                    <span
+                      className={`shrink-0 rounded-full px-1.5 py-0.5 font-bold ${n.score >= 70 ? "bg-meadow/15 text-meadow-deep" : n.score >= 40 ? "bg-sunflower-soft" : "bg-terracotta/15 text-terracotta-deep"}`}
+                    >
+                      {n.best ? "⭐ " : ""}{n.score}
+                    </span>
+                    <span className="text-charcoal-soft">{n.tip}</span>
+                    {n.best && n.id !== leadPhotoId && (
+                      <Form method="post" className="shrink-0">
+                        <input type="hidden" name="intent" value="make-lead-photo" />
+                        <input type="hidden" name="photo_id" value={n.id} />
+                        <button className="rounded-full bg-sunflower px-2 py-0.5 font-semibold shadow-soft whitespace-nowrap">
+                          Make it the lead
+                        </button>
+                      </Form>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <Form method="post" encType="multipart/form-data" className="mt-3 flex gap-2 items-center">
               <input type="hidden" name="intent" value="upload-photo" />
               <input type="file" name="photo" accept="image/*,video/mp4,video/webm,video/quicktime" required className="text-sm flex-1 w-0" />

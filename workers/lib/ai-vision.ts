@@ -27,7 +27,7 @@ export async function fileToVisionImage(file: File): Promise<VisionImage | null>
   return { media_type: type as VisionImage["media_type"], data: btoa(bin) };
 }
 
-async function visionStructured<T>(
+export async function visionStructured<T>(
   env: Env,
   args: { orgId: string; feature: string; prompt: string; images: VisionImage[]; schema: Record<string, unknown>; maxTokens: number },
 ): Promise<{ data?: T; error?: string }> {
