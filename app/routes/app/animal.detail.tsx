@@ -496,6 +496,15 @@ export async function action({ context, request, params }: Route.ActionArgs) {
   }
 
   if (intent === "delete-animal") {
+    // collect media keys first so nothing is orphaned in R2
+    const mediaRows = await env.DB.prepare(
+      `SELECT r2_key, original_key FROM animal_photos WHERE animal_id = ? AND org_id = ?`,
+    )
+      .bind(animal.id, user.org_id)
+      .all<{ r2_key: string; original_key: string | null }>();
+    const mediaKeys = mediaRows.results.flatMap((p) =>
+      p.original_key && p.original_key !== p.r2_key ? [p.r2_key, p.original_key] : [p.r2_key],
+    );
     await env.DB.batch([
       env.DB.prepare(`DELETE FROM medical_records WHERE animal_id = ? AND org_id = ?`).bind(animal.id, user.org_id),
       env.DB.prepare(`DELETE FROM animal_photos WHERE animal_id = ? AND org_id = ?`).bind(animal.id, user.org_id),
@@ -505,6 +514,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       env.DB.prepare(`DELETE FROM applications WHERE animal_id = ? AND org_id = ?`).bind(animal.id, user.org_id),
       env.DB.prepare(`DELETE FROM animals WHERE id = ? AND org_id = ?`).bind(animal.id, user.org_id),
     ]);
+    if (mediaKeys.length) ctx.waitUntil(env.MEDIA.delete(mediaKeys));
     return redirect("/app/animals");
   }
 

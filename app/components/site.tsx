@@ -105,10 +105,12 @@ export function SiteFooter() {
         <p className="text-charcoal-soft text-center font-semibold">
           Peace and all good things to you and your animals.
         </p>
-        <div className="flex gap-4 text-sm font-semibold text-charcoal-soft">
+        <div className="flex flex-wrap justify-center gap-4 text-sm font-semibold text-charcoal-soft">
           <Link to="/signup" className="hover:text-charcoal">Get started</Link>
           <Link to="/import" className="hover:text-charcoal">Free importer</Link>
           <a href="/#pricing" className="hover:text-charcoal">Pricing</a>
+          <Link to="/privacy" className="hover:text-charcoal">Privacy</Link>
+          <Link to="/terms" className="hover:text-charcoal">Terms</Link>
         </div>
       </div>
     </footer>

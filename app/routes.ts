@@ -8,6 +8,9 @@ export default [
   route("signup", "routes/signup.tsx"),
   route("demo", "routes/demo.tsx"),
   route("unsub/:token", "routes/unsub.tsx"),
+  route("privacy", "routes/privacy.tsx"),
+  route("terms", "routes/terms.tsx"),
+  route("join/:token", "routes/join.tsx"),
   route("logout", "routes/logout.tsx"),
 
   // public adoption portal + QR quick lookup

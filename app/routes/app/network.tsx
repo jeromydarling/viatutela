@@ -13,8 +13,11 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const posts = await env.DB.prepare(
     `SELECT t.*, o.name org_name, o.address, o.demo FROM transfer_posts t JOIN orgs o ON o.id = t.org_id
      WHERE t.status = 'open' AND t.expires_at > datetime('now')
+       AND (o.demo = 0 OR t.org_id = ?1)
      ORDER BY CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'soon' THEN 1 ELSE 2 END, t.created_at DESC LIMIT 100`,
-  ).all<Record<string, unknown>>();
+  )
+    .bind(user.org_id)
+    .all<Record<string, unknown>>();
   const org = await env.DB.prepare(`SELECT email FROM orgs WHERE id = ?`).bind(user.org_id).first<{ email: string | null }>();
   return { posts: posts.results, myOrgId: user.org_id, orgEmail: org?.email ?? "" };
 }
