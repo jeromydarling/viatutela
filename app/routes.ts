@@ -8,6 +8,8 @@ export default [
   route("signup", "routes/signup.tsx"),
   route("demo", "routes/demo.tsx"),
   route("unsub/:token", "routes/unsub.tsx"),
+  route("guides", "routes/guides.tsx"),
+  route("guides/:slug", "routes/guides.article.tsx"),
   route("privacy", "routes/privacy.tsx"),
   route("terms", "routes/terms.tsx"),
   route("join/:token", "routes/join.tsx"),

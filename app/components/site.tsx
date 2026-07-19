@@ -37,6 +37,9 @@ export function SiteHeader() {
               {s.label}
             </a>
           ))}
+          <Link to="/guides" className="hidden md:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
+            Guides
+          </Link>
           <Link to="/login" className="hidden sm:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
             Sign in
           </Link>
@@ -70,6 +73,13 @@ export function SiteHeader() {
                 {s.label}
               </a>
             ))}
+            <Link
+              to="/guides"
+              onClick={() => setOpen(false)}
+              className="rounded-xl px-4 py-2.5 font-semibold hover:bg-sunflower-soft transition-colors"
+            >
+              Guides
+            </Link>
             <a href="/demo" className="rounded-xl px-4 py-2.5 font-semibold hover:bg-sunflower-soft transition-colors">
               🌻 Live demo
             </a>
@@ -108,6 +118,7 @@ export function SiteFooter() {
         <div className="flex flex-wrap justify-center gap-4 text-sm font-semibold text-charcoal-soft">
           <Link to="/signup" className="hover:text-charcoal">Get started</Link>
           <Link to="/import" className="hover:text-charcoal">Free importer</Link>
+          <Link to="/guides" className="hover:text-charcoal">Guides</Link>
           <a href="/#pricing" className="hover:text-charcoal">Pricing</a>
           <Link to="/privacy" className="hover:text-charcoal">Privacy</Link>
           <Link to="/terms" className="hover:text-charcoal">Terms</Link>
