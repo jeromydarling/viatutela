@@ -148,6 +148,31 @@ export default function Volunteers({ loaderData, actionData }: Route.ComponentPr
       </div>
 
       <section className="rounded-blob bg-white shadow-soft p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display font-semibold text-lg">Your volunteer roster ({volunteers.length})</h2>
+          <Link to="/app/people?role=volunteer" className="text-sm font-semibold text-meadow-deep hover:underline">
+            Manage in People →
+          </Link>
+        </div>
+        {volunteers.length === 0 ? (
+          <p className="mt-2 text-sm text-charcoal-soft">
+            Nobody wears the volunteer badge yet. Open{" "}
+            <Link to="/app/people" className="font-semibold text-meadow-deep hover:underline">People</Link>{" "}
+            and check the <strong>volunteer</strong> role on anyone who helps out — they'll show up
+            here and in every shift's sign-up picker.
+          </p>
+        ) : (
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {volunteers.map((v) => (
+              <li key={v.id} className="rounded-full bg-cream px-3 py-1 text-sm font-semibold">
+                {v.name}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-blob bg-white shadow-soft p-6">
         <h2 className="font-display font-semibold text-lg">New shift</h2>
         <Form method="post" className="mt-3 flex flex-wrap gap-2 items-end">
           <input type="hidden" name="intent" value="create-shift" />
