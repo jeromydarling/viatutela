@@ -16,7 +16,18 @@ import { normalizeRow } from "./lib/rows";
 import { toCsv } from "./lib/csv";
 import { promoteImport } from "./import/promote";
 import { AUTH_COOKIE, getAuthedUser } from "./lib/auth";
-import { buildShiftsIcs, decodeCursor, encodeCursor, verifyApiKey, type ApiKeyAuth, type IcsShift } from "./lib/integrations";
+import {
+  SAMPLE_EVENTS,
+  buildShiftsIcs,
+  cleanEventList,
+  decodeCursor,
+  emitEvent,
+  encodeCursor,
+  validateWebhookUrl,
+  verifyApiKey,
+  type ApiKeyAuth,
+  type IcsShift,
+} from "./lib/integrations";
 import { hashPassword } from "./lib/password";
 import { sendAppEmail } from "./lib/email";
 
@@ -735,6 +746,251 @@ async function v1Auth(c: any): Promise<ApiKeyAuth | Response> {
   return key;
 }
 
+// -- auth test / connection label (Zapier calls this when a key is connected)
+api.get("/v1/me", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  const org = await c.env.DB.prepare(`SELECT id, name, slug FROM orgs WHERE id = ?`)
+    .bind(key.orgId)
+    .first<{ id: string; name: string; slug: string }>();
+  return c.json({ org_id: org?.id, org_name: org?.name, slug: org?.slug, scope: key.scope });
+});
+
+// -- REST hook subscriptions (Zapier subscribes on Zap-on, unsubscribes on Zap-off)
+const API_HOOK_LIMIT = 30;
+
+api.get("/v1/hooks", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  const rows = await c.env.DB.prepare(
+    `SELECT id, url, events, active, created_at FROM webhooks WHERE org_id = ? ORDER BY created_at DESC LIMIT 50`,
+  ).bind(key.orgId).all();
+  return c.json({ data: rows.results });
+});
+
+api.post("/v1/hooks", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Send a JSON body." }, 400);
+  }
+  const checked = validateWebhookUrl(String(body.url ?? ""));
+  if (!checked.ok) return c.json({ error: checked.error }, 400);
+  const rawEvents = Array.isArray(body.events) ? body.events.map(String) : [String(body.events ?? "")];
+  const events = cleanEventList(rawEvents);
+  if (!events) return c.json({ error: "events must include at least one known event." }, 400);
+  const count = await c.env.DB.prepare(`SELECT COUNT(*) n FROM webhooks WHERE org_id = ?`)
+    .bind(key.orgId)
+    .first<{ n: number }>();
+  if ((count?.n ?? 0) >= API_HOOK_LIMIT) {
+    return c.json({ error: `Subscription limit reached (${API_HOOK_LIMIT}).` }, 409);
+  }
+  const id = newId("wh");
+  const secret = newToken();
+  await c.env.DB.prepare(`INSERT INTO webhooks (id, org_id, url, secret, events) VALUES (?, ?, ?, ?, ?)`)
+    .bind(id, key.orgId, checked.url, secret, events)
+    .run();
+  return c.json({ id, url: checked.url, events: events.split(","), secret }, 201);
+});
+
+api.delete("/v1/hooks/:id", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  const id = c.req.param("id");
+  await c.env.DB.batch([
+    c.env.DB.prepare(`DELETE FROM webhook_deliveries WHERE webhook_id = ? AND org_id = ?`).bind(id, key.orgId),
+    c.env.DB.prepare(`DELETE FROM webhooks WHERE id = ? AND org_id = ?`).bind(id, key.orgId),
+  ]);
+  // idempotent by design — unsubscribing twice is fine
+  return c.json({ ok: true });
+});
+
+// -- per-event samples, shaped exactly like webhook `data` payloads
+api.get("/v1/samples/:event", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  const event = c.req.param("event");
+  const canned = SAMPLE_EVENTS[event];
+  if (!canned) return c.json({ error: `Unknown event. Available: ${Object.keys(SAMPLE_EVENTS).join(", ")}` }, 404);
+
+  let rows: Record<string, unknown>[] = [];
+  if (event === "application.created") {
+    const r = await c.env.DB.prepare(
+      `SELECT ap.id, ap.animal_id, a.name animal_name, ap.name, ap.email, ap.interest
+       FROM applications ap LEFT JOIN animals a ON a.id = ap.animal_id
+       WHERE ap.org_id = ? ORDER BY ap.created_at DESC LIMIT 3`,
+    ).bind(key.orgId).all<Record<string, unknown>>();
+    rows = r.results;
+  } else if (event === "adoption.created") {
+    const r = await c.env.DB.prepare(
+      `SELECT ad.id, ad.animal_id, a.name animal_name, ad.contact_id, ct.name adopter_name, ad.date
+       FROM adoptions ad LEFT JOIN animals a ON a.id = ad.animal_id LEFT JOIN contacts ct ON ct.id = ad.contact_id
+       WHERE ad.org_id = ? ORDER BY ad.created_at DESC LIMIT 3`,
+    ).bind(key.orgId).all<Record<string, unknown>>();
+    rows = r.results;
+  } else if (event === "donation.created") {
+    const r = await c.env.DB.prepare(
+      `SELECT id, contact_id, donor_name, email, amount, method, date
+       FROM donations WHERE org_id = ? ORDER BY created_at DESC LIMIT 3`,
+    ).bind(key.orgId).all<Record<string, unknown>>();
+    rows = r.results;
+  } else if (event === "animal.created") {
+    const r = await c.env.DB.prepare(
+      `SELECT id, name, species, breed, status, is_public
+       FROM animals WHERE org_id = ? ORDER BY created_at DESC LIMIT 3`,
+    ).bind(key.orgId).all<Record<string, unknown>>();
+    rows = r.results;
+  } else if (event === "volunteer.signup") {
+    const r = await c.env.DB.prepare(
+      `SELECT sg.id, sg.shift_id, sh.title shift_title, sh.date shift_date, sg.contact_id, ct.name volunteer_name
+       FROM shift_signups sg LEFT JOIN shifts sh ON sh.id = sg.shift_id LEFT JOIN contacts ct ON ct.id = sg.contact_id
+       WHERE sg.org_id = ? ORDER BY sg.created_at DESC LIMIT 3`,
+    ).bind(key.orgId).all<Record<string, unknown>>();
+    rows = r.results;
+  }
+  return c.json({ data: rows.length ? rows : [canned] });
+});
+
+// -- write endpoints (require a read+write key) — Zapier "actions"
+
+function requireWrite(c: any, key: ApiKeyAuth): Response | null {
+  if (key.scope !== "write") {
+    return c.json({ error: "This key is read-only. Create a read + write key in Settings → Integrations." }, 403);
+  }
+  return null;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const CONTACT_ROLES = ["adopter", "foster", "volunteer", "donor", "newsletter"];
+
+/** Find-or-create a contact by email. Roles merge; name/phone fill blanks only. */
+api.post("/v1/contacts", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  const denied = requireWrite(c, key);
+  if (denied) return denied;
+  let b: Record<string, unknown>;
+  try {
+    b = await c.req.json();
+  } catch {
+    return c.json({ error: "Send a JSON body." }, 400);
+  }
+  const email = String(b.email ?? "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return c.json({ error: "A valid email is required." }, 400);
+  const name = String(b.name ?? "").trim().slice(0, 120) || email.split("@")[0];
+  const phone = String(b.phone ?? "").trim().slice(0, 40) || null;
+  const address = String(b.address ?? "").trim().slice(0, 300) || null;
+  const roles = String(b.roles ?? "")
+    .split(",")
+    .map((r) => r.trim().toLowerCase())
+    .filter((r) => CONTACT_ROLES.includes(r));
+
+  const existing = await c.env.DB.prepare(`SELECT id, name, phone, address, roles FROM contacts WHERE org_id = ? AND email = ?`)
+    .bind(key.orgId, email)
+    .first<{ id: string; name: string; phone: string | null; address: string | null; roles: string | null }>();
+  if (existing) {
+    const merged = new Set((existing.roles ?? "").split(",").filter(Boolean));
+    for (const r of roles) merged.add(r);
+    await c.env.DB.prepare(`UPDATE contacts SET roles = ?, phone = COALESCE(phone, ?), address = COALESCE(address, ?) WHERE id = ?`)
+      .bind([...merged].join(","), phone, address, existing.id)
+      .run();
+    return c.json({ id: existing.id, email, name: existing.name, roles: [...merged].join(","), created: false });
+  }
+  const id = newId("ct");
+  await c.env.DB.prepare(`INSERT INTO contacts (id, org_id, name, email, phone, address, roles) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+    .bind(id, key.orgId, name, email, phone, address, roles.join(",") || null)
+    .run();
+  return c.json({ id, email, name, roles: roles.join(","), created: true }, 201);
+});
+
+api.post("/v1/donations", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  const denied = requireWrite(c, key);
+  if (denied) return denied;
+  let b: Record<string, unknown>;
+  try {
+    b = await c.req.json();
+  } catch {
+    return c.json({ error: "Send a JSON body." }, 400);
+  }
+  const amount = Number(b.amount);
+  if (!isFinite(amount) || amount <= 0 || amount > 10_000_000) {
+    return c.json({ error: "amount must be a positive number." }, 400);
+  }
+  let contactId = String(b.contact_id ?? "").trim() || null;
+  if (contactId) {
+    const owned = await c.env.DB.prepare(`SELECT id FROM contacts WHERE id = ? AND org_id = ?`)
+      .bind(contactId, key.orgId)
+      .first();
+    if (!owned) return c.json({ error: "contact_id not found in this organization." }, 400);
+  }
+  const email = String(b.email ?? "").trim().toLowerCase() || null;
+  const donorName = String(b.donor_name ?? "").trim().slice(0, 120) || null;
+  const method = String(b.method ?? "").trim().slice(0, 30) || null;
+  const note = String(b.note ?? "").trim().slice(0, 500) || null;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(b.date ?? "")) ? String(b.date) : null;
+
+  const id = newId("dn");
+  await c.env.DB.prepare(
+    `INSERT INTO donations (id, org_id, contact_id, donor_name, email, amount, method, note, date)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, date('now')))`,
+  )
+    .bind(id, key.orgId, contactId, donorName, email, amount, method, note, date)
+    .run();
+  await emitEvent(c.env, c.executionCtx as unknown as ExecutionContext, key.orgId, "donation.created", {
+    id, contact_id: contactId, donor_name: donorName, email, amount, method,
+    date: date ?? new Date().toISOString().slice(0, 10),
+  });
+  return c.json({ id, amount, date: date ?? new Date().toISOString().slice(0, 10), created: true }, 201);
+});
+
+api.post("/v1/animals", async (c) => {
+  const key = await v1Auth(c);
+  if (key instanceof Response) return key;
+  const denied = requireWrite(c, key);
+  if (denied) return denied;
+  let b: Record<string, unknown>;
+  try {
+    b = await c.req.json();
+  } catch {
+    return c.json({ error: "Send a JSON body." }, 400);
+  }
+  const name = String(b.name ?? "").trim().slice(0, 120);
+  if (!name) return c.json({ error: "Every friend needs a name." }, 400);
+  const status = ["available", "pending", "in foster", "hold", "adopted"].includes(String(b.status))
+    ? String(b.status)
+    : "available";
+  const id = newId("an");
+  await c.env.DB.prepare(
+    `INSERT INTO animals (id, org_id, name, species, breed, sex, dob, microchip, status, description, intake_date, is_public)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, date('now')), ?)`,
+  )
+    .bind(
+      id, key.orgId, name,
+      String(b.species ?? "").trim().toLowerCase().slice(0, 40) || null,
+      String(b.breed ?? "").trim().slice(0, 80) || null,
+      ["male", "female"].includes(String(b.sex)) ? String(b.sex) : null,
+      /^\d{4}-\d{2}-\d{2}$/.test(String(b.dob ?? "")) ? String(b.dob) : null,
+      String(b.microchip ?? "").trim().slice(0, 40) || null,
+      status,
+      String(b.description ?? "").trim().slice(0, 4000) || null,
+      /^\d{4}-\d{2}-\d{2}$/.test(String(b.intake_date ?? "")) ? String(b.intake_date) : null,
+      b.is_public ? 1 : 0,
+    )
+    .run();
+  await emitEvent(c.env, c.executionCtx as unknown as ExecutionContext, key.orgId, "animal.created", {
+    id, name,
+    species: String(b.species ?? "").trim().toLowerCase() || null,
+    breed: String(b.breed ?? "").trim() || null,
+    status, is_public: b.is_public ? 1 : 0,
+  });
+  return c.json({ id, name, status, created: true }, 201);
+});
+
 api.get("/v1/:resource", async (c) => {
   const key = await v1Auth(c);
   if (key instanceof Response) return key;
@@ -757,6 +1013,14 @@ api.get("/v1/:resource", async (c) => {
     }
     sql += ` AND created_at > ?`;
     binds.push(normalized);
+  }
+
+  // exact-match email filter (contacts/applications/donations) — powers
+  // Zapier's "Find contact" search
+  const email = c.req.query("email");
+  if (email && ["contacts", "applications", "donations"].includes(resource)) {
+    sql += ` AND email = ?`;
+    binds.push(email.trim().toLowerCase());
   }
 
   const rawCursor = c.req.query("cursor");

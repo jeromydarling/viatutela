@@ -64,11 +64,12 @@ export async function action({ context, request }: Route.ActionArgs) {
       `SELECT COUNT(*) n FROM api_keys WHERE org_id = ? AND revoked_at IS NULL`,
     ).bind(user.org_id).first<{ n: number }>();
     if ((count?.n ?? 0) >= 10) return { error: "Ten active keys is plenty — revoke one you're not using first." };
+    const scope = String(f.get("scope")) === "write" ? "write" : "read";
     const token = generateApiKey();
     await env.DB.prepare(
-      `INSERT INTO api_keys (id, org_id, name, prefix, key_hash, scope) VALUES (?, ?, ?, ?, ?, 'read')`,
+      `INSERT INTO api_keys (id, org_id, name, prefix, key_hash, scope) VALUES (?, ?, ?, ?, ?, ?)`,
     )
-      .bind(newId("ak"), user.org_id, name, token.slice(0, 12) + "…", await hashApiKey(token))
+      .bind(newId("ak"), user.org_id, name, token.slice(0, 12) + "…", await hashApiKey(token), scope)
       .run();
     return { newKey: token, ok: "Key created — copy it now, it won't be shown again." };
   }
@@ -176,9 +177,13 @@ export default function Integrations({ loaderData, actionData }: Route.Component
             <code className="text-xs">Authorization: Bearer …</code>; page with <code className="text-xs">?cursor=</code>,
             filter with <code className="text-xs">?since=</code>. 120 requests/minute.
           </p>
-          <Form method="post" className="mt-3 flex gap-2">
+          <Form method="post" className="mt-3 flex flex-wrap gap-2">
             <input type="hidden" name="intent" value="create-key" />
-            <input name="name" placeholder="What's this key for? e.g. Zapier" className={`${inputCls} flex-1`} maxLength={60} />
+            <input name="name" placeholder="What's this key for? e.g. Zapier" className={`${inputCls} flex-1 min-w-40`} maxLength={60} />
+            <select name="scope" className={inputCls} title="Write access lets tools create contacts, donations, and animals">
+              <option value="read">Read-only</option>
+              <option value="write">Read + write</option>
+            </select>
             <button disabled={busy} className="rounded-full bg-meadow text-white px-4 py-2 text-sm font-display font-semibold shadow-soft disabled:opacity-50">
               Create key
             </button>
@@ -189,7 +194,8 @@ export default function Integrations({ loaderData, actionData }: Route.Component
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold truncate">{k.name}</div>
                   <div className="text-xs text-charcoal-soft">
-                    <code>{k.prefix}</code> · {k.last_used_at ? `last used ${String(k.last_used_at).slice(0, 10)}` : "never used"}
+                    <code>{k.prefix}</code> · {k.scope === "write" ? "read + write" : "read-only"} ·{" "}
+                    {k.last_used_at ? `last used ${String(k.last_used_at).slice(0, 10)}` : "never used"}
                   </div>
                 </div>
                 <Form method="post">
