@@ -4,6 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 import { parseBrand } from "../../lib/site.server";
 import { parseBrandJson } from "../../../workers/lib/brand";
+import { createStarterPages } from "../../../workers/lib/site-starters";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Website — Via Tutela" }];
@@ -33,65 +34,6 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   };
 }
 
-const STARTERS: { slug: string; title: string; sections: (orgName: string, orgSlug: string) => unknown[] }[] = [
-  {
-    slug: "home",
-    title: "Home",
-    sections: (orgName, orgSlug) => [
-      { type: "home_hero", eyebrow: "Welcome to", heading: orgName, sub: "Every animal deserves a way home — come meet yours.", cta_label: "Meet the animals", cta_href: `/adopt/${orgSlug}` },
-      { type: "adoptable_grid", heading: "Looking for a home", limit: 6 },
-      { type: "cta_band", heading: "Lend a paw", text: "Adopt, foster, volunteer, or give — every bit of kindness counts.", primary_label: "Adopt", primary_href: `/adopt/${orgSlug}`, secondary_label: "Donate", secondary_href: `/s/${orgSlug}/donate` },
-      { type: "newsletter_signup", heading: "Stay close to the pack", text: "Occasional good news, adoption days, and friends who found home." },
-    ],
-  },
-  {
-    slug: "about",
-    title: "About us",
-    sections: (orgName) => [
-      { type: "prose", md: `## Our story\n\nWrite the story of ${orgName} here — how you began, who you serve, and what you believe about animals and the people who love them.` },
-      { type: "quote", text: "Saving one animal won't change the world, but for that one animal the world changes forever.", attribution: "" },
-    ],
-  },
-  {
-    slug: "adopt",
-    title: "Adopt",
-    sections: (_orgName, orgSlug) => [
-      { type: "hero", heading: "Adopt a friend", sub: "Applying is free and starts a conversation — it never commits you." },
-      { type: "adoptable_grid", heading: "Waiting for you", limit: 12 },
-      { type: "faq", heading: "How adopting works", items: [
-        { q: "What does adoption cost?", a: "Fees vary by animal and cover vaccines, spay/neuter, and microchip." },
-        { q: "How long does it take?", a: "Usually a few days: application, a quick conversation, then homecoming." },
-      ] },
-    ],
-  },
-  {
-    slug: "donate",
-    title: "Donate",
-    sections: (orgName) => [
-      { type: "hero", heading: "Give a little sunshine", sub: `Every cent goes to the animals in ${orgName}'s care.` },
-      { type: "prose", md: "Tell supporters how gifts are used — food, vet care, warm beds — and how to give (check, cash, online)." },
-      { type: "cta_band", heading: "Ready to help?", text: "Reach out and we'll make it easy.", primary_label: "Contact us", primary_href: "mailto:" },
-    ],
-  },
-  {
-    slug: "volunteer",
-    title: "Volunteer & foster",
-    sections: () => [
-      { type: "hero", heading: "Join the flock", sub: "Walk dogs, cuddle cats, foster a friend between homes." },
-      { type: "prose", md: "Describe your volunteer roles and foster program here — time commitment, training, and who to contact." },
-    ],
-  },
-  {
-    slug: "faq",
-    title: "FAQ",
-    sections: () => [
-      { type: "faq", heading: "Good questions", items: [
-        { q: "Where are you located?", a: "Add your address and visiting hours here." },
-        { q: "Can I visit before applying?", a: "Tell people how visits work." },
-      ] },
-    ],
-  },
-];
 
 export async function action({ context, request }: Route.ActionArgs) {
   const { env, user } = await requireUser(context, request);
@@ -113,23 +55,7 @@ export async function action({ context, request }: Route.ActionArgs) {
   }
 
   if (intent === "create-starters") {
-    for (const st of STARTERS) {
-      const exists = await env.DB.prepare(`SELECT id FROM pages WHERE org_id = ? AND slug = ?`).bind(user.org_id, st.slug).first();
-      if (exists) continue;
-      await env.DB.prepare(
-        `INSERT INTO pages (id, org_id, slug, title, sections) VALUES (?, ?, ?, ?, ?)`,
-      ).bind(newId("pg"), user.org_id, st.slug, st.title, JSON.stringify(st.sections(user.org_name, user.slug))).run();
-    }
-    const nav = [
-      { label: "Home", href: `/s/${user.slug}` },
-      { label: "Adopt", href: `/s/${user.slug}/adopt` },
-      { label: "About", href: `/s/${user.slug}/about` },
-      { label: "Donate", href: `/s/${user.slug}/donate` },
-      { label: "Volunteer", href: `/s/${user.slug}/volunteer` },
-      { label: "FAQ", href: `/s/${user.slug}/faq` },
-    ];
-    await env.DB.prepare(`UPDATE orgs SET nav_json = COALESCE(nav_json, ?) WHERE id = ?`)
-      .bind(JSON.stringify(nav), user.org_id).run();
+    await createStarterPages(env, user.org_id, user.org_name, user.slug);
     return { ok: "Starter pages created as drafts — open each one to make it yours, then publish." };
   }
 

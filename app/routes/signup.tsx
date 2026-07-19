@@ -6,6 +6,8 @@ import { Logo } from "../components/site";
 import { newId, newToken } from "../../workers/lib/ids";
 import { hashPassword } from "../../workers/lib/password";
 import { sessionCookie } from "../../workers/lib/auth";
+import { seedNewOrg } from "../../workers/lib/onboarding";
+import { cloudflareContext } from "../cloudflare-context";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Sign up free — Via Tutela" }];
@@ -13,6 +15,7 @@ export function meta(_: Route.MetaArgs) {
 
 export async function action({ context, request }: Route.ActionArgs) {
   const env = getEnv(context);
+  const { ctx } = context.get(cloudflareContext);
   const f = await request.formData();
   if (String(f.get("website") ?? "")) return { error: "Something went wrong." }; // honeypot
 
@@ -46,6 +49,9 @@ export async function action({ context, request }: Route.ActionArgs) {
     ).bind(userId, orgId, email, name.slice(0, 120) || null, hash, salt),
     env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`).bind(token, userId, expires),
   ]);
+
+  // the nest is never empty: starter site drafts, a to-do list, the drip
+  ctx.waitUntil(seedNewOrg(env, { orgId, orgName, slug, email, name: name || null }));
 
   return redirect("/app", { headers: { "Set-Cookie": sessionCookie(token) } });
 }

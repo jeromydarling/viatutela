@@ -49,7 +49,18 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     ).bind(org).all<Record<string, string>>(),
   ]);
 
+  // getting-started state (cheap; only matters for young orgs)
+  const setup = await env.DB.prepare(
+    `SELECT
+      (SELECT COUNT(*) FROM pages WHERE org_id = ?1 AND status = 'published') published_pages,
+      (SELECT COUNT(*) FROM pages WHERE org_id = ?1) total_pages,
+      (SELECT brand_json IS NOT NULL FROM orgs WHERE id = ?1) brand_set,
+      (SELECT COUNT(*) FROM animals WHERE org_id = ?1 AND is_public = 1) public_animals`,
+  ).bind(org).first<{ published_pages: number; total_pages: number; brand_set: number; public_animals: number }>();
+
   return {
+    setup: setup ?? { published_pages: 0, total_pages: 0, brand_set: 0, public_animals: 0 },
+    orgSlug: user.slug,
     counts: counts ?? { animals: 0, available: 0, contacts: 0, adoptions: 0 },
     newApplications: apps.results,
     activeFosters: fosters?.n ?? 0,
@@ -94,10 +105,70 @@ function fmtMoney(n: number) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { counts, newApplications, activeFosters, donations30, tasks, recentAnimals, medicalDue, today } = loaderData;
+  const { counts, newApplications, activeFosters, donations30, tasks, recentAnimals, medicalDue, today, setup, orgSlug } = loaderData;
+
+  const steps: { done: boolean; label: string; to: string; hint: string }[] = [
+    {
+      done: counts.animals > 0,
+      label: "Welcome your first friend",
+      to: "/app/animals/new",
+      hint: "Add one animal — or snap intake photos and let AI draft the profile.",
+    },
+    {
+      done: Boolean(setup.brand_set),
+      label: "Make it yours in the Brand Studio",
+      to: "/app/brand",
+      hint: "Colors, a typeset wordmark, and a site theme — three answers and AI proposes the lot.",
+    },
+    {
+      done: setup.published_pages > 0,
+      label: "Publish your website",
+      to: "/app/website",
+      hint: `${setup.total_pages > 0 ? "Six pages are already drafted and waiting" : "Starter pages are one click away"} — open, tweak, publish.`,
+    },
+    {
+      done: setup.public_animals > 0 && counts.animals > 0,
+      label: "Put a friend on the adoption page",
+      to: counts.animals > 0 ? "/app/animals" : "/app/animals/new",
+      hint: "The 🌐 toggle on any profile — website, adoption page, and Petfinder feed all at once.",
+    },
+  ];
+  const doneCount = steps.filter((s) => s.done).length;
+  const showChecklist = doneCount < steps.length;
 
   return (
     <div className="space-y-8">
+      {showChecklist && (
+        <section className="rounded-blob bg-sunflower-soft/70 border-2 border-sunflower shadow-soft p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display font-semibold text-xl">🌻 Getting settled — {doneCount} of {steps.length}</h2>
+            <a href={`/adopt/${orgSlug}`} className="text-sm font-semibold text-meadow-deep hover:underline">
+              Peek at your public adoption page ↗
+            </a>
+          </div>
+          <div className="mt-3 h-2 rounded-full bg-white overflow-hidden">
+            <div className="h-full bg-meadow rounded-full transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+          </div>
+          <ul className="mt-4 grid sm:grid-cols-2 gap-3">
+            {steps.map((s) => (
+              <li key={s.label}>
+                <Link
+                  to={s.to}
+                  className={`block rounded-2xl p-3.5 transition-shadow ${s.done ? "bg-white/60 opacity-70" : "bg-white shadow-soft hover:shadow-lift"}`}
+                >
+                  <span className="font-semibold text-sm flex items-center gap-2">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${s.done ? "bg-meadow text-white" : "bg-cream text-charcoal-soft"}`}>
+                      {s.done ? "✓" : "→"}
+                    </span>
+                    <span className={s.done ? "line-through decoration-2 decoration-meadow/40" : ""}>{s.label}</span>
+                  </span>
+                  {!s.done && <span className="mt-1 block text-xs text-charcoal-soft">{s.hint}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           ["friends in care", counts.animals],

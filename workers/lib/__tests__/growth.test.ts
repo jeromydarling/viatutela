@@ -72,3 +72,10 @@ describe("pricing crossover", () => {
     expect(monthlyCostCents("rescue", 500)).toBe(3900); // flat tiers never meter
   });
 });
+
+describe("onboarding drip", () => {
+  it("schedules day 1, 3, 7", async () => {
+    const { onboardingPlan } = await import("../onboarding");
+    expect(onboardingPlan().map((p) => [p.kind, p.days])).toEqual([["day1", 1], ["day3", 3], ["day7", 7]]);
+  });
+});
