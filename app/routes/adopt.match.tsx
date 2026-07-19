@@ -1,4 +1,4 @@
-import { aiAvailable } from "../../workers/lib/ai-shelter";
+import { aiAvailable } from "../../workers/lib/ai-flags";
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/adopt.match";
 import { getEnv } from "../lib/auth.server";
