@@ -19,8 +19,8 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
   if (!animal) throw new Response("Not found", { status: 404 });
 
   const [photos, medical, adoptions, fosters, contacts, locations, bonded] = await Promise.all([
-    env.DB.prepare(`SELECT id, r2_key FROM animal_photos WHERE animal_id = ? ORDER BY created_at`)
-      .bind(animal.id).all<{ id: string; r2_key: string }>(),
+    env.DB.prepare(`SELECT id, r2_key, kind FROM animal_photos WHERE animal_id = ? ORDER BY created_at`)
+      .bind(animal.id).all<{ id: string; r2_key: string; kind: string }>(),
     env.DB.prepare(`SELECT * FROM medical_records WHERE animal_id = ? ORDER BY date DESC, created_at DESC`)
       .bind(animal.id).all<Record<string, unknown>>(),
     env.DB.prepare(
@@ -97,19 +97,24 @@ export async function action({ context, request, params }: Route.ActionArgs) {
   if (intent === "upload-photo") {
     const file = f.get("photo");
     if (file instanceof File && file.size > 0) {
-      if (file.size > 10 * 1024 * 1024) return { error: "Photos need to be under 10MB." };
       const type = file.type || "image/jpeg";
-      if (!type.startsWith("image/")) return { error: "That doesn't look like an image." };
-      const ext = type.includes("png") ? "png" : type.includes("webp") ? "webp" : "jpg";
+      const isVideo = type.startsWith("video/");
+      if (!isVideo && !type.startsWith("image/")) return { error: "That doesn't look like a photo or video." };
+      if (isVideo && file.size > 50 * 1024 * 1024) return { error: "Videos need to be under 50MB — a 30-second clip is plenty." };
+      if (!isVideo && file.size > 10 * 1024 * 1024) return { error: "Photos need to be under 10MB." };
+      const ext = isVideo
+        ? (type.includes("webm") ? "webm" : type.includes("quicktime") ? "mov" : "mp4")
+        : (type.includes("png") ? "png" : type.includes("webp") ? "webp" : "jpg");
       const key = `orgs/${user.org_id}/photos/${animal.id}-${newId("p")}.${ext}`;
       await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: type } });
       await env.DB.prepare(
-        `INSERT INTO animal_photos (id, org_id, animal_id, r2_key) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES (?, ?, ?, ?, ?)`,
       )
-        .bind(newId("ph"), user.org_id, animal.id, key)
+        .bind(newId("ph"), user.org_id, animal.id, key, isVideo ? "video" : "photo")
         .run();
+      return { ok: isVideo ? "Video added — it'll play right on the adoption page. 🎬" : "Photo added." };
     }
-    return { ok: "Photo added." };
+    return { ok: "Nothing uploaded." };
   }
 
   if (intent === "delete-photo") {
@@ -330,7 +335,14 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
             <div className="mt-3 grid grid-cols-3 gap-2">
               {photos.map((p) => (
                 <div key={p.id} className="relative group">
-                  <img src={`/api/media/${p.r2_key}`} alt="" className="w-full aspect-square object-cover rounded-xl" />
+                  {p.kind === "video" ? (
+                    <video src={`/api/media/${p.r2_key}`} preload="metadata" muted className="w-full aspect-square object-cover rounded-xl bg-charcoal/80" />
+                  ) : (
+                    <img src={`/api/media/${p.r2_key}`} alt="" className="w-full aspect-square object-cover rounded-xl" />
+                  )}
+                  {p.kind === "video" && (
+                    <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-xs">🎬</span>
+                  )}
                   <Form method="post" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <input type="hidden" name="intent" value="delete-photo" />
                     <input type="hidden" name="photo_id" value={p.id} />
@@ -343,11 +355,12 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
             </div>
             <Form method="post" encType="multipart/form-data" className="mt-3 flex gap-2 items-center">
               <input type="hidden" name="intent" value="upload-photo" />
-              <input type="file" name="photo" accept="image/*" required className="text-sm flex-1" />
+              <input type="file" name="photo" accept="image/*,video/mp4,video/webm,video/quicktime" required className="text-sm flex-1" />
               <button className="rounded-full bg-sunflower px-4 py-2 text-sm font-semibold shadow-soft">
                 Upload
               </button>
             </Form>
+            <p className="mt-1 text-xs text-charcoal-soft">Photos up to 10MB · videos up to 50MB — a 30-second clip sells a personality better than ten photos.</p>
           </section>
 
           {/* foster */}

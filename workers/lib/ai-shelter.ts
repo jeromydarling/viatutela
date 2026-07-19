@@ -145,7 +145,7 @@ export interface AppReview {
 export async function reviewApplication(
   env: Env,
   args: {
-    application: { name: string; email: string; phone: string | null; home_type: string | null; message: string | null };
+    application: { name: string; email: string; phone: string | null; home_type: string | null; message: string | null; interest?: string | null };
     animal: CompactAnimal | null;
     others: CompactAnimal[];
     priorAdoptions: number;
@@ -181,6 +181,7 @@ export async function reviewApplication(
 APPLICATION:
 - Applicant: ${args.application.name}
 - Home type: ${args.application.home_type ?? "not stated"}
+- They said they want to: ${args.application.interest ?? "adopt"}
 - Their message: ${(args.application.message ?? "none").slice(0, 2000)}
 - Prior completed adoptions from this shelter: ${args.priorAdoptions}
 

@@ -503,6 +503,60 @@ api.get("/export.zip", async (c) => {
   });
 });
 
+// ---------- Public share kit: photos + blurb for one adoptable friend ----------
+
+api.get("/share-kit/:slug/:file", async (c) => {
+  const animalId = c.req.param("file").replace(/\.zip$/, "");
+  const org = await c.env.DB.prepare(`SELECT id, name, slug FROM orgs WHERE slug = ?`)
+    .bind(c.req.param("slug"))
+    .first<{ id: string; name: string; slug: string }>();
+  if (!org) return c.json({ error: "Not found" }, 404);
+  const animal = await c.env.DB.prepare(
+    `SELECT id, name, species, breed, sex, description, bonded_group_id FROM animals
+     WHERE id = ? AND org_id = ? AND is_public = 1`,
+  )
+    .bind(animalId, org.id)
+    .first<Record<string, unknown>>();
+  if (!animal) return c.json({ error: "Not found" }, 404);
+
+  const photos = await c.env.DB.prepare(
+    `SELECT r2_key FROM animal_photos WHERE animal_id = ? AND kind != 'video' ORDER BY created_at LIMIT 8`,
+  )
+    .bind(animal.id)
+    .all<{ r2_key: string }>();
+
+  const { zipSync, strToU8 } = await import("fflate");
+  const files: Record<string, Uint8Array> = {};
+  let budget = 30 * 1024 * 1024; // keep the zip friendly to phones
+  let i = 0;
+  for (const p of photos.results) {
+    const obj = await c.env.MEDIA.get(p.r2_key);
+    if (!obj) continue;
+    const buf = new Uint8Array(await obj.arrayBuffer());
+    if (buf.byteLength > budget) continue;
+    budget -= buf.byteLength;
+    i++;
+    const ext = p.r2_key.split(".").pop() ?? "jpg";
+    files[`${String(animal.name).replace(/[^\w-]/g, "_")}-${i}.${ext}`] = buf;
+  }
+  const pageUrl = `${new URL(c.req.url).origin}/adopt/${org.slug}/${animal.id}`;
+  const facts = [animal.breed ?? animal.species, animal.sex].filter(Boolean).join(", ");
+  files["share-text.txt"] = strToU8(
+    `${String(animal.name)}${facts ? ` (${facts})` : ""} is looking for a home at ${org.name}.\n` +
+      (animal.bonded_group_id ? `They're part of a bonded pair — they go home together.\n` : "") +
+      (animal.description ? `\n${String(animal.description)}\n` : "") +
+      `\nMeet them: ${pageUrl}\n\nThank you for sharing — it's how friends get found. 💛\n`,
+  );
+  const zipped = zipSync(files, { level: 6 });
+  return new Response(zipped.slice().buffer as ArrayBuffer, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${String(animal.name).replace(/[^\w-]/g, "_")}-share-kit.zip"`,
+      "Cache-Control": "public, max-age=300",
+    },
+  });
+});
+
 // ---------- Petfinder-format public feed ----------
 
 api.get("/feeds/:slug/petfinder.csv", async (c) => {
