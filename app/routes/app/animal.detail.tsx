@@ -8,6 +8,7 @@ import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, summarizeNotes, writeBio, type BioPack, type HandoffPack } from "../../../workers/lib/ai-shelter";
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
+import { recordAdoptionUsage } from "../../../workers/lib/billing";
 import { notifyWaitlist } from "../../../workers/lib/waitlist";
 import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
 import { extractVetRecords, fileToVisionImage, type OcrRecord, type VisionImage } from "../../../workers/lib/ai-vision";
@@ -213,6 +214,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     ]);
     ctx.waitUntil(autoAdoption(env, user.org_id, String(animal.id)));
     ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
+    ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
     return { ok: "Welcome home! Adoption recorded — check-in emails are scheduled." };
   }
 

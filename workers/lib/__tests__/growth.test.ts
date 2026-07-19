@@ -56,3 +56,19 @@ describe("public animal filters", () => {
     expect(FILTERS_APPEAR_AT).toBeGreaterThan(3); // a handful of animals stays a simple list
   });
 });
+
+describe("pricing crossover", () => {
+  it("Starter beats the flat tier until ~30 adoptions/month", async () => {
+    const { monthlyCostCents, recommendPlan, PLANS } = await import("../pricing");
+    expect(PLANS.starter.monthlyCents).toBe(900);
+    expect(PLANS.starter.perAdoptionCents).toBe(100);
+    expect(monthlyCostCents("starter", 0)).toBe(900);
+    expect(monthlyCostCents("starter", 10)).toBe(1900);
+    expect(monthlyCostCents("starter", 30)).toBe(3900); // = Rescue flat
+    expect(recommendPlan(5).key).toBe("starter");
+    expect(recommendPlan(29).key).toBe("starter");
+    expect(recommendPlan(30).key).toBe("rescue"); // crossover: 9 + 30 = 39
+    expect(recommendPlan(100).key).toBe("rescue");
+    expect(monthlyCostCents("rescue", 500)).toBe(3900); // flat tiers never meter
+  });
+});

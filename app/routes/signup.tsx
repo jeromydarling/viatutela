@@ -40,7 +40,7 @@ export async function action({ context, request }: Route.ActionArgs) {
   const expires = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
 
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO orgs (id, slug, name, plan) VALUES (?, ?, ?, 'free')`).bind(orgId, slug, orgName.slice(0, 120)),
+    env.DB.prepare(`INSERT INTO orgs (id, slug, name, plan) VALUES (?, ?, ?, 'starter')`).bind(orgId, slug, orgName.slice(0, 120)),
     env.DB.prepare(
       `INSERT INTO users (id, org_id, email, name, password_hash, password_salt) VALUES (?, ?, ?, ?, ?, ?)`,
     ).bind(userId, orgId, email, name.slice(0, 120) || null, hash, salt),
@@ -64,7 +64,8 @@ export default function Signup() {
           <Logo className="w-16 h-16 mx-auto" />
           <h1 className="mt-2 text-3xl font-display font-semibold text-center">Sign up free</h1>
           <p className="mt-1 text-center text-sm text-charcoal-soft">
-            Two minutes to a working shelter platform. Free forever for small rescues.
+            Two minutes to a working shelter platform. Free to move in — Starter is $9 a month
+            plus $1 for every animal you send home.
           </p>
           <Form method="post" className="mt-6 space-y-4">
             <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
