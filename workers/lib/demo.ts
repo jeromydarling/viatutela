@@ -539,17 +539,32 @@ export async function resetDemoData(env: Env, origin: string): Promise<void> {
   ANIMALS.forEach((a, i) => {
     if (a.art) art.push([a.id, a.art, i]);
   });
-  // historical friends share a small pool of generic shots by species —
-  // rows point at shared R2 objects, so this costs six small files total
-  const FILLER_ART: Record<string, string[]> = {
-    dog: ["demo-filler-dog1", "demo-filler-dog2", "demo-filler-dog3"],
-    cat: ["demo-filler-cat1", "demo-filler-cat2"],
-    rabbit: ["demo-filler-rabbit"],
-  };
+  // every historical friend gets their own photo — no repeats anywhere.
+  // Index-aligned with HISTORY_NAMES (species formula: cat/dog/rabbit).
+  const HISTORY_ART = [
+    "demo-filler-cat1",   // Scout — brown tabby in the condo
+    "demo-filler-dog1",   // Poppy — brown mix on the sidewalk
+    "demo-filler-rabbit", // Otis — dutch rabbit with hay
+    "demo-filler-cat2",   // Luna — tuxedo on the windowsill
+    "demo-filler-dog2",   // Beans — black lab on the kennel cot
+    "demo-filler-dog3",   // Duke — chihuahua mix in the yard
+    "demo-h-willow",      // Willow — longhaired gray on the cat tree
+    "demo-h-taco",        // Taco — corgi mix mid-walk
+    "demo-h-ivy",         // Ivy — brindle pittie in a bandana
+    "demo-h-bruno",       // Bruno — orange tom on the scratcher
+    "demo-h-sage",        // Sage — schnauzer mix on the doormat
+    "demo-h-pickles",     // Pickles — dachshund in a sweater
+    "demo-h-nova",        // Nova — black cat, box too small
+    "demo-h-chester",     // Chester — senior golden, white muzzle
+    "demo-h-daisy",       // Daisy — heeler with the slobbery ball
+    "demo-h-milo",        // Milo — siamese atop the bookshelf
+    "demo-h-olive",       // Olive — pug mix, belly up
+    "demo-h-rocket",      // Rocket — spotted rabbit mid-binky
+    "demo-h-pepper",      // Pepper — gray & white in the paper bag
+    "demo-h-finn",        // Finn — border collie catching a frisbee
+  ];
   HISTORY_NAMES.forEach((_, i) => {
-    const species = i % 3 === 0 ? "cat" : i % 3 === 1 ? "dog" : i % 5 === 2 ? "rabbit" : "dog";
-    const pool = FILLER_ART[species] ?? FILLER_ART.dog;
-    art.push([`dm_an_h${i}`, pool[i % pool.length], 100 + i]);
+    if (HISTORY_ART[i]) art.push([`dm_an_h${i}`, HISTORY_ART[i], 100 + i]);
   });
   for (const [animalId, name, i] of art) {
     try {
