@@ -114,6 +114,19 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
         </a>
       </section>
 
+      <section className="rounded-blob bg-white shadow-soft p-6 space-y-2">
+        <h2 className="font-display font-semibold text-lg">Email</h2>
+        <p className="text-sm text-charcoal-soft">
+          Via Tutela sends application confirmations, approval/denial notes,
+          donation receipts, and welcome emails through Cloudflare Email
+          Sending. Set your <strong>public email</strong> above to get notified
+          of new applications (it's also used as the reply-to on emails to
+          adopters). Delivery activates once the sender domain is verified in
+          the Cloudflare dashboard (Email → Sending) — until then, sends are
+          logged and skipped, and nothing else is affected.
+        </p>
+      </section>
+
       <section className="rounded-blob bg-white shadow-soft p-6">
         <h2 className="font-display font-semibold text-lg">Plan</h2>
         <p className="mt-1 text-sm">

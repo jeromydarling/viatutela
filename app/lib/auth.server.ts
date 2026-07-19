@@ -6,11 +6,11 @@ import { getAuthedUser, type AuthedUser } from "../../workers/lib/auth";
 export async function requireUser(
   context: Readonly<RouterContextProvider>,
   request: Request,
-): Promise<{ env: Env; user: AuthedUser }> {
-  const { env } = context.get(cloudflareContext);
+): Promise<{ env: Env; ctx: ExecutionContext; user: AuthedUser }> {
+  const { env, ctx } = context.get(cloudflareContext);
   const user = await getAuthedUser(env, request);
   if (!user) throw redirect("/login");
-  return { env, user };
+  return { env, ctx, user };
 }
 
 export function getEnv(context: Readonly<RouterContextProvider>): Env {

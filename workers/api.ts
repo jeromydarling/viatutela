@@ -17,6 +17,7 @@ import { toCsv } from "./lib/csv";
 import { promoteImport } from "./import/promote";
 import { AUTH_COOKIE, getAuthedUser } from "./lib/auth";
 import { hashPassword } from "./lib/password";
+import { sendAppEmail } from "./lib/email";
 
 type AppEnv = { Bindings: Env };
 
@@ -396,6 +397,20 @@ api.post("/import/:jobId/claim", async (c) => {
   ]);
 
   const promoted = await promoteImport(c.env.DB, job.id as string, orgId);
+
+  const origin = new URL(c.req.url).origin;
+  c.executionCtx.waitUntil(
+    sendAppEmail(c.env, {
+      to: emailNorm,
+      subject: "Welcome home — your rescue has a new roof 🏡",
+      heading: `Welcome to Via Tutela, ${org_name.trim()}`,
+      paragraphs: [
+        `Every one of your ${promoted.animals} friend${promoted.animals === 1 ? "" : "s"} made it across safely — records, relationships, bonded pairs and all.`,
+        `Your workspace is ready whenever you are. Move in at your own pace; we'll carry any more boxes you find.`,
+      ],
+      cta: { label: "Open your workspace", url: `${origin}/app` },
+    }),
+  );
 
   setCookie(c, AUTH_COOKIE, sessionToken, {
     httpOnly: true,

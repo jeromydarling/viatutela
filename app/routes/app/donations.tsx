@@ -2,6 +2,7 @@ import { Form } from "react-router";
 import type { Route } from "./+types/donations";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
+import { sendAppEmail } from "../../../workers/lib/email";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Donations — Via Tutela" }];
@@ -45,7 +46,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
-  const { env, user } = await requireUser(context, request);
+  const { env, ctx, user } = await requireUser(context, request);
   const f = await request.formData();
   const intent = String(f.get("intent"));
   const str = (k: string) => String(f.get(k) ?? "").trim() || null;
@@ -64,13 +65,33 @@ export async function action({ context, request }: Route.ActionArgs) {
         str("method"), str("note"), str("date"),
       )
       .run();
+    let receiptEmail = str("email");
+    let donorName = str("donor_name");
     if (contactId) {
-      const c = await env.DB.prepare(`SELECT roles FROM contacts WHERE id = ?`).bind(contactId).first<{ roles: string | null }>();
+      const c = await env.DB.prepare(`SELECT name, email, roles FROM contacts WHERE id = ?`)
+        .bind(contactId)
+        .first<{ name: string; email: string | null; roles: string | null }>();
+      receiptEmail = receiptEmail ?? c?.email ?? null;
+      donorName = donorName ?? c?.name ?? null;
       const roles = new Set((c?.roles ?? "").split(",").filter(Boolean));
       if (!roles.has("donor")) {
         roles.add("donor");
         await env.DB.prepare(`UPDATE contacts SET roles = ? WHERE id = ?`).bind([...roles].join(","), contactId).run();
       }
+    }
+    if (receiptEmail) {
+      ctx.waitUntil(
+        sendAppEmail(env, {
+          to: receiptEmail,
+          subject: `Thank you from ${user.org_name} 💛`,
+          heading: "Thank you for your generosity",
+          paragraphs: [
+            `${donorName ?? "Friend"}, your gift of ${amount.toLocaleString("en-US", { style: "currency", currency: "USD" })} to ${user.org_name} has been received with gratitude.`,
+            `It goes straight to the animals — Via Tutela doesn't take a cent.`,
+            `Keep this note for your records.`,
+          ],
+        }),
+      );
     }
     return { ok: "Thank you for their generosity — recorded. It goes straight to the animals." };
   }
