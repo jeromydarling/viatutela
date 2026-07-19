@@ -1,6 +1,7 @@
 import { Form } from "react-router";
 import type { Route } from "./+types/donations";
 import { requireUser } from "../../lib/auth.server";
+import { emitEvent } from "../../../workers/lib/integrations";
 import { newId } from "../../../workers/lib/ids";
 import { sendAppEmail } from "../../../workers/lib/email";
 
@@ -55,16 +56,28 @@ export async function action({ context, request }: Route.ActionArgs) {
     const amount = Number(f.get("amount"));
     if (!isFinite(amount) || amount <= 0) return { error: "The amount needs to be a positive number." };
     const contactId = str("contact_id");
+    const donationId = newId("dn");
     await env.DB.prepare(
       `INSERT INTO donations (id, org_id, contact_id, campaign_id, donor_name, email, amount, method, note, date)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, date('now')))`,
     )
       .bind(
-        newId("dn"), user.org_id, contactId, str("campaign_id"),
+        donationId, user.org_id, contactId, str("campaign_id"),
         contactId ? null : str("donor_name"), str("email"), amount,
         str("method"), str("note"), str("date"),
       )
       .run();
+    ctx.waitUntil(
+      emitEvent(env, ctx, user.org_id, "donation.created", {
+        id: donationId,
+        contact_id: contactId,
+        donor_name: contactId ? null : str("donor_name"),
+        email: str("email"),
+        amount,
+        method: str("method"),
+        date: str("date") ?? new Date().toISOString().slice(0, 10),
+      }),
+    );
     let receiptEmail = str("email");
     let donorName = str("donor_name");
     if (contactId) {

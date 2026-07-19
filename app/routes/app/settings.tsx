@@ -1,4 +1,4 @@
-import { Form } from "react-router";
+import { Form, Link } from "react-router";
 import type { Route } from "./+types/settings";
 import { requireUser } from "../../lib/auth.server";
 import { newId, newToken } from "../../../workers/lib/ids";
@@ -266,6 +266,19 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </span>
           </p>
         </div>
+      </section>
+
+      <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">
+        <h2 className="font-display font-semibold text-lg">Integrations</h2>
+        <p className="text-sm text-charcoal-soft">
+          API keys, webhooks for Zapier/Make/n8n, and a calendar feed of volunteer shifts.
+        </p>
+        <Link
+          to="/app/settings/integrations"
+          className="inline-block rounded-full bg-sky/20 text-sky-deep px-6 py-3 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
+        >
+          Manage integrations →
+        </Link>
       </section>
 
       <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">

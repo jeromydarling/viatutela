@@ -2,6 +2,7 @@ import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/volunteers";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
+import { emitEvent } from "../../../workers/lib/integrations";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Volunteers — Tutela" }];
@@ -49,7 +50,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
-  const { env, user } = await requireUser(context, request);
+  const { env, ctx, user } = await requireUser(context, request);
   const f = await request.formData();
   const intent = String(f.get("intent"));
   const str = (k: string) => String(f.get(k) ?? "").trim();
@@ -68,17 +69,31 @@ export async function action({ context, request }: Route.ActionArgs) {
   }
 
   if (intent === "signup") {
-    const shift = await env.DB.prepare(`SELECT start_time, end_time FROM shifts WHERE id = ? AND org_id = ?`)
+    const shift = await env.DB.prepare(`SELECT title, date, start_time, end_time FROM shifts WHERE id = ? AND org_id = ?`)
       .bind(str("shift_id"), user.org_id)
-      .first<{ start_time: string | null; end_time: string | null }>();
+      .first<{ title: string; date: string; start_time: string | null; end_time: string | null }>();
     if (!shift) return { error: "That shift is gone." };
     const contactId = str("contact_id");
     if (!contactId) return { error: "Pick a volunteer." };
+    const signupId = newId("sg");
     await env.DB.prepare(
       `INSERT INTO shift_signups (id, org_id, shift_id, contact_id, hours) VALUES (?, ?, ?, ?, ?)`,
     )
-      .bind(newId("sg"), user.org_id, str("shift_id"), contactId, hoursBetween(shift.start_time, shift.end_time))
+      .bind(signupId, user.org_id, str("shift_id"), contactId, hoursBetween(shift.start_time, shift.end_time))
       .run();
+    const volunteer = await env.DB.prepare(`SELECT name FROM contacts WHERE id = ? AND org_id = ?`)
+      .bind(contactId, user.org_id)
+      .first<{ name: string }>();
+    ctx.waitUntil(
+      emitEvent(env, ctx, user.org_id, "volunteer.signup", {
+        id: signupId,
+        shift_id: str("shift_id"),
+        shift_title: shift.title,
+        shift_date: shift.date,
+        contact_id: contactId,
+        volunteer_name: volunteer?.name ?? null,
+      }),
+    );
     return { ok: "Signed up — hours logged automatically for grant season." };
   }
 

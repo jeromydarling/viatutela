@@ -8,6 +8,7 @@ import { compactAnimal, reviewApplication, type AppReview } from "../../../worke
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 import { sendSms } from "../../../workers/lib/sms";
+import { emitEvent } from "../../../workers/lib/integrations";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
 
 export function meta(_: Route.MetaArgs) {
@@ -166,6 +167,16 @@ export async function action({ context, request }: Route.ActionArgs) {
       ctx.waitUntil(autoAdoption(env, user.org_id, String(app.animal_id)));
       ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
       ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
+      ctx.waitUntil(
+        emitEvent(env, ctx, user.org_id, "adoption.created", {
+          id: adoptionId,
+          animal_id: app.animal_id,
+          animal_name: animalName,
+          contact_id: contactId,
+          adopter_name: app.name,
+          date: new Date().toISOString().slice(0, 10),
+        }),
+      );
     }
     if (app.phone) {
       ctx.waitUntil(

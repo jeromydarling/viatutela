@@ -10,6 +10,7 @@ import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
 import { notifyWaitlist } from "../../../workers/lib/waitlist";
+import { emitEvent } from "../../../workers/lib/integrations";
 import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
 import { extractVetRecords, fileToVisionImage, type OcrRecord, type VisionImage } from "../../../workers/lib/ai-vision";
 import {
@@ -84,9 +85,9 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
 
 export async function action({ context, request, params }: Route.ActionArgs) {
   const { env, ctx, user } = await requireUser(context, request);
-  const animal = await env.DB.prepare(`SELECT id, status FROM animals WHERE id = ? AND org_id = ?`)
+  const animal = await env.DB.prepare(`SELECT id, name, status FROM animals WHERE id = ? AND org_id = ?`)
     .bind(params.animalId, user.org_id)
-    .first<{ id: string; status: string }>();
+    .first<{ id: string; name: string; status: string }>();
   if (!animal) throw new Response("Not found", { status: 404 });
 
   const f = await request.formData();
@@ -413,6 +414,15 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     ctx.waitUntil(autoAdoption(env, user.org_id, String(animal.id)));
     ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
     ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
+    ctx.waitUntil(
+      emitEvent(env, ctx, user.org_id, "adoption.created", {
+        id: adoptionId,
+        animal_id: animal.id,
+        animal_name: animal.name,
+        contact_id: contactId,
+        date: str("date") ?? new Date().toISOString().slice(0, 10),
+      }),
+    );
     return { ok: "Welcome home! Adoption recorded — check-in emails are scheduled." };
   }
 
