@@ -8,6 +8,14 @@
 	"compatibility_date": "2026-07-01",
 	"main": "./workers/app.ts",
 	"compatibility_flags": ["nodejs_compat"],
+	/**
+	 * Ensures `wrangler deploy` (e.g. from Workers Builds with the default
+	 * deploy command) always runs the Vite/React Router build first; the
+	 * plugin then redirects wrangler to the built output config.
+	 */
+	"build": {
+		"command": "npm run build"
+	},
 	"observability": {
 		"enabled": true
 	},
