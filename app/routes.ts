@@ -12,6 +12,9 @@ export default [
   route("adopt/:slug/:animalId", "routes/adopt.animal.tsx"),
   route("a/:animalId", "routes/quick.tsx"),
 
+  // shelter websites (block CMS)
+  route("s/:slug/:pageSlug?", "routes/site.page.tsx"),
+
   // staff app
   route("app", "routes/app/layout.tsx", [
     index("routes/app/dashboard.tsx"),
@@ -24,6 +27,11 @@ export default [
     route("fosters", "routes/app/fosters.tsx"),
     route("donations", "routes/app/donations.tsx"),
     route("reports", "routes/app/reports.tsx"),
+    route("website", "routes/app/website.tsx"),
+    route("website/pages/:pageId", "routes/app/website.page.tsx"),
+    route("website/media", "routes/app/website.media.tsx"),
+    route("website/interview", "routes/app/website.interview.tsx"),
+    route("website/domain", "routes/app/website.domain.tsx"),
     route("settings", "routes/app/settings.tsx"),
   ]),
 ] satisfies RouteConfig;
