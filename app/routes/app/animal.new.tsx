@@ -8,8 +8,13 @@ export function meta(_: Route.MetaArgs) {
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
-  await requireUser(context, request);
-  return null;
+  const { env, user } = await requireUser(context, request);
+  const locations = await env.DB.prepare(
+    `SELECT id, name FROM locations WHERE org_id = ? AND active = 1 ORDER BY name`,
+  )
+    .bind(user.org_id)
+    .all<{ id: string; name: string }>();
+  return { locations: locations.results };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
@@ -43,13 +48,27 @@ export async function action({ context, request }: Route.ActionArgs) {
       f.get("is_public") ? 1 : 0,
     )
     .run();
+  const locationId = String(f.get("location_id") || "");
+  if (locationId) {
+    await env.DB.prepare(
+      `UPDATE animals SET location_id = ? WHERE id = ? AND ? IN (SELECT id FROM locations WHERE org_id = ?)`,
+    )
+      .bind(locationId, id, locationId, user.org_id)
+      .run();
+  }
   return redirect(`/app/animals/${id}`);
 }
 
 export const animalFieldsClass =
   "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-3 py-2 focus:border-meadow outline-none";
 
-export function AnimalFields({ animal }: { animal?: Record<string, unknown> }) {
+export function AnimalFields({
+  animal,
+  locations = [],
+}: {
+  animal?: Record<string, unknown>;
+  locations?: { id: string; name: string }[];
+}) {
   const v = (k: string) => (animal?.[k] as string | number | null | undefined) ?? "";
   return (
     <div className="grid sm:grid-cols-2 gap-4">
@@ -102,9 +121,20 @@ export function AnimalFields({ animal }: { animal?: Record<string, unknown> }) {
         </select>
       </label>
       <label className="block">
-        <span className="font-semibold text-sm">Kennel / location</span>
+        <span className="font-semibold text-sm">Kennel</span>
         <input name="kennel" defaultValue={v("kennel")} placeholder="K-12, Cat Room 2…" className={animalFieldsClass} />
       </label>
+      {locations.length > 0 && (
+        <label className="block">
+          <span className="font-semibold text-sm">Location</span>
+          <select name="location_id" defaultValue={v("location_id")} className={animalFieldsClass}>
+            <option value="">— no location —</option>
+            {locations.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className="block">
         <span className="font-semibold text-sm">Color</span>
         <input name="color" defaultValue={v("color")} className={animalFieldsClass} />
@@ -130,7 +160,7 @@ export function AnimalFields({ animal }: { animal?: Record<string, unknown> }) {
   );
 }
 
-export default function NewAnimal({ actionData }: Route.ComponentProps) {
+export default function NewAnimal({ loaderData, actionData }: Route.ComponentProps) {
   const nav = useNavigation();
   return (
     <div className="max-w-3xl">
@@ -139,7 +169,7 @@ export default function NewAnimal({ actionData }: Route.ComponentProps) {
       </Link>
       <h1 className="mt-2 text-2xl font-display font-semibold">Add a friend</h1>
       <Form method="post" className="mt-6 rounded-blob bg-white shadow-soft p-6">
-        <AnimalFields />
+        <AnimalFields locations={loaderData.locations} />
         {actionData?.error && (
           <p className="mt-4 font-semibold text-terracotta-deep" role="alert">{actionData.error}</p>
         )}

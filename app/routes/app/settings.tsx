@@ -1,6 +1,7 @@
 import { Form } from "react-router";
 import type { Route } from "./+types/settings";
 import { requireUser } from "../../lib/auth.server";
+import { newId } from "../../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Settings — Via Tutela" }];
@@ -8,19 +9,43 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
-  const org = await env.DB.prepare(
-    `SELECT id, name, slug, plan, about, website, email, phone, address FROM orgs WHERE id = ?`,
-  )
-    .bind(user.org_id)
-    .first<Record<string, string | null>>();
+  const [org, locations] = await Promise.all([
+    env.DB.prepare(
+      `SELECT id, name, slug, plan, about, website, email, phone, address FROM orgs WHERE id = ?`,
+    ).bind(user.org_id).first<Record<string, string | null>>(),
+    env.DB.prepare(
+      `SELECT l.*, (SELECT COUNT(*) FROM animals a WHERE a.location_id = l.id AND a.status NOT IN ('adopted','deceased','transferred')) in_care
+       FROM locations l WHERE l.org_id = ? ORDER BY l.active DESC, l.name`,
+    ).bind(user.org_id).all<Record<string, unknown>>(),
+  ]);
   const origin = new URL(request.url).origin;
-  return { org: org!, origin };
+  return { org: org!, origin, locations: locations.results };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
   const { env, user } = await requireUser(context, request);
   const f = await request.formData();
+  const intent = String(f.get("intent") ?? "org");
   const str = (k: string) => String(f.get(k) ?? "").trim() || null;
+
+  if (intent === "add-location") {
+    const name = str("location_name");
+    if (!name) return { error: "The location needs a name." };
+    await env.DB.prepare(
+      `INSERT INTO locations (id, org_id, name, address) VALUES (?, ?, ?, ?)`,
+    )
+      .bind(newId("lc"), user.org_id, name, str("location_address"))
+      .run();
+    return { ok: `${name} added.` };
+  }
+
+  if (intent === "toggle-location") {
+    await env.DB.prepare(`UPDATE locations SET active = 1 - active WHERE id = ? AND org_id = ?`)
+      .bind(str("location_id"), user.org_id)
+      .run();
+    return null;
+  }
+
   const name = str("name");
   if (!name) return { error: "Your organization needs a name." };
   await env.DB.prepare(
@@ -35,7 +60,7 @@ const inputCls =
   "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none";
 
 export default function Settings({ loaderData, actionData }: Route.ComponentProps) {
-  const { org, origin } = loaderData;
+  const { org, origin, locations } = loaderData;
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -112,6 +137,41 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
         >
           Download everything (.zip)
         </a>
+      </section>
+
+      <section className="rounded-blob bg-white shadow-soft p-6">
+        <h2 className="font-display font-semibold text-lg">Locations</h2>
+        <p className="mt-1 text-sm text-charcoal-soft">
+          Buildings, rooms, or partner sites. Assign friends to a location on
+          their profile; filter and report by location everywhere.
+        </p>
+        {locations.length > 0 && (
+          <ul className="mt-3 divide-y divide-cream text-sm">
+            {locations.map((l) => (
+              <li key={String(l.id)} className={`py-2.5 flex items-center gap-3 ${l.active ? "" : "opacity-50"}`}>
+                <span className="font-semibold">{String(l.name)}</span>
+                <span className="text-charcoal-soft">{String(l.address ?? "")}</span>
+                <span className="flex-1" />
+                <span className="rounded-full bg-sky/20 text-sky-deep text-xs font-semibold px-2 py-0.5">
+                  {Number(l.in_care)} in care
+                </span>
+                <Form method="post">
+                  <input type="hidden" name="intent" value="toggle-location" />
+                  <input type="hidden" name="location_id" value={String(l.id)} />
+                  <button className="text-xs font-semibold text-charcoal-soft hover:underline">
+                    {l.active ? "retire" : "reopen"}
+                  </button>
+                </Form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Form method="post" className="mt-3 flex flex-wrap gap-2">
+          <input type="hidden" name="intent" value="add-location" />
+          <input name="location_name" required placeholder="Location name (Main Shelter, Cat Annex…)" className={`${inputCls} mt-0 flex-1 min-w-48`} />
+          <input name="location_address" placeholder="Address (optional)" className={`${inputCls} mt-0 flex-1 min-w-40`} />
+          <button className="rounded-full bg-meadow text-white px-5 py-2 text-sm font-semibold">Add location</button>
+        </Form>
       </section>
 
       <section className="rounded-blob bg-white shadow-soft p-6 space-y-2">

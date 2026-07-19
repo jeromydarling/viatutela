@@ -23,6 +23,7 @@ export default [
     route("applications", "routes/app/applications.tsx"),
     route("fosters", "routes/app/fosters.tsx"),
     route("donations", "routes/app/donations.tsx"),
+    route("reports", "routes/app/reports.tsx"),
     route("settings", "routes/app/settings.tsx"),
   ]),
 ] satisfies RouteConfig;
