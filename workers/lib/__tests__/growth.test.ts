@@ -36,3 +36,23 @@ describe("followupPlan", () => {
     expect(plan.every((p, i) => i === 0 || p.days > plan[i - 1].days)).toBe(true);
   });
 });
+
+describe("public animal filters", () => {
+  it("filters by species, age group, sex, bonded, and text — and hides below the threshold", async () => {
+    const { filterAnimals, ageGroup, speciesPresent, FILTERS_APPEAR_AT, EMPTY_FILTER } = await import("../animal-filter");
+    const now = Date.parse("2026-07-19");
+    const zoo = [
+      { id: "1", name: "Pearl", species: "cat", breed: "longhair", sex: "female", dob: "2015-01-01", description: "senior sweetheart", bonded_group_id: null },
+      { id: "2", name: "Ziggy", species: "dog", breed: "lab mix", sex: "male", dob: "2026-02-01", description: "puppy applause", bonded_group_id: null },
+      { id: "3", name: "Biscuit", species: "dog", breed: "terrier", sex: "male", dob: "2022-01-01", description: "squeaky toys", bonded_group_id: "bg1" },
+    ];
+    expect(ageGroup("2015-01-01", now)).toBe("senior");
+    expect(ageGroup("2026-02-01", now)).toBe("young");
+    expect(filterAnimals(zoo, { ...EMPTY_FILTER, species: "dog" }, now).map((a) => a.id)).toEqual(["2", "3"]);
+    expect(filterAnimals(zoo, { ...EMPTY_FILTER, age: "senior" }, now).map((a) => a.id)).toEqual(["1"]);
+    expect(filterAnimals(zoo, { ...EMPTY_FILTER, sex: "male", bonded: true }, now).map((a) => a.id)).toEqual(["3"]);
+    expect(filterAnimals(zoo, { ...EMPTY_FILTER, q: "squeaky" }, now).map((a) => a.id)).toEqual(["3"]);
+    expect(speciesPresent(zoo)).toEqual(["dog", "cat"]);
+    expect(FILTERS_APPEAR_AT).toBeGreaterThan(3); // a handful of animals stays a simple list
+  });
+});

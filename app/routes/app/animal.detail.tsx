@@ -8,6 +8,8 @@ import { getAnthropic, logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, summarizeNotes, writeBio, type BioPack, type HandoffPack } from "../../../workers/lib/ai-shelter";
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
+import { notifyWaitlist } from "../../../workers/lib/waitlist";
+import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
 import { extractVetRecords, fileToVisionImage, type OcrRecord, type VisionImage } from "../../../workers/lib/ai-vision";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
@@ -95,6 +97,22 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       )
       .run();
     return { ok: "Saved." };
+  }
+
+  if (intent === "toggle-public") {
+    const row = await env.DB.prepare(`SELECT is_public FROM animals WHERE id = ?`).bind(animal.id).first<{ is_public: number }>();
+    const next = row?.is_public ? 0 : 1;
+    await env.DB.prepare(`UPDATE animals SET is_public = ? WHERE id = ? AND org_id = ?`).bind(next, animal.id, user.org_id).run();
+    if (next === 1 && animal.status === "available") {
+      // going live counts as an arrival: waitlist alerts + launch kit
+      ctx.waitUntil(notifyWaitlist(env, user.org_id, String(animal.id), new URL(request.url).origin));
+      ctx.waitUntil(autoNewAnimal(env, user.org_id, String(animal.id)));
+    }
+    return {
+      ok: next
+        ? "Live! They're on your website, adoption page, and Petfinder feed — waitlist matches are being emailed."
+        : "Hidden from the public site.",
+    };
   }
 
   if (intent === "upload-photo") {
@@ -322,7 +340,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
             ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             to={`/app/animals/${animal.id}/card`}
             className="rounded-full border-2 border-meadow px-4 py-2 text-sm font-display font-semibold text-meadow-deep hover:bg-meadow hover:text-white transition-colors"
@@ -337,8 +355,26 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
               Public page ↗
             </Link>
           )}
+          <Form method="post">
+            <input type="hidden" name="intent" value="toggle-public" />
+            <button
+              className={`rounded-full px-4 py-2 text-sm font-display font-semibold shadow-soft transition-colors ${
+                animal.is_public ? "bg-meadow text-white" : "bg-white border-2 border-dashed border-charcoal/30 text-charcoal-soft"
+              }`}
+              title={animal.is_public ? "Click to hide from your website and adoption page" : "Click to publish to your website and adoption page"}
+            >
+              {animal.is_public ? "🌐 On your site" : "🌐 Publish to site"}
+            </button>
+          </Form>
         </div>
       </div>
+
+      {Boolean(animal.is_public) && !["available", "pending", "in foster"].includes(String(animal.status)) && (
+        <p className="rounded-2xl bg-sunflower-soft px-4 py-2.5 text-sm font-semibold">
+          Heads up: {String(animal.name)} is published, but their status is “{String(animal.status)}” — the public
+          site only shows friends who are available, pending, or in foster. Flip the status and they appear instantly.
+        </p>
+      )}
 
       {(actionData?.ok || actionData?.error) && (
         <p

@@ -140,6 +140,8 @@ tokens/day (override with the `AI_DAILY_TOKEN_LIMIT` var); over-budget calls get
 |---|---|---|
 | Public adoption portal per org (`/adopt/:slug`) | ✅ | Org branding fields from Settings |
 | Public animal pages with application form | ✅ | Honeypot spam protection; "I'd like to…" intent (adopt / meet / foster-to-adopt / question) flows into the inbox and AI triage |
+| One-click "🌐 Publish to site" toggle on every profile | ✅ | Going live fires waitlist alerts + the marketing launch kit; a banner warns when a published friend's status keeps them hidden |
+| Adaptive search & filters on the adoption portal | ✅ | Search + species/age/sex/bonded chips, instant client-side; appears only at 9+ animals — a handful stays a simple warm list |
 | Share bar on every animal page (native share, FB, X, WhatsApp, Pinterest, Nextdoor, email, SMS, copy link/blurb, QR) | ✅ | Plain share intents, no tracking scripts |
 | Printable branded adoption flyer (`…/flyer`) | ✅ | Brand tokens + big QR; print → Save as PDF |
 | Embeddable widget (`…/embed`) with copyable iframe snippet | ✅ | For partner/community websites |
