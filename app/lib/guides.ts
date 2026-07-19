@@ -862,6 +862,105 @@ GUIDES.push(
   },
 );
 
+GUIDES.push({
+  slug: "shelter-automation-recipes",
+  title: "Zapier Automations for Animal Shelters: 19 Recipes",
+  h1: "Automate the busywork: 19 ready-made recipes for shelters",
+  description:
+    "Connect your shelter software to Slack, Google Sheets, Mailchimp, Trello, and calendars with Zapier or Make — 19 concrete automation recipes, no code required.",
+  category: "Playbooks",
+  minutes: 9,
+  updated: "2026-07-19",
+  blocks: [
+    {
+      p: "Every shelter runs on a second, invisible workload: telling the team an application came in, copying donations into the treasurer's spreadsheet, remembering the handwritten thank-you, announcing the new arrival. None of it is hard. All of it eats volunteer hours. And every piece of it can run itself.",
+    },
+    {
+      p: "Tools like Zapier, Make, and n8n connect the software you already use — no code, no developer. Your shelter software fires a signal when something happens (\"an application arrived\"), and the automation does the busywork (\"post it in Slack, add a row to the sheet, make a Trello card\"). Here are the recipes we see work, organized by the job they save.",
+    },
+    { h2: "How the plumbing works (two minutes, once)" },
+    {
+      p: "Automation platforms speak two languages: webhooks (your software pushes events to them the moment things happen) and APIs (they pull data on a schedule). Good shelter software gives you both. In Tutela, Settings → Integrations hands you signed webhooks for five events — new application, adoption completed, donation recorded, new animal, volunteer shift signup — plus a read-only API key and a calendar feed of volunteer shifts. Paste one URL, tick the events, done.",
+    },
+    {
+      tip: "Whatever software you use: paste IDs and URLs, never passwords. A well-designed integration never asks for your login, can be revoked in one click, and signs every message so the receiving end can verify it's really from your system.",
+    },
+    { h2: "Adoption-team recipes" },
+    {
+      list: [
+        "Application → Slack: every new application posts to #adoptions the second it arrives. The team stops refreshing inboxes.",
+        "Application → Google Sheets: a running pipeline sheet for the weekly adoptions meeting, with a hand-filled 'decision' column.",
+        "Application → Trello/Asana/Notion: each applicant becomes a card you drag through Screening → Home visit → Approved.",
+        "Adoption → Slack 🎉: the whole team celebrates the moment a friend goes home. Morale is a metric.",
+        "Adoption → outcomes sheet: board reports and grant applications pull from a ledger that fills itself in.",
+      ],
+    },
+    { h2: "Donor recipes" },
+    {
+      list: [
+        "Donation over $100 → Todoist task: 'handwritten thank-you, due in 3 days.' Donor retention lives on the thank-you.",
+        "Donation → bookkeeping mirror: rows appear in the treasurer's sheet or QuickBooks — reconciliation, not re-typing.",
+        "Donation → Mailchimp: donors who opted in join your update list while the gift is still warm. (Only people who agreed — a surprise mailing list is how you lose a donor.)",
+        "Donation → #wins channel: fundraising momentum everyone can feel during campaign week.",
+      ],
+    },
+    { h2: "Volunteer recipes" },
+    {
+      list: [
+        "Shift signup → confirmation email with the shift name, date, and what to bring.",
+        "Shift signup → hours backup sheet — the belt-and-suspenders copy grant reviewers love.",
+        "Shift calendar feed → Google/Apple Calendar: the whole crew subscribes once and every shift just appears. No automation platform needed — it's a standard calendar link.",
+        "Shift signup → #volunteers channel, so coordinators watch coverage fill in real time.",
+      ],
+    },
+    { h2: "Marketing and office recipes" },
+    {
+      list: [
+        "New animal → Buffer draft: arrivals queue as social drafts while the intake photo is fresh. A human still picks the photo and presses go.",
+        "New animal → Discord: your most engaged supporters hear first — they're your fastest shares.",
+        "New animal → partner alert: filter on breed and email the husky rescue automatically.",
+        "Monday digest: a scheduled automation calls the API — 'what arrived last week?' — and emails the director a summary.",
+        "Applications + donations → one Notion/Airtable base: a flexible mini-CRM of everyone who loves your shelter.",
+        "Urgent application → SMS: applications for your longest-stay friend ping a phone, not an inbox.",
+      ],
+    },
+    { h2: "Three rules for shelter automations" },
+    {
+      list: [
+        "Automate notifications and copies, not decisions. A human approves adoptions; the robot just makes sure nobody misses the application.",
+        "Send the minimum. Map only the fields the destination needs — the Slack channel doesn't need a phone number.",
+        "Write the automation down. A one-line note ('Zap: applications → Sheets, made July 2026, owner: Dana') saves the next coordinator an archaeology dig.",
+      ],
+    },
+    {
+      p: "If your current software has no webhooks and no API, every recipe above becomes a nightly copy-paste job — worth remembering when you [compare shelter software](/guides/shelter-software-pricing). Tutela ships all of this on every plan: five webhook events, a read API, the shift calendar, and a recipe library inside the app with field-by-field setup steps.",
+    },
+  ],
+  faq: [
+    {
+      q: "Do I need a paid Zapier plan for these recipes?",
+      a: "Zapier's webhook trigger is a premium feature, so most webhook recipes need a paid Zapier plan (Make and n8n offer generous free tiers for the same job). The calendar-feed recipe needs no automation platform at all — it's a standard subscription link.",
+    },
+    {
+      q: "Is it safe to connect shelter data to Zapier?",
+      a: "Treat it like any data decision: you choose which events to send and which fields to map, the connection should be revocable in one click, and adopter/donor details deserve the same care in a spreadsheet as in your database. Send the minimum the recipe needs, and disclose your tools in your privacy policy.",
+    },
+    {
+      q: "What's a webhook, in plain words?",
+      a: "A doorbell. When something happens in your shelter software — an application arrives — it rings a URL you chose, carrying a small note about what happened. The automation platform answers the door and does whatever you taught it: post to Slack, add a row, create a card.",
+    },
+    {
+      q: "Can these replace shelter software features?",
+      a: "They complement them. Built-in features (adoption follow-up emails, medical reminders, marketing drafts) understand your data deeply; automations shine at reaching tools your software will never be — your Slack, your bookkeeping, your Notion.",
+    },
+  ],
+  cta: {
+    text: "Every Tutela plan includes webhooks, an API key, a shift calendar feed, and this recipe library built in.",
+    label: "Get started",
+    to: "/signup",
+  },
+});
+
 export function getGuide(slug: string): Guide | undefined {
   return GUIDES.find((g) => g.slug === slug);
 }

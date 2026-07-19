@@ -149,7 +149,11 @@ export default function Integrations({ loaderData, actionData }: Route.Component
         <h1 className="text-2xl font-display font-semibold">Integrations</h1>
         <p className="text-sm text-charcoal-soft max-w-2xl">
           Connect Tutela to Zapier, Make, n8n, or your own tools. Data you send out through these
-          integrations is under your control — cover it in your own privacy policy.
+          integrations is under your control — cover it in your own privacy policy. Not sure where to
+          start?{" "}
+          <Link to="/app/settings/integrations/recipes" className="font-semibold text-meadow-deep hover:underline">
+            Browse the automation recipes →
+          </Link>
         </p>
       </div>
 
