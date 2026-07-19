@@ -51,9 +51,8 @@ versus what is actually built and deployed. Updated 2026-07-19.
 
 ## AI for shelters (work smarter, match better)
 
-All five run server-side on the Anthropic API, are audit-logged, never auto-apply output
-(staff click to accept), and degrade to a friendly note until the **`ANTHROPIC_API_KEY`
-Worker secret** is set — that single secret activates everything below plus the AI site designer.
+All run server-side on the Anthropic API, are audit-logged, and never auto-apply output
+(staff click to accept). **`ANTHROPIC_API_KEY` is set in production — every AI feature is live.**
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -115,6 +114,14 @@ Worker secret** is set — that single secret activates everything below plus th
 | Intake vision (photos → draft profile) | 🟡 | Snap intake photos → species/breed/color/age guesses + first bio, prefilled into the add-friend form; every guess staff-reviewed. Needs key |
 | Vet-record OCR (paper → medical rows) | 🟡 | Photograph paper records → structured, dated medical rows with due dates; reviewed before applying. Needs key |
 | Cross-shelter transfer network (`/app/network`) | ✅ | Every Via Tutela rescue shares one board: need-space / have-space posts with urgency, species, counts; 14-day expiry; the network-effect feature |
+
+## SMS (Twilio)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Twilio SMS layer (`workers/lib/sms.ts`) | 🟡 | REST API via fetch, never throws, E.164 normalization. **Activation: set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` Worker secrets** |
+| New-application text to the shelter | ✅ | Settings → "Text alerts number"; fires on every public application |
+| Approval text to the adopter | ✅ | Sent alongside the approval email when the applicant left a phone |
 
 ## Adoption pipeline
 

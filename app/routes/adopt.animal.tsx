@@ -5,6 +5,7 @@ import { cloudflareContext } from "../cloudflare-context";
 import { getEnv } from "../lib/auth.server";
 import { newId } from "../../workers/lib/ids";
 import { sendAppEmail } from "../../workers/lib/email";
+import { sendSms } from "../../workers/lib/sms";
 import { ShareBar } from "../components/share-bar";
 import { CatDoodle, DogDoodle, HeartPawDoodle, PawDoodle } from "../components/doodles";
 
@@ -82,9 +83,9 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
 export async function action({ context, request, params }: Route.ActionArgs) {
   const env = getEnv(context);
   const { ctx } = context.get(cloudflareContext);
-  const org = await env.DB.prepare(`SELECT id, name, email FROM orgs WHERE slug = ?`)
+  const org = await env.DB.prepare(`SELECT id, name, email, sms_number FROM orgs WHERE slug = ?`)
     .bind(params.slug)
-    .first<{ id: string; name: string; email: string | null }>();
+    .first<{ id: string; name: string; email: string | null; sms_number: string | null }>();
   if (!org) throw new Response("Not found", { status: 404 });
 
   const f = await request.formData();
@@ -143,6 +144,9 @@ export async function action({ context, request, params }: Route.ActionArgs) {
             ],
             cta: { label: "Review the application", url: `${origin}/app/applications` },
           })
+        : Promise.resolve(false),
+      org.sms_number
+        ? sendSms(env, org.sms_number, `🐾 New application: ${name} wants to meet ${animalName}. Review: ${origin}/app/applications`)
         : Promise.resolve(false),
     ]),
   );
