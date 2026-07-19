@@ -18,24 +18,36 @@ import { newToken } from "./ids";
 export const DEMO_SLUG = "sunny-meadow-demo";
 export const DEMO_EMAIL = "demo@viatutela.app";
 
-/** Static-asset origin fallback for cron reseeds: APP_ORIGIN points at the
- * launch domain, which may not be attached yet — workers.dev always is. */
-const ASSET_FALLBACK_ORIGIN = "https://viatutela.jeromydarling.workers.dev";
-
-async function fetchArt(origin: string, name: string): Promise<Response | null> {
-  try {
-    const first = await fetch(`${origin}/art/${name}.webp`);
-    if (first.ok) return first;
-  } catch {
-    // fall through to the known-good origin
+/**
+ * Read a bundled art file. The ASSETS binding serves the worker's own
+ * static assets in-process — an HTTP fetch of our own hostname is blocked
+ * by the runtime (error 1042), which is exactly how a whole reseed once
+ * came back photoless. HTTP against the request origin remains only as a
+ * dev-environment fallback, and responses must actually be images.
+ */
+async function fetchArt(env: Env, origin: string, name: string): Promise<Response | null> {
+  const path = `/art/${name}.webp`;
+  const assets = (env as { ASSETS?: Fetcher }).ASSETS;
+  if (assets) {
+    try {
+      const resp = await assets.fetch(new Request(`https://assets.internal${path}`));
+      if (resp.ok && looksLikeImage(resp)) return resp;
+    } catch {
+      // fall through
+    }
   }
   try {
-    const second = await fetch(`${ASSET_FALLBACK_ORIGIN}/art/${name}.webp`);
-    if (second.ok) return second;
+    const resp = await fetch(`${origin}${path}`);
+    if (resp.ok && looksLikeImage(resp)) return resp;
   } catch {
     // best-effort only
   }
   return null;
+}
+
+function looksLikeImage(resp: Response): boolean {
+  const type = resp.headers.get("content-type") ?? "";
+  return type.startsWith("image/") || type === "application/octet-stream";
 }
 export const DEMO_PASSWORD = "sunflower";
 const ORG = "org_demo_sunnymeadow";
@@ -94,8 +106,15 @@ export async function createDemoSession(env: Env): Promise<string> {
 }
 
 export async function isDemoSeeded(env: Env): Promise<boolean> {
-  const row = await env.DB.prepare(`SELECT id FROM animals WHERE org_id = ? LIMIT 1`).bind(ORG).first();
-  return Boolean(row);
+  // "seeded" means alive: animals AND their photos. A photoless demo (a
+  // reseed whose art fetches failed) should heal on the next visit.
+  const row = await env.DB.prepare(
+    `SELECT (SELECT COUNT(*) FROM animals WHERE org_id = ?1) a,
+            (SELECT COUNT(*) FROM animal_photos WHERE org_id = ?1) p`,
+  )
+    .bind(ORG)
+    .first<{ a: number; p: number }>();
+  return Boolean(row && row.a > 0 && row.p > 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -574,7 +593,7 @@ export async function resetDemoData(env: Env, origin: string): Promise<void> {
       const key = `orgs/${ORG}/photos/dm_${name}-${animalId}.webp`;
       const exists = await env.MEDIA.head(key);
       if (!exists) {
-        const resp = await fetchArt(origin, name);
+        const resp = await fetchArt(env, origin, name);
         if (!resp) continue;
         await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
       }
@@ -585,12 +604,13 @@ export async function resetDemoData(env: Env, origin: string): Promise<void> {
       console.log(`[demo photo skipped] ${name}: ${err instanceof Error ? err.message : err}`);
     }
   }
-  // bonded-pair extra photo for Biscuit
+  // bonded-pair extra photo for Biscuit — row only if the object is real
   try {
     const key = `orgs/${ORG}/photos/dm_demo-bonded.webp`;
     if (!(await env.MEDIA.head(key))) {
-      const resp = await fetchArt(origin, "demo-bonded");
-      if (resp) await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
+      const resp = await fetchArt(env, origin, "demo-bonded");
+      if (!resp) return;
+      await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
     }
     await env.DB.prepare(
       `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES ('dm_ph_bonded', ?, 'dm_an_biscuit', ?, 'photo')`,
