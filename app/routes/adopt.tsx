@@ -1,7 +1,16 @@
+import { useState } from "react";
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/adopt";
 import { getEnv } from "../lib/auth.server";
 import { subscribeWaitlist } from "../../workers/lib/waitlist";
+import {
+  EMPTY_FILTER,
+  FILTERS_APPEAR_AT,
+  ageGroup,
+  filterAnimals,
+  speciesPresent,
+  type AnimalFilterState,
+} from "../../workers/lib/animal-filter";
 import { BirdDoodle, CatDoodle, DogDoodle, PawDoodle } from "../components/doodles";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
@@ -64,6 +73,168 @@ function ageLabel(dob: string | null): string | null {
   return `${Math.floor(years)} year${years >= 2 ? "s" : ""}`;
 }
 
+type PortalAnimal = Record<string, string | null>;
+
+function AnimalCard({ a, orgSlug }: { a: PortalAnimal; orgSlug: string }) {
+  const Doodle = SPECIES_DOODLE[a.species ?? ""] ?? PawDoodle;
+  const age = ageLabel(a.dob);
+  return (
+    <Link
+      to={`/adopt/${orgSlug}/${a.id}`}
+      className="rounded-blob bg-white shadow-soft overflow-hidden hover:shadow-lift transition-shadow"
+    >
+      {a.photo_key ? (
+        <img src={`/api/media/${a.photo_key}`} alt={`${a.name}`} className="w-full h-52 object-cover" loading="lazy" />
+      ) : (
+        <div className="w-full h-52 bg-cream flex items-center justify-center">
+          <Doodle className="w-24 h-24 text-charcoal-soft" />
+        </div>
+      )}
+      <div className="p-5">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display font-semibold text-xl">{a.name}</h3>
+          {a.status !== "available" && (
+            <span className="text-xs font-semibold rounded-full bg-sunflower-soft px-2 py-1">
+              {a.status === "pending" ? "adoption pending" : a.status}
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-charcoal-soft">
+          {[a.breed ?? a.species, a.sex, age].filter(Boolean).join(" · ")}
+        </p>
+        {a.bonded_group_id && (
+          <p className="mt-1 text-xs font-semibold text-terracotta-deep">
+            ♥ part of a bonded pair — they go home together
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+const chipCls = (active: boolean) =>
+  `rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+    active ? "bg-meadow text-white" : "bg-white shadow-soft text-charcoal-soft hover:bg-sunflower-soft"
+  }`;
+
+/** The grid, with a filter bar that only appears once there's enough variety to need one. */
+function FilterableAnimals({ animals, orgSlug }: { animals: PortalAnimal[]; orgSlug: string }) {
+  const [f, setF] = useState<AnimalFilterState>(EMPTY_FILTER);
+  const showFilters = animals.length >= FILTERS_APPEAR_AT;
+  const filterable = animals.map((a) => ({
+    id: String(a.id),
+    name: String(a.name ?? ""),
+    species: a.species,
+    breed: a.breed,
+    sex: a.sex,
+    dob: a.dob,
+    description: a.description,
+    bonded_group_id: a.bonded_group_id,
+  }));
+  const species = speciesPresent(filterable);
+  const anyBonded = filterable.some((a) => a.bonded_group_id);
+  const anySenior = filterable.some((a) => ageGroup(a.dob) === "senior");
+  const keptIds = new Set(filterAnimals(filterable, f).map((a) => a.id));
+  const shown = animals.filter((a) => keptIds.has(String(a.id)));
+  const filtering = JSON.stringify(f) !== JSON.stringify(EMPTY_FILTER);
+
+  return (
+    <>
+      <h2 className="text-2xl font-display font-semibold text-center">
+        {animals.length} friend{animals.length === 1 ? "" : "s"} waiting for a way home
+      </h2>
+
+      {showFilters && (
+        <div className="mt-6 rounded-blob bg-white/80 shadow-soft p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={f.q}
+              onChange={(e) => setF({ ...f, q: e.target.value })}
+              placeholder="Search names, breeds…"
+              aria-label="Search animals"
+              className="flex-1 min-w-40 rounded-full border-2 border-cream bg-cream px-4 py-2 text-sm focus:border-meadow outline-none"
+            />
+            <button type="button" onClick={() => setF({ ...f, species: "" })} className={chipCls(f.species === "")}>
+              All
+            </button>
+            {species.slice(0, 5).map((sp) => (
+              <button
+                key={sp}
+                type="button"
+                onClick={() => setF({ ...f, species: f.species === sp ? "" : sp })}
+                className={chipCls(f.species === sp)}
+              >
+                {sp}s
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {(
+              [
+                ["young", "🐣 young"],
+                ["adult", "adult"],
+                ["senior", "💛 senior"],
+              ] as const
+            ).map(([key, label]) =>
+              key === "senior" && !anySenior ? null : (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setF({ ...f, age: f.age === key ? "" : key })}
+                  className={chipCls(f.age === key)}
+                >
+                  {label}
+                </button>
+              ),
+            )}
+            <span className="w-px h-5 bg-cream" aria-hidden />
+            {(["female", "male"] as const).map((sx) => (
+              <button
+                key={sx}
+                type="button"
+                onClick={() => setF({ ...f, sex: f.sex === sx ? "" : sx })}
+                className={chipCls(f.sex === sx)}
+              >
+                {sx}
+              </button>
+            ))}
+            {anyBonded && (
+              <button type="button" onClick={() => setF({ ...f, bonded: !f.bonded })} className={chipCls(f.bonded)}>
+                ♥ bonded pairs
+              </button>
+            )}
+            {filtering && (
+              <button
+                type="button"
+                onClick={() => setF(EMPTY_FILTER)}
+                className="ml-auto text-sm font-semibold text-terracotta-deep hover:underline"
+              >
+                clear ({shown.length} of {animals.length})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {shown.length === 0 ? (
+        <div className="mt-10 text-center">
+          <p className="text-lg font-semibold">No friends match those filters right now.</p>
+          <p className="mt-1 text-charcoal-soft text-sm">
+            Try widening the search — or scroll down and join the waitlist; we'll email you when your match arrives.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {shown.map((a) => (
+            <AnimalCard key={String(a.id)} a={a} orgSlug={orgSlug} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function AdoptPortal({ loaderData, actionData }: Route.ComponentProps) {
   const { org, animals } = loaderData;
   const wl = actionData as { waitlist?: boolean; waitlistError?: string } | undefined;
@@ -110,55 +281,7 @@ export default function AdoptPortal({ loaderData, actionData }: Route.ComponentP
             </p>
           </div>
         ) : (
-          <>
-            <h2 className="text-2xl font-display font-semibold text-center">
-              {animals.length} friend{animals.length === 1 ? "" : "s"} waiting for a way home
-            </h2>
-            <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {animals.map((a) => {
-                const Doodle = SPECIES_DOODLE[a.species ?? ""] ?? PawDoodle;
-                const age = ageLabel(a.dob);
-                return (
-                  <Link
-                    key={a.id}
-                    to={`/adopt/${org.slug}/${a.id}`}
-                    className="rounded-blob bg-white shadow-soft overflow-hidden hover:shadow-lift transition-shadow"
-                  >
-                    {a.photo_key ? (
-                      <img
-                        src={`/api/media/${a.photo_key}`}
-                        alt={`${a.name}`}
-                        className="w-full h-52 object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-52 bg-cream flex items-center justify-center">
-                        <Doodle className="w-24 h-24 text-charcoal-soft" />
-                      </div>
-                    )}
-                    <div className="p-5">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-display font-semibold text-xl">{a.name}</h3>
-                        {a.status !== "available" && (
-                          <span className="text-xs font-semibold rounded-full bg-sunflower-soft px-2 py-1">
-                            {a.status === "pending" ? "adoption pending" : a.status}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-charcoal-soft">
-                        {[a.breed ?? a.species, a.sex, age].filter(Boolean).join(" · ")}
-                      </p>
-                      {a.bonded_group_id && (
-                        <p className="mt-1 text-xs font-semibold text-terracotta-deep">
-                          ♥ part of a bonded pair — they go home together
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </>
+          <FilterableAnimals animals={animals} orgSlug={String(org.slug)} />
         )}
       </main>
 
