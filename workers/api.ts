@@ -429,7 +429,38 @@ api.get("/media/*", async (c) => {
   const key = c.req.path.replace(/^\/api\/media\//, "");
   if (!key || key.includes("..")) return c.text("not found", 404);
   const obj = await c.env.MEDIA.get(key);
-  if (!obj) return c.text("This little one seems to have wandered off.", 404);
+  if (!obj) {
+    // Demo art materializes lazily: seeding writes only DB rows (subrequest
+    // budgets are tight), and the first view copies the bundled asset into
+    // R2. Keys look like dm_<artname>[-dm_an_<id>].webp.
+    const m = key.match(/^orgs\/org_demo_sunnymeadow\/photos\/dm_(.+?)(?:-dm_an_[a-z0-9_]+)?\.webp$/);
+    if (m) {
+      const artPath = `/art/${m[1]}.webp`;
+      const attempts: (() => Promise<Response>)[] = [
+        () => c.env.ASSETS.fetch(new Request(`https://assets.internal${artPath}`)),
+        // dev fallback: the vite dev server has no ASSETS binding, but
+        // same-origin HTTP works there (production never reaches this —
+        // self-fetch is blocked, ASSETS is not)
+        () => fetch(new URL(artPath, c.req.url)),
+      ];
+      for (const attempt of attempts) {
+        try {
+          const resp = await attempt();
+          if (!resp.ok || !(resp.headers.get("content-type") ?? "").startsWith("image/")) continue;
+          const bytes = await resp.arrayBuffer();
+          c.executionCtx.waitUntil(
+            c.env.MEDIA.put(key, bytes, { httpMetadata: { contentType: "image/webp" } }),
+          );
+          return new Response(bytes, {
+            headers: { "Content-Type": "image/webp", "Cache-Control": "public, max-age=86400" },
+          });
+        } catch {
+          // try the next source
+        }
+      }
+    }
+    return c.text("This little one seems to have wandered off.", 404);
+  }
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
   headers.set("Cache-Control", "public, max-age=86400");

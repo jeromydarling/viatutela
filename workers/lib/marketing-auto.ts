@@ -30,7 +30,7 @@ async function contextFor(
   )
     .bind(orgId)
     .first<{ name: string; slug: string; address: string | null; custom_domain: string | null; brand_json: string | null }>();
-  const appOrigin = (env as unknown as { APP_ORIGIN?: string }).APP_ORIGIN ?? "https://viatutela.com";
+  const appOrigin = (env as unknown as { APP_ORIGIN?: string }).APP_ORIGIN ?? "https://viatutela.pet";
   let animal: CampaignContext["animal"] = null;
   if (campaign.animalId) {
     const a = await env.DB.prepare(`SELECT name, species, breed, description, intake_date FROM animals WHERE id = ?`)
