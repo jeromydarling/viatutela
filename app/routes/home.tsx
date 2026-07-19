@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { SiteHeader, SiteFooter } from "../components/site";
@@ -290,6 +290,73 @@ function FeatureTabs() {
   );
 }
 
+const IMPACT_STATS: { number: string; label: string; source: string; color: string }[] = [
+  {
+    number: "127%",
+    label: "higher adoption rate after adding better photos + AI-optimized listings",
+    source: "Palm Valley Animal Society pilot",
+    color: "text-meadow-deep",
+  },
+  {
+    number: "66%",
+    label: "of shelters say social media increased their overall adoptions",
+    source: "ASPCA survey of 800+ shelters",
+    color: "text-sky-deep",
+  },
+  {
+    number: "6x",
+    label: "more visits to adoptable-pet profiles from AI-enhanced photos",
+    source: "Pedigree “Adoptable” campaign",
+    color: "text-terracotta-deep",
+  },
+  {
+    number: "88%",
+    label: "of shelters name Facebook their #1 driver of adoptions",
+    source: "Morrison et al., 2024",
+    color: "text-meadow-deep",
+  },
+];
+
+/** Fades children up when they scroll into view. Visible from the start if
+ * JS never runs; the vt-fade-up keyframe is already disabled under
+ * prefers-reduced-motion. */
+function Reveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={`${shown ? "vt-fade-up" : ""} ${className}`}
+      style={shown && delay ? { animationDelay: `${delay}ms` } : undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SourceTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-block rounded-full bg-cream px-2.5 py-0.5 text-xs font-semibold text-charcoal-soft">
+      {children}
+    </span>
+  );
+}
+
 function MiniCta({ text, label = "Get started", to = "/signup" }: { text: string; label?: string; to?: string }) {
   return (
     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
@@ -358,6 +425,62 @@ export default function Home() {
               className="absolute -bottom-8 -left-6 w-24 h-24 rounded-full shadow-soft -rotate-6 vt-float bg-cream"
             />
           </div>
+        </div>
+      </section>
+
+      {/* ---------- Impact: technology drives adoptions ---------- */}
+      <section id="impact" className="bg-white/70 py-16 scroll-mt-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Reveal className="text-center">
+            <p className="font-display font-semibold text-meadow-deep uppercase tracking-wide text-sm">
+              Shelters have seen results like these
+            </p>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-display font-semibold">
+              Technology sends more animals home.
+            </h2>
+            <p className="mt-3 text-lg text-charcoal-soft max-w-2xl mx-auto">
+              The right tools don't just save time — they save lives. Here's what
+              shelters see when they modernize.
+            </p>
+          </Reveal>
+          <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {IMPACT_STATS.map((stat, i) => (
+              <Reveal key={stat.source} delay={i * 90} className="h-full">
+                <div className="h-full rounded-blob bg-white shadow-soft p-6 flex flex-col gap-3">
+                  <span className={`text-5xl font-display font-semibold ${stat.color}`}>
+                    {stat.number}
+                  </span>
+                  <p className="font-semibold leading-snug">{stat.label}</p>
+                  <div className="mt-auto pt-1">
+                    <SourceTag>{stat.source}</SourceTag>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={120} className="mt-8 text-center">
+            <p className="text-charcoal-soft max-w-3xl mx-auto">
+              Social media also boosts adoptions of harder-to-place seniors and
+              medical-needs pets by as much as 55%, and shares — not likes — are
+              what actually get pets adopted.{" "}
+              <SourceTag>ASPCA</SourceTag>{" "}
+              <SourceTag>peer-reviewed Facebook study, 2025</SourceTag>
+            </p>
+            <p className="mt-2 text-sm text-charcoal-soft max-w-2xl mx-auto">
+              The biggest numbers here come from individual pilots and campaigns —
+              best cases, not promises. Every stat keeps its source on the card.
+            </p>
+            <p className="mt-8 font-display font-semibold text-lg">
+              Via Tutela builds these advantages in — AI-assisted photos and bios,
+              one-click listing syndication, and shareable adoption pages.
+            </p>
+            <a
+              href="#features"
+              className="mt-4 inline-block rounded-full bg-sunflower px-6 py-3 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"
+            >
+              See how Via Tutela helps you do this
+            </a>
+          </Reveal>
         </div>
       </section>
 

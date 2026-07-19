@@ -15,6 +15,7 @@ export function Logo({ className = "w-9 h-9" }: { className?: string }) {
 
 const SECTIONS = [
   { href: "/#spotlight", label: "Adoption pages" },
+  { href: "/#impact", label: "Impact" },
   { href: "/#features", label: "Features" },
   { href: "/#savings", label: "Savings" },
   { href: "/#compare", label: "Compare" },
