@@ -17,6 +17,26 @@ import { newToken } from "./ids";
 
 export const DEMO_SLUG = "sunny-meadow-demo";
 export const DEMO_EMAIL = "demo@viatutela.app";
+
+/** Static-asset origin fallback for cron reseeds: APP_ORIGIN points at the
+ * launch domain, which may not be attached yet — workers.dev always is. */
+const ASSET_FALLBACK_ORIGIN = "https://viatutela.jeromydarling.workers.dev";
+
+async function fetchArt(origin: string, name: string): Promise<Response | null> {
+  try {
+    const first = await fetch(`${origin}/art/${name}.webp`);
+    if (first.ok) return first;
+  } catch {
+    // fall through to the known-good origin
+  }
+  try {
+    const second = await fetch(`${ASSET_FALLBACK_ORIGIN}/art/${name}.webp`);
+    if (second.ok) return second;
+  } catch {
+    // best-effort only
+  }
+  return null;
+}
 export const DEMO_PASSWORD = "sunflower";
 const ORG = "org_demo_sunnymeadow";
 const USER = "u_demo_sunnymeadow";
@@ -105,82 +125,82 @@ const ANIMALS: SeedAnimal[] = [
   {
     id: "dm_an_biscuit", name: "Biscuit", species: "dog", breed: "terrier mix", sex: "male", dobDays: 1500,
     altered: 1, status: "available", kennel: "K-7", color: "wheat", weight: "24 lb", chip: "985112004561234",
-    bonded: "dm_bond_bw", intakeDays: 41, art: "dog-bounce",
+    bonded: "dm_bond_bw", intakeDays: 41, art: "demo-biscuit",
     description:
       "Biscuit believes every squeaky toy has a soul and he is their shepherd. Four years of pure wag, sits for treats, walks like a gentleman, and falls asleep mid-play with his legs in the air. He and Waffle have been best friends since the day they were found sharing one blanket — they go home together.",
   },
   {
     id: "dm_an_waffle", name: "Waffle", species: "dog", breed: "beagle", sex: "female", dobDays: 1800,
     altered: 1, status: "available", kennel: "K-7", color: "tricolor", weight: "19 lb", chip: "985112004569876",
-    bonded: "dm_bond_bw", intakeDays: 41, art: "wander",
+    bonded: "dm_bond_bw", intakeDays: 41, art: "demo-waffle",
     description:
       "Waffle is the brains of the Biscuit-and-Waffle operation: she opens the treat drawer, he celebrates. A gentle beagle who hums when she's happy and insists on morning sniff-safaris. Bonded with Biscuit — one home, two shadows.",
   },
   {
     id: "dm_an_mochi", name: "Mochi", species: "cat", breed: "domestic shorthair", sex: "female", dobDays: 1100,
     altered: 1, status: "available", kennel: "C-2", color: "cream tabby", weight: "9 lb", chip: "985112004512378",
-    intakeDays: 27, art: "cat",
+    intakeDays: 27, art: "demo-mochi",
     description:
       "Mochi naps professionally and judges gently. She'll pretend indifference for exactly one afternoon, then claim your laptop keyboard, your favorite chair, and your whole heart. Great with calm homes; prefers to be your one and only.",
   },
   {
     id: "dm_an_clover", name: "Clover", species: "rabbit", breed: "holland lop", sex: "female", dobDays: 700,
     altered: 1, status: "available", kennel: "SB-1", color: "gray", weight: "3.5 lb",
-    intakeDays: 63, art: "rabbit",
+    intakeDays: 63, art: "demo-clover",
     description:
       "Clover does a little hop-spin (a 'binky', ask any rabbit person) when the greens come out. Litter-trained, curious, and surprisingly opinionated about cardboard castles. Needs indoor housing and a human who understands that rabbits are roommates, not decor.",
   },
   {
     id: "dm_an_pearl", name: "Pearl", species: "cat", breed: "domestic longhair", sex: "female", dobDays: 4000,
     altered: 1, status: "available", kennel: "C-5", color: "white", weight: "8 lb", chip: "985112004598765",
-    intakeDays: 128, art: "cat",
+    intakeDays: 128, art: "demo-pearl",
     description:
       "Pearl is eleven, silk-soft, and completely over drama. She wants a sunbeam, a lap on her own schedule, and someone who knows senior cats are the best-kept secret in rescue. Her adoption fee is sponsored — a kind neighbor already paid it forward.",
   },
   {
     id: "dm_an_ranger", name: "Ranger", species: "dog", breed: "shepherd mix", sex: "male", dobDays: 900,
     altered: 1, status: "in foster", color: "black & tan", weight: "52 lb", chip: "985112004523456",
-    intakeDays: 88, art: "logo-dog",
+    intakeDays: 88, art: "demo-ranger",
     description:
       "Ranger came in nervous and is blossoming in foster care — his foster reports he's now 'couch royalty with a PhD in fetch.' Smart, loyal, eager to learn; he'd love an active home that keeps his brain busy.",
   },
   {
     id: "dm_an_storm", name: "Storm", species: "cat", breed: "russian blue mix", sex: "male", dobDays: 1600,
     altered: 1, status: "in foster", color: "blue", weight: "11 lb",
-    intakeDays: 74,
+    intakeDays: 74, art: "demo-storm",
     description:
       "Storm spent his first week hiding behind a bookshelf and now sleeps on his foster's pillow — his glow-up is documented in foster notes. Quiet homes only; rewards patience with headbutts.",
   },
   {
     id: "dm_an_peanut", name: "Peanut", species: "guinea pig", breed: null, sex: "male", dobDays: 400,
     altered: 0, status: "available", kennel: "SB-3", color: "caramel",
-    intakeDays: 19,
+    intakeDays: 19, art: "demo-peanut",
     description:
       "Peanut squeaks the moment the fridge opens — hope springs eternal. A chatty, gentle little guy who'd love a roomy enclosure and maybe a guinea pig friend to gossip with.",
   },
   {
     id: "dm_an_juniper", name: "Juniper", species: "dog", breed: "husky mix", sex: "female", dobDays: 1200,
     altered: 1, status: "pending", kennel: "K-3", color: "silver", weight: "44 lb", chip: "985112004534567",
-    intakeDays: 52, art: "meadow",
+    intakeDays: 52, art: "demo-juniper",
     description:
       "Juniper talks — full husky monologues about her day, delivered with dramatic eye contact. Adoption pending with a lovely trail-running family (paws crossed!).",
   },
   {
     id: "dm_an_maple", name: "Maple", species: "cat", breed: "torbie", sex: "female", dobDays: 2600,
     altered: 1, status: "available", kennel: "C-8", color: "torbie",
-    intakeDays: 203,
+    intakeDays: 203, art: "demo-maple",
     description: "Sweet girl, needs a quiet home.",
   },
   {
     id: "dm_an_ziggy", name: "Ziggy", species: "dog", breed: "lab mix puppy", sex: "male", dobDays: 160,
     altered: 0, status: "available", kennel: "K-1", color: "yellow", weight: "18 lb",
-    intakeDays: 12, art: "dog-bounce",
+    intakeDays: 12, art: "demo-ziggy",
     description:
       "Ziggy is five months of pure applause. Everything is the best thing that has ever happened: breakfast! a leaf! you! Starting puppy classes next week; his adopter gets a graduate.",
   },
   {
     id: "dm_an_hazel", name: "Hazel", species: "cat", breed: "calico", sex: "female", dobDays: 2000,
-    altered: 1, status: "adopted", color: "calico", intakeDays: 160, art: "cat",
+    altered: 1, status: "adopted", color: "calico", intakeDays: 160, art: "demo-hazel",
     description: "Adopted last week — her new family sends photos daily and we are not tired of them.",
   },
 ];
@@ -514,18 +534,30 @@ export async function resetDemoData(env: Env, origin: string): Promise<void> {
     // KV hiccup — the panel just shows its empty state
   }
 
-  // ---- photos: copy crayon art from static assets into R2 (best-effort) ----
+  // ---- photos: copy FLUX demo photos from static assets into R2 (best-effort) ----
   const art: [string, string, number][] = [];
   ANIMALS.forEach((a, i) => {
     if (a.art) art.push([a.id, a.art, i]);
+  });
+  // historical friends share a small pool of generic shots by species —
+  // rows point at shared R2 objects, so this costs six small files total
+  const FILLER_ART: Record<string, string[]> = {
+    dog: ["demo-filler-dog1", "demo-filler-dog2", "demo-filler-dog3"],
+    cat: ["demo-filler-cat1", "demo-filler-cat2"],
+    rabbit: ["demo-filler-rabbit"],
+  };
+  HISTORY_NAMES.forEach((_, i) => {
+    const species = i % 3 === 0 ? "cat" : i % 3 === 1 ? "dog" : i % 5 === 2 ? "rabbit" : "dog";
+    const pool = FILLER_ART[species] ?? FILLER_ART.dog;
+    art.push([`dm_an_h${i}`, pool[i % pool.length], 100 + i]);
   });
   for (const [animalId, name, i] of art) {
     try {
       const key = `orgs/${ORG}/photos/dm_${name}-${animalId}.webp`;
       const exists = await env.MEDIA.head(key);
       if (!exists) {
-        const resp = await fetch(`${origin}/art/${name}.webp`);
-        if (!resp.ok) continue;
+        const resp = await fetchArt(origin, name);
+        if (!resp) continue;
         await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
       }
       await env.DB.prepare(
@@ -537,10 +569,10 @@ export async function resetDemoData(env: Env, origin: string): Promise<void> {
   }
   // bonded-pair extra photo for Biscuit
   try {
-    const key = `orgs/${ORG}/photos/dm_bonded-extra.webp`;
+    const key = `orgs/${ORG}/photos/dm_demo-bonded.webp`;
     if (!(await env.MEDIA.head(key))) {
-      const resp = await fetch(`${origin}/art/bonded.webp`);
-      if (resp.ok) await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
+      const resp = await fetchArt(origin, "demo-bonded");
+      if (resp) await env.MEDIA.put(key, await resp.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
     }
     await env.DB.prepare(
       `INSERT INTO animal_photos (id, org_id, animal_id, r2_key, kind) VALUES ('dm_ph_bonded', ?, 'dm_an_biscuit', ?, 'photo')`,
