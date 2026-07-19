@@ -43,5 +43,7 @@ export default {
   async scheduled(_event, env, ctx) {
     const { sendMedicalDigests } = await import("./lib/digest");
     ctx.waitUntil(sendMedicalDigests(env, env.APP_ORIGIN));
+    const { autoLongStaySpotlights } = await import("./lib/marketing-auto");
+    ctx.waitUntil(autoLongStaySpotlights(env));
   },
 } satisfies ExportedHandler<Env>;

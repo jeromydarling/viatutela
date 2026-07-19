@@ -21,6 +21,7 @@ interface EmailBinding {
     html?: string;
     text?: string;
     replyTo?: string;
+    headers?: Record<string, string>;
   }): Promise<EmailSendResult>;
 }
 
@@ -35,6 +36,8 @@ export interface AppEmail {
   cta?: { label: string; url: string };
   /** reply-to, e.g. the org's public email */
   replyTo?: string;
+  /** extra headers, e.g. List-Unsubscribe for supporter mail */
+  headers?: Record<string, string>;
 }
 
 function esc(s: string): string {
@@ -87,6 +90,7 @@ export async function sendAppEmail(env: Env, mail: AppEmail): Promise<boolean> {
       html: renderHtml(mail),
       text: renderText(mail),
       ...(mail.replyTo ? { replyTo: mail.replyTo } : {}),
+      ...(mail.headers ? { headers: mail.headers } : {}),
     });
     console.log(`[email sent] to=${mail.to} id=${result?.messageId ?? "?"}`);
     return true;

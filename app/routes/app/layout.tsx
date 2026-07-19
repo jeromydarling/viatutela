@@ -21,6 +21,8 @@ const NAV = [
   { to: "/app/fosters", label: "Fosters" },
   { to: "/app/donations", label: "Donations" },
   { to: "/app/website", label: "Website" },
+  { to: "/app/brand", label: "Brand" },
+  { to: "/app/marketing", label: "Marketing" },
   { to: "/app/reports", label: "Reports" },
   { to: "/app/settings", label: "Settings" },
 ];

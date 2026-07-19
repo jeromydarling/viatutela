@@ -3,7 +3,7 @@ import { getEnv } from "../lib/auth.server";
 import { handleNewsletterSignup, loadSitePage } from "../lib/site.server";
 import { RenderSections } from "../components/site-sections";
 import { Markdown } from "../components/markdown";
-import { PreviewBanner, ShelterSiteFooter, ShelterSiteHeader } from "../components/site-chrome";
+import { BrandStyle, PreviewBanner, ShelterSiteFooter, ShelterSiteHeader } from "../components/site-chrome";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   if (!data) return [];
@@ -15,9 +15,26 @@ export function meta({ loaderData: data }: Route.MetaArgs) {
     { property: "og:title", content: title },
     { property: "og:description", content: description },
   ];
-  if (data.page.hero_image_url) out.push({ property: "og:image", content: data.page.hero_image_url });
-  if (data.isPreview) out.push({ name: "robots", content: "noindex" });
+  const ogImage = data.page.hero_image_url || data.seo.og_image;
+  if (ogImage) out.push({ property: "og:image", content: ogImage });
+  if (data.seo.google_verify) out.push({ name: "google-site-verification", content: data.seo.google_verify });
+  if (data.seo.bing_verify) out.push({ name: "msvalidate.01", content: data.seo.bing_verify });
+  if (data.isPreview || !data.seo.visible) out.push({ name: "robots", content: "noindex" });
   return out;
+}
+
+/** schema.org AnimalShelter — local SEO's backbone. Rendered on the homepage. */
+function shelterJsonLd(org: { name: string; email: string | null; phone: string | null; address: string | null; website: string | null }): string {
+  const data: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "AnimalShelter",
+    name: org.name,
+  };
+  if (org.email) data.email = org.email;
+  if (org.phone) data.telephone = org.phone;
+  if (org.address) data.address = org.address;
+  if (org.website) data.url = org.website;
+  return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
 export async function loader({ context, request, params }: Route.LoaderArgs) {
@@ -39,9 +56,13 @@ export async function action({ context, request, params }: Route.ActionArgs) {
 export default function ShelterSitePage({ loaderData, actionData }: Route.ComponentProps) {
   const { org, page, sections, liveAnimals, isPreview, nav, brand } = loaderData;
   return (
-    <div>
+    <div className="brand-scope min-h-screen">
+      <BrandStyle brand={brand} />
+      {page.slug === "home" && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: shelterJsonLd(org) }} />
+      )}
       {isPreview && <PreviewBanner />}
-      <ShelterSiteHeader orgName={org.name} homeHref={`/s/${org.slug}`} nav={nav} accent={brand.accent} />
+      <ShelterSiteHeader orgName={org.name} homeHref={`/s/${org.slug}`} nav={nav} brand={brand} />
       <main>
         {page.slug !== "home" && page.layout !== "hero" && sections.every((sec) => sec.type !== "hero" && sec.type !== "home_hero") && (
           <div className="mx-auto max-w-4xl px-4 sm:px-6 pt-12 text-center">
@@ -64,7 +85,7 @@ export default function ShelterSitePage({ loaderData, actionData }: Route.Compon
           </div>
         )}
       </main>
-      <ShelterSiteFooter orgName={org.name} email={org.email} phone={org.phone} address={org.address} />
+      <ShelterSiteFooter orgName={org.name} brand={brand} email={org.email} phone={org.phone} address={org.address} />
     </div>
   );
 }

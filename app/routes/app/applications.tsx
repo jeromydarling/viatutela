@@ -5,6 +5,7 @@ import { newId } from "../../../workers/lib/ids";
 import { sendAppEmail } from "../../../workers/lib/email";
 import { logAiWrite } from "../../../workers/lib/ai";
 import { compactAnimal, reviewApplication, type AppReview } from "../../../workers/lib/ai-shelter";
+import { autoAdoption } from "../../../workers/lib/marketing-auto";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Via Tutela" }];
@@ -155,6 +156,7 @@ export async function action({ context, request }: Route.ActionArgs) {
       );
     }
     await env.DB.batch(stmts);
+    if (app.animal_id) ctx.waitUntil(autoAdoption(env, user.org_id, String(app.animal_id)));
     ctx.waitUntil(
       sendAppEmail(env, {
         to: String(app.email),
