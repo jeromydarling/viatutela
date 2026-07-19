@@ -272,8 +272,11 @@ function days(n: number): string {
 export async function resetDemoData(env: Env, origin: string): Promise<void> {
   await ensureDemoOrg(env);
 
-  // ---- wipe (children first) ----
+  // ---- wipe (children first — every org-scoped table, or FK constraints
+  // abort the whole reset; when a migration adds a table, add it here) ----
   const wipe = [
+    "shift_signups", "shifts", "waitlist_subscriptions", "followups", "grant_drafts",
+    "transfer_posts", "billing_usage", "onboarding_emails",
     "marketing_assets", "marketing_campaigns", "ai_audit", "ai_usage", "email_suppression",
     "media", "pages", "applications", "adoptions", "foster_assignments", "medical_records",
     "animal_photos", "tasks", "donations", "campaigns", "contacts", "animals", "locations",
