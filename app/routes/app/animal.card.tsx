@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import QRCode from "qrcode";
 import type { Route } from "./+types/animal.card";
 import { requireUser } from "../../lib/auth.server";
-import { BirdDoodle } from "../../components/doodles";
+import { Logo } from "../../components/site";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   return [{ title: `Kennel card — ${data?.animal?.name ?? ""} — Via Tutela` }];
@@ -47,7 +47,7 @@ export default function KennelCard({ loaderData }: Route.ComponentProps) {
 
       <div className="mt-6 rounded-blob bg-white shadow-lift p-8 border-4 border-sunflower print:shadow-none print:border-2">
         <div className="flex items-center gap-2 text-charcoal-soft">
-          <BirdDoodle className="w-8 h-8 text-meadow-deep" />
+          <Logo className="w-8 h-8" />
           <span className="font-display font-semibold">{orgName}</span>
         </div>
         <div className="mt-4 flex gap-6 items-start">

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/import";
 import { SiteHeader, SiteFooter } from "../components/site";
-import { BirdDoodle, DogDoodle, HeartPawDoodle } from "../components/doodles";
+import { BirdDoodle, HeartPawDoodle } from "../components/doodles";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -93,7 +93,13 @@ export default function ImportLanding() {
               if (e.target.files?.length) upload(e.target.files);
             }}
           />
-          <DogDoodle className="w-24 h-24 mx-auto text-meadow-deep vt-float" />
+          <img
+            src="/art/dog-bounce.webp"
+            alt=""
+            width={512}
+            height={512}
+            className="w-28 h-28 mx-auto rounded-3xl shadow-soft vt-float"
+          />
           {uploading ? (
             <p className="mt-4 text-xl font-display font-semibold">
               Carrying your boxes in…

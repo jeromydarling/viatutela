@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Route } from "./+types/import.job";
 import { SiteHeader, SiteFooter } from "../components/site";
-import { BirdDoodle, CatDoodle, HeartPawDoodle } from "../components/doodles";
+import { BirdDoodle, CatDoodle } from "../components/doodles";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Your import — Via Tutela" }];
@@ -502,7 +502,13 @@ function ResultsPhase({
   return (
     <div className="vt-fade-up">
       <div className="text-center">
-        <HeartPawDoodle className="w-20 h-20 mx-auto text-meadow" />
+        <img
+          src="/art/bonded.webp"
+          alt=""
+          width={512}
+          height={512}
+          className="w-28 h-28 mx-auto rounded-3xl shadow-soft rotate-2"
+        />
         <h1 className="mt-4 text-3xl sm:text-4xl font-display font-semibold">
           Welcome home. Every one of them made it across safely.
         </h1>

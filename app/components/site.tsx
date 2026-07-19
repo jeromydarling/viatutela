@@ -1,12 +1,23 @@
 import { Link } from "react-router";
-import { BirdDoodle } from "./doodles";
+
+export function Logo({ className = "w-9 h-9" }: { className?: string }) {
+  return (
+    <img
+      src="/art/logo-dog.webp"
+      alt=""
+      className={`${className} rounded-full object-cover shadow-soft`}
+      width={36}
+      height={36}
+    />
+  );
+}
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 bg-cream/90 backdrop-blur border-b border-sunflower-soft">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2 font-display font-semibold text-xl text-charcoal">
-          <BirdDoodle className="w-9 h-9 text-meadow-deep" title="Via Tutela" />
+          <Logo />
           Via&nbsp;Tutela
         </Link>
         <nav className="flex items-center gap-2 sm:gap-4 text-sm font-semibold">
@@ -42,7 +53,7 @@ export function SiteFooter() {
     <footer className="mt-24 border-t border-sunflower-soft bg-white/60">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-2 font-display font-semibold text-charcoal">
-          <BirdDoodle className="w-8 h-8 text-meadow-deep" />
+          <Logo className="w-8 h-8" />
           Via Tutela
         </div>
         <p className="text-charcoal-soft text-center font-semibold">

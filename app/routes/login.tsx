@@ -1,7 +1,6 @@
 import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import type { Route } from "./+types/login";
-import { SiteHeader, SiteFooter } from "../components/site";
-import { BirdDoodle } from "../components/doodles";
+import { SiteHeader, SiteFooter, Logo } from "../components/site";
 import { getEnv } from "../lib/auth.server";
 import { getAuthedUser, sessionCookie } from "../../workers/lib/auth";
 import { verifyPassword } from "../../workers/lib/password";
@@ -54,7 +53,7 @@ export default function Login() {
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-20">
         <div className="rounded-blob bg-white shadow-lift p-8">
-          <BirdDoodle className="w-16 h-16 mx-auto text-meadow-deep" />
+          <Logo className="w-16 h-16 mx-auto" />
           <h1 className="mt-2 text-3xl font-display font-semibold text-center">Welcome back</h1>
           <Form method="post" className="mt-6 space-y-4">
             <label className="block">

@@ -73,7 +73,13 @@ export default function AdoptPortal({ loaderData }: Route.ComponentProps) {
       <main className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
         {animals.length === 0 ? (
           <div className="text-center py-16">
-            <PawDoodle className="w-16 h-16 mx-auto text-sunflower" />
+            <img
+              src="/art/rabbit.webp"
+              alt=""
+              width={512}
+              height={512}
+              className="w-32 h-32 mx-auto rounded-3xl shadow-soft -rotate-2"
+            />
             <p className="mt-4 text-lg font-semibold">
               No friends looking for homes right now — check back soon.
             </p>
