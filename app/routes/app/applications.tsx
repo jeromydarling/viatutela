@@ -28,11 +28,12 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     binds.push(status);
   }
   sql += ` ORDER BY ap.created_at DESC LIMIT 200`;
-  const apps = await env.DB.prepare(sql).bind(...binds).all<Record<string, unknown>>();
-
-  const counts = await env.DB.prepare(
-    `SELECT status, COUNT(*) n FROM applications WHERE org_id = ? GROUP BY status`,
-  ).bind(user.org_id).all<{ status: string; n: number }>();
+  const [apps, counts] = await Promise.all([
+    env.DB.prepare(sql).bind(...binds).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      `SELECT status, COUNT(*) n FROM applications WHERE org_id = ? GROUP BY status`,
+    ).bind(user.org_id).all<{ status: string; n: number }>(),
+  ]);
 
   return {
     applications: apps.results,

@@ -37,10 +37,10 @@ export function SiteHeader() {
               {s.label}
             </a>
           ))}
-          <Link to="/guides" className="hidden md:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
+          <Link to="/guides" prefetch="intent" className="hidden md:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
             Guides
           </Link>
-          <Link to="/login" className="hidden sm:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
+          <Link to="/login" prefetch="intent" className="hidden sm:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
             Sign in
           </Link>
           <Link
