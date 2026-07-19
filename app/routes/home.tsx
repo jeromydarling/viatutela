@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { SiteHeader, SiteFooter } from "../components/site";
+import { marketingMeta, SITE_ORIGIN } from "../lib/seo";
 import { SavingsCalculator } from "../components/savings-calculator";
 import { BirdDoodle, HeartPawDoodle } from "../components/doodles";
 import {
@@ -26,15 +27,48 @@ import {
 } from "../components/feature-screens";
 
 export function meta(_: Route.MetaArgs) {
-  return [
-    { title: "Via Tutela — Every animal deserves a way home." },
-    {
-      name: "description",
-      content:
-        "The all-in-one platform for shelters, rescues, and fosters. Move in free, keep your data, keep your money.",
-    },
-  ];
+  return marketingMeta({
+    title: "Via Tutela — Every animal deserves a way home.",
+    description:
+      "The all-in-one platform for shelters, rescues, and fosters. Move in free, keep your data, keep your money.",
+    path: "/",
+  });
 }
+
+const HOME_JSONLD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_ORIGIN}#org`,
+      name: "Via Tutela",
+      url: SITE_ORIGIN,
+      logo: `${SITE_ORIGIN}/art/logo-dog.webp`,
+      description: "The all-in-one platform for animal shelters, rescues, and fosters.",
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_ORIGIN}#site`,
+      name: "Via Tutela",
+      url: SITE_ORIGIN,
+      publisher: { "@id": `${SITE_ORIGIN}#org` },
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "Via Tutela",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: SITE_ORIGIN,
+      description:
+        "Shelter management: animals, adoptions, fosters, donors, websites, marketing, and AI tools for rescues.",
+      offers: [
+        { "@type": "Offer", name: "Starter", price: "9.00", priceCurrency: "USD", description: "$9/month plus $1 per adoption" },
+        { "@type": "Offer", name: "Rescue", price: "39.00", priceCurrency: "USD" },
+        { "@type": "Offer", name: "Shelter Pro", price: "79.00", priceCurrency: "USD" },
+      ],
+    },
+  ],
+});
 
 const PAIN_RELIEF: { pain: string; relief: string }[] = [
   {
@@ -374,6 +408,7 @@ function MiniCta({ text, label = "Get started", to = "/signup" }: { text: string
 export default function Home() {
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: HOME_JSONLD }} />
       <SiteHeader />
 
       {/* ---------- Hero ---------- */}
@@ -415,6 +450,7 @@ export default function Home() {
               alt=""
               width={1000}
               height={750}
+              fetchPriority="high"
               className="rounded-blob shadow-lift rotate-1 w-full"
             />
             <img
@@ -422,6 +458,7 @@ export default function Home() {
               alt=""
               width={512}
               height={512}
+              loading="lazy"
               className="absolute -bottom-8 -left-6 w-24 h-24 rounded-full shadow-soft -rotate-6 vt-float bg-cream"
             />
           </div>
@@ -485,19 +522,19 @@ export default function Home() {
       </section>
 
       {/* ---------- Spotlight: the adoption page ---------- */}
-      <section id="spotlight" className="bg-meadow py-16 overflow-hidden scroll-mt-20">
+      <section id="spotlight" className="bg-meadow-deep py-16 overflow-hidden scroll-mt-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 grid md:grid-cols-2 gap-10 items-center">
           <div className="max-w-sm w-full mx-auto md:order-2 md:-rotate-1">
             <ShareScreen />
           </div>
           <div className="text-white md:order-1">
-            <p className="font-display font-semibold text-sunflower uppercase tracking-wide text-sm">
+            <p className="font-display font-semibold text-sunflower-soft uppercase tracking-wide text-sm">
               The heart of it all
             </p>
             <h2 className="mt-2 text-3xl sm:text-5xl font-display font-semibold leading-tight">
               Every animal gets the internet's best adoption page.
             </h2>
-            <p className="mt-4 text-lg text-white/90 leading-relaxed">
+            <p className="mt-4 text-lg text-white/95 leading-relaxed">
               Photos <em>and videos</em>. A share bar with every channel your volunteers already use —
               Facebook, Nextdoor, WhatsApp, texts, QR codes. A print-ready flyer in your brand. An embed
               widget for the vet's website. A share kit anyone can download. Links that unfurl with the

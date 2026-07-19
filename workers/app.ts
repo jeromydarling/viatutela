@@ -36,6 +36,10 @@ const handleFetch: ExportedHandlerFetchHandler<Env> = async (request, env, ctx) 
 
     // custom shelter domains: resolve tenant by Host, serve the public site
     const tenant = await resolveTenant(env, url.hostname);
+    if (!tenant) {
+      const marketing = marketingSeoFile(url);
+      if (marketing) return marketing;
+    }
     if (tenant) {
       const route = routeTenantPath(url.pathname, tenant.slug);
       if (route.kind === "sitemap") return tenantSitemap(env, tenant, url.origin);
@@ -59,6 +63,49 @@ const handleFetch: ExportedHandlerFetchHandler<Env> = async (request, env, ctx) 
     context.set(cloudflareContext, { env, ctx });
     return requestHandler(request, context);
 };
+
+/** robots.txt / sitemap.xml / llms.txt for the marketing site itself
+ * (shelter tenant domains get their own via routeTenantPath). */
+function marketingSeoFile(url: URL): Response | null {
+  const MARKETING_PATHS = ["/", "/import", "/signup", "/login", "/privacy", "/terms"];
+  if (url.pathname === "/robots.txt") {
+    return new Response(
+      `User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api\n\nSitemap: ${url.origin}/sitemap.xml\n`,
+      { headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=86400" } },
+    );
+  }
+  if (url.pathname === "/sitemap.xml") {
+    const urls = MARKETING_PATHS.map(
+      (p) => `  <url><loc>${url.origin}${p === "/" ? "" : p}</loc></url>`,
+    ).join("\n");
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+      { headers: { "Content-Type": "application/xml", "Cache-Control": "public, max-age=86400" } },
+    );
+  }
+  if (url.pathname === "/llms.txt") {
+    return new Response(
+      `# Via Tutela
+
+> The all-in-one platform for animal shelters, rescues, and fosters: animal management, adoption pages and applications, foster tracking, donor CRM, a website builder with custom domains, marketing tools, and AI assistance (matchmaking, application triage, bio writing, photo enhancement, grant drafting). Warm by design — animals are "friends" here.
+
+Pricing: Starter is $9/month plus $1 per adoption. Rescue is $39/month flat. Shelter Pro is $79/month flat. The migration importer is free and needs no account.
+
+## Pages
+
+- [Home](${url.origin}/): product overview, features, impact stats, pricing, comparisons
+- [Free importer](${url.origin}/import): migrate from any shelter software — relationships preserved
+- [Get started](${url.origin}/signup): create a shelter workspace
+- [Live demo](${url.origin}/demo): a fully seeded demo shelter, no signup
+- [Privacy](${url.origin}/privacy) and [Terms](${url.origin}/terms): plain-language policies — shelters own their data
+
+Each shelter also gets public adoption pages at /adopt/<shelter> and an optional website at /s/<shelter> or their own domain.
+`,
+      { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=86400" } },
+    );
+  }
+  return null;
+}
 
 const handleScheduled: ExportedHandlerScheduledHandler<Env> = async (event, env, ctx) => {
     if (event.cron === "15 */6 * * *") {
