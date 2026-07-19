@@ -4,7 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { parseSeo } from "../../lib/site.server";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "SEO & Search Checkup — Via Tutela" }];
+  return [{ title: "SEO & Search Checkup — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

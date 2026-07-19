@@ -5,7 +5,7 @@ import { requireUser } from "../../lib/auth.server";
 import { Logo } from "../../components/site";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
-  return [{ title: `Kennel card — ${data?.animal?.name ?? ""} — Via Tutela` }];
+  return [{ title: `Kennel card — ${data?.animal?.name ?? ""} — Tutela` }];
 }
 
 export async function loader({ context, request, params }: Route.LoaderArgs) {

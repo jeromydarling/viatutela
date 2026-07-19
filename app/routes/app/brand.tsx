@@ -18,7 +18,7 @@ import {
 } from "../../../workers/lib/brand";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Brand Studio — Via Tutela" }];
+  return [{ title: "Brand Studio — Tutela" }];
 }
 
 const ALL_STUDIO_FONTS =

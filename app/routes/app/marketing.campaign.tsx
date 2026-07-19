@@ -10,7 +10,7 @@ import { sendSupporterEmail } from "../../../workers/lib/supporter-email";
 import { daysBetween } from "../../../workers/lib/ai-shelter";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
-  return [{ title: `${data?.campaign?.name ?? "Campaign"} — Marketing — Via Tutela` }];
+  return [{ title: `${data?.campaign?.name ?? "Campaign"} — Marketing — Tutela` }];
 }
 
 async function loadCampaign(env: Env, orgId: string, campaignId: string) {
@@ -30,7 +30,7 @@ async function buildContext(env: Env, orgId: string, campaign: Record<string, un
   )
     .bind(orgId)
     .first<{ name: string; slug: string; address: string | null; custom_domain: string | null; brand_json: string | null }>();
-  const appOrigin = (env as unknown as { APP_ORIGIN?: string }).APP_ORIGIN ?? "https://viatutela.app";
+  const appOrigin = (env as unknown as { APP_ORIGIN?: string }).APP_ORIGIN ?? "https://viatutela.com";
   const siteUrl = org?.custom_domain ? `https://${org.custom_domain}` : `${appOrigin}/s/${org?.slug}`;
   let animal: CampaignContext["animal"] = null;
   if (campaign.animal_id) {
@@ -140,7 +140,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     const org = await env.DB.prepare(`SELECT name, slug, email, custom_domain FROM orgs WHERE id = ?`)
       .bind(user.org_id)
       .first<{ name: string; slug: string; email: string | null; custom_domain: string | null }>();
-    const appOrigin = (env as unknown as { APP_ORIGIN?: string }).APP_ORIGIN ?? "https://viatutela.app";
+    const appOrigin = (env as unknown as { APP_ORIGIN?: string }).APP_ORIGIN ?? "https://viatutela.com";
     const siteUrl = org?.custom_domain ? `https://${org.custom_domain}` : `${appOrigin}/s/${org?.slug}`;
 
     const result = await sendSupporterEmail(env, {

@@ -5,7 +5,7 @@ import { marketingMeta, SITE_ORIGIN } from "../lib/seo";
 import { getState, nearbyStates, REGION_NOTES, type RescueState } from "../lib/guide-states";
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  if (!loaderData?.state) return [{ title: "Guide not found — Via Tutela" }];
+  if (!loaderData?.state) return [{ title: "Guide not found — Tutela" }];
   const s = loaderData.state;
   return marketingMeta({
     title: `How to Start an Animal Rescue in ${s.name} (2026)`,
@@ -30,8 +30,8 @@ function stateJsonLd(s: RescueState): string {
         description: `Nonprofit setup, state requirements, and regional rescue context for founding an animal rescue in ${s.name}.`,
         dateModified: "2026-07-19",
         url: `${SITE_ORIGIN}/guides/start-a-rescue/${s.slug}`,
-        author: { "@type": "Organization", name: "Via Tutela", url: SITE_ORIGIN },
-        publisher: { "@type": "Organization", name: "Via Tutela", url: SITE_ORIGIN },
+        author: { "@type": "Organization", name: "Tutela", url: SITE_ORIGIN },
+        publisher: { "@type": "Organization", name: "Tutela", url: SITE_ORIGIN },
       },
       {
         "@type": "BreadcrumbList",
@@ -147,7 +147,7 @@ export default function StateGuide({ loaderData }: Route.ComponentProps) {
             <Link to="/guides/spreadsheets-vs-shelter-software" className="font-semibold text-meadow-deep hover:underline">
               exactly where
             </Link>
-            ). Via Tutela's Starter plan is $9 a month plus $1 per adoption precisely so a
+            ). Tutela's Starter plan is $9 a month plus $1 per adoption precisely so a
             brand-new {s.name} rescue can afford real systems from intake #1 — adoption pages,
             medical reminders, donation receipts, and a website included.
           </p>

@@ -7,7 +7,7 @@ import { parseBrandJson } from "../../../workers/lib/brand";
 import { createStarterPages } from "../../../workers/lib/site-starters";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Website — Via Tutela" }];
+  return [{ title: "Website — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

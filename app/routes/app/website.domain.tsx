@@ -15,7 +15,7 @@ import {
 } from "../../../workers/lib/domains";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Custom domain — Via Tutela" }];
+  return [{ title: "Custom domain — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
@@ -114,7 +114,7 @@ export async function action({ context, request }: Route.ActionArgs) {
     }
     await env.DB.prepare(`UPDATE orgs SET custom_domain = NULL, domain_status = NULL WHERE id = ?`)
       .bind(user.org_id).run();
-    return { ok: "Domain disconnected. Your site still lives at its Via Tutela address." };
+    return { ok: "Domain disconnected. Your site still lives at its Tutela address." };
   }
   return null;
 }
@@ -131,7 +131,7 @@ export default function DomainSettings({ loaderData, actionData }: Route.Compone
         <h1 className="mt-2 text-2xl font-display font-semibold">Custom domain</h1>
         <p className="mt-2 text-charcoal-soft">
           Put your site on your own domain. One CNAME record, automatic SSL, no strings —
-          your Via Tutela address keeps working either way.
+          your Tutela address keeps working either way.
         </p>
       </div>
 

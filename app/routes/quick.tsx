@@ -11,7 +11,7 @@ import { CatDoodle, DogDoodle, PawDoodle } from "../components/doodles";
  */
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
-  return [{ title: `${data?.animal?.name ?? "Friend"} — Via Tutela` }];
+  return [{ title: `${data?.animal?.name ?? "Friend"} — Tutela` }];
 }
 
 export async function loader({ context, request, params }: Route.LoaderArgs) {

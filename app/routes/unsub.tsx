@@ -4,7 +4,7 @@ import { getEnv } from "../lib/auth.server";
 import { suppress, verifyUnsubToken } from "../../workers/lib/supporter-email";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Unsubscribed — Via Tutela" }, { name: "robots", content: "noindex" }];
+  return [{ title: "Unsubscribed — Tutela" }, { name: "robots", content: "noindex" }];
 }
 
 async function handle(env: Env, token: string) {
@@ -48,7 +48,7 @@ export default function Unsubscribe({ loaderData }: Route.ComponentProps) {
           </>
         )}
         <Link to="/" className="mt-5 inline-block text-sm font-semibold text-meadow-deep hover:underline">
-          Via Tutela
+          Tutela
         </Link>
       </div>
     </div>

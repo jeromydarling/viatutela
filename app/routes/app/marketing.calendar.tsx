@@ -3,7 +3,7 @@ import type { Route } from "./+types/marketing.calendar";
 import { requireUser } from "../../lib/auth.server";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Content calendar — Via Tutela" }];
+  return [{ title: "Content calendar — Tutela" }];
 }
 
 function monthOf(param: string | null): string {

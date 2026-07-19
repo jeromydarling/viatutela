@@ -92,7 +92,7 @@ function marketingSeoFile(url: URL): Response | null {
   }
   if (url.pathname === "/llms.txt") {
     return new Response(
-      `# Via Tutela
+      `# Tutela
 
 > The all-in-one platform for animal shelters, rescues, and fosters: animal management, adoption pages and applications, foster tracking, donor CRM, a website builder with custom domains, marketing tools, and AI assistance (matchmaking, application triage, bio writing, photo enhancement, grant drafting). Warm by design — animals are "friends" here.
 

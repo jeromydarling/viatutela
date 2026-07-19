@@ -1,7 +1,7 @@
 @import "tailwindcss" source(".");
 
 @theme {
-  /* Via Tutela palette — warm, sunny, earthy-joyful */
+  /* Tutela palette — warm, sunny, earthy-joyful */
   --color-sunflower: #f6c445;
   --color-sunflower-soft: #fbe3a3;
   --color-meadow: #4caf7d;

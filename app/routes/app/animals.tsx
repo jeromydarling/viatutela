@@ -4,7 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { CatDoodle, DogDoodle, PawDoodle, BirdDoodle } from "../../components/doodles";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Animals — Via Tutela" }];
+  return [{ title: "Animals — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

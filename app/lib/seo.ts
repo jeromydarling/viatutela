@@ -4,11 +4,11 @@
  * (adopt/*, s/*) manage their own richer metadata.
  */
 
-// Update when the marketing site moves to its launch domain — also read
-// by the worker-served sitemap/robots/llms responses via APP_ORIGIN.
-export const SITE_ORIGIN = "https://viatutela.jeromydarling.workers.dev";
+// The launch domain. Canonicals, OG URLs, and JSON-LD all point here —
+// attach viatutela.com to the Worker (Custom Domains) so they resolve.
+export const SITE_ORIGIN = "https://viatutela.com";
 
-export const SITE_NAME = "Via Tutela";
+export const SITE_NAME = "Tutela";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/art/meadow.webp`;
 
 export function marketingMeta(args: {

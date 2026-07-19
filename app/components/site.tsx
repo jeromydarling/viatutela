@@ -29,7 +29,7 @@ export function SiteHeader() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between h-16 gap-2">
         <Link to="/" className="flex items-center gap-2 font-display font-semibold text-xl text-charcoal shrink-0">
           <Logo />
-          Via&nbsp;Tutela
+          Tutela
         </Link>
         <nav className="flex items-center gap-1 sm:gap-3 text-sm font-semibold">
           {SECTIONS.slice(1).map((s) => (
@@ -110,7 +110,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-2 font-display font-semibold text-charcoal">
           <Logo className="w-8 h-8" />
-          Via Tutela
+          Tutela
         </div>
         <p className="text-charcoal-soft text-center font-semibold">
           Peace and all good things to you and your animals.

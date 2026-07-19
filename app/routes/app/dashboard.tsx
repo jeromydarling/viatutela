@@ -5,7 +5,7 @@ import { newId } from "../../../workers/lib/ids";
 import { PawDoodle } from "../../components/doodles";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Dashboard — Via Tutela" }];
+  return [{ title: "Dashboard — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

@@ -8,7 +8,7 @@ import { PawDoodle } from "../components/doodles";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
   return [
-    { title: `Find your match at ${data?.org?.name ?? "a rescue"} — Via Tutela` },
+    { title: `Find your match at ${data?.org?.name ?? "a rescue"} — Tutela` },
     { name: "description", content: "Answer six quick questions and we'll suggest the friends most likely to fit your home." },
   ];
 }
@@ -236,7 +236,7 @@ export default function MatchQuiz({ loaderData, actionData }: Route.ComponentPro
       <footer className="py-8 text-center text-sm text-charcoal-soft">
         Powered by{" "}
         <Link to="/" className="font-semibold text-meadow-deep hover:underline">
-          Via Tutela
+          Tutela
         </Link>
       </footer>
     </div>

@@ -56,7 +56,7 @@ export interface SiteTheme {
 export const SITE_THEMES: Record<string, SiteTheme> = {
   meadow: {
     label: "Meadow — soft & sunny",
-    blurb: "Round corners, gentle shadows, a wave between sections. The classic Via Tutela warmth.",
+    blurb: "Round corners, gentle shadows, a wave between sections. The classic Tutela warmth.",
     radius: "2rem",
     buttonRadius: "999px",
     cardShadow: "0 6px 24px rgba(46,42,38,0.10)",

@@ -7,7 +7,7 @@ import { seatLimit, PLANS } from "../../../workers/lib/pricing";
 import { sendAppEmail } from "../../../workers/lib/email";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Settings — Via Tutela" }];
+  return [{ title: "Settings — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
@@ -74,7 +74,7 @@ export async function action({ context, request }: Route.ActionArgs) {
       return { error: `Your ${PLANS[user.plan]?.label ?? "current"} plan includes ${seats} seats — they're all filled. A bigger plan adds more.` };
     }
     const existing = await env.DB.prepare(`SELECT id FROM users WHERE email = ?`).bind(email).first();
-    if (existing) return { error: "That email already has a Via Tutela account." };
+    if (existing) return { error: "That email already has a Tutela account." };
     const token = newToken();
     await env.DB.prepare(
       `INSERT INTO users (id, org_id, email, name, invite_token, invited_by) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -85,10 +85,10 @@ export async function action({ context, request }: Route.ActionArgs) {
     ctx.waitUntil(
       sendAppEmail(env, {
         to: email,
-        subject: `${user.user_name ?? "A teammate"} invited you to ${user.org_name} on Via Tutela 🌻`,
+        subject: `${user.user_name ?? "A teammate"} invited you to ${user.org_name} on Tutela 🌻`,
         heading: `Come join ${user.org_name}`,
         paragraphs: [
-          `${user.user_name ?? user.email} added you to ${user.org_name}'s workspace on Via Tutela — the place where the whole team manages animals, adoptions, and everything around them.`,
+          `${user.user_name ?? user.email} added you to ${user.org_name}'s workspace on Tutela — the place where the whole team manages animals, adoptions, and everything around them.`,
           `Tap the button to choose a password and step inside. This link is yours alone; if you weren't expecting it, you can simply ignore it.`,
         ],
         cta: { label: "Join the team", url: `${origin}/join/${token}` },
@@ -319,7 +319,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
       <section className="rounded-blob bg-white shadow-soft p-6 space-y-2">
         <h2 className="font-display font-semibold text-lg">Email</h2>
         <p className="text-sm text-charcoal-soft">
-          Via Tutela sends application confirmations, approval/denial notes,
+          Tutela sends application confirmations, approval/denial notes,
           donation receipts, and welcome emails through Cloudflare Email
           Sending. Set your <strong>public email</strong> above to get notified
           of new applications (it's also used as the reply-to on emails to

@@ -102,7 +102,7 @@ export const GUIDES: Guide[] = [
       },
       {
         q: "Will adopter and medical history survive the move?",
-        a: "Only if your importer understands relationships, not just rows. Test with a trial import and check one animal's full story before committing. Via Tutela's importer preserves adopter links, medical timelines, and bonded pairs from any CSV or Excel export.",
+        a: "Only if your importer understands relationships, not just rows. Test with a trial import and check one animal's full story before committing. Tutela's importer preserves adopter links, medical timelines, and bonded pairs from any CSV or Excel export.",
       },
     ],
     cta: {
@@ -152,7 +152,7 @@ export const GUIDES: Guide[] = [
       },
       { h2: "Let the AI draft, let a human decide" },
       {
-        p: "The blank page is the real enemy — most shelves of animals go bio-less because nobody had twenty free minutes. This is a place where AI genuinely helps: [Via Tutela's bio writer](/signup) drafts from the animal's actual profile — age, quirks, staff notes, even what's visible in their photos — in your shelter's voice, honestly labeling what it doesn't know. A person reads it, fixes the one wrong detail, and publishes. Two minutes instead of twenty, and nothing goes live without human eyes.",
+        p: "The blank page is the real enemy — most shelves of animals go bio-less because nobody had twenty free minutes. This is a place where AI genuinely helps: [Tutela's bio writer](/signup) drafts from the animal's actual profile — age, quirks, staff notes, even what's visible in their photos — in your shelter's voice, honestly labeling what it doesn't know. A person reads it, fixes the one wrong detail, and publishes. Two minutes instead of twenty, and nothing goes live without human eyes.",
       },
     ],
     faq: [
@@ -166,7 +166,7 @@ export const GUIDES: Guide[] = [
       },
     ],
     cta: {
-      text: "Every Via Tutela animal page gets an AI bio draft, a share bar, and a print-ready flyer.",
+      text: "Every Tutela animal page gets an AI bio draft, a share bar, and a print-ready flyer.",
       label: "See it on the live demo",
       to: "/demo",
     },
@@ -211,7 +211,7 @@ export const GUIDES: Guide[] = [
         p: "A gentle brightness lift, a touch of contrast, a little sharpening — that's a service to the animal, because it shows what your eyes actually saw in bad lighting. Changing how the animal looks is a betrayal that gets discovered at the meet-and-greet. Enhance what the camera captured, never fabricate what it didn't.",
       },
       {
-        p: "This is exactly how [Via Tutela's photo studio](/signup) works: the AI suggests gentle, clamped adjustments with a before/after preview, a human approves or discards, and the original is always kept. It can also score a set of photos, tell you which should lead the page, and cut face-centered crops for social — the whole routine above, minus the fiddling.",
+        p: "This is exactly how [Tutela's photo studio](/signup) works: the AI suggests gentle, clamped adjustments with a before/after preview, a human approves or discards, and the original is always kept. It can also score a set of photos, tell you which should lead the page, and cut face-centered crops for social — the whole routine above, minus the fiddling.",
       },
     ],
     faq: [
@@ -259,7 +259,7 @@ export const GUIDES: Guide[] = [
       },
       { h2: "Make sharing effortless for your people" },
       {
-        p: "Your volunteers and fosters WANT to share — every click you save them multiplies reach. Every animal needs a public page with a one-tap share bar (Facebook, Nextdoor, WhatsApp, plain text messages — where actual neighbors actually are), links that unfurl with the animal's photo, and a flyer anyone can print. That's the machinery [Via Tutela builds into every animal page](/demo) automatically.",
+        p: "Your volunteers and fosters WANT to share — every click you save them multiplies reach. Every animal needs a public page with a one-tap share bar (Facebook, Nextdoor, WhatsApp, plain text messages — where actual neighbors actually are), links that unfurl with the animal's photo, and a flyer anyone can print. That's the machinery [Tutela builds into every animal page](/demo) automatically.",
       },
       { h2: "Don't sleep on the unglamorous channels" },
       {
@@ -270,7 +270,7 @@ export const GUIDES: Guide[] = [
       },
       { h2: "When there's no one to write it" },
       {
-        p: "The cadence above dies the week your one social-media volunteer gets busy. That's the gap [Via Tutela's Marketing Studio](/signup) fills: it drafts channel-ready posts in your shelter's voice — new-arrival announcements, long-stay spotlights, adoption celebrations — and queues them for a human to approve. Nothing posts itself; everything is ready when you are.",
+        p: "The cadence above dies the week your one social-media volunteer gets busy. That's the gap [Tutela's Marketing Studio](/signup) fills: it drafts channel-ready posts in your shelter's voice — new-arrival announcements, long-stay spotlights, adoption celebrations — and queues them for a human to approve. Nothing posts itself; everything is ready when you are.",
       },
     ],
     faq: [
@@ -326,7 +326,7 @@ export const GUIDES: Guide[] = [
       },
       { h2: "Writing the narrative without losing a week" },
       {
-        p: "This is the blank-page problem again, and it's another place AI honestly earns its keep: [Via Tutela's grant writer](/signup) drafts a funder-ready narrative from your shelter's real outcomes, volunteer hours, and donor numbers — and it never invents a statistic, because invented statistics are how you lose a funder forever. You edit, you verify, you submit. The numbers were already there; now the words are too.",
+        p: "This is the blank-page problem again, and it's another place AI honestly earns its keep: [Tutela's grant writer](/signup) drafts a funder-ready narrative from your shelter's real outcomes, volunteer hours, and donor numbers — and it never invents a statistic, because invented statistics are how you lose a funder forever. You edit, you verify, you submit. The numbers were already there; now the words are too.",
       },
     ],
     faq: [
@@ -377,7 +377,7 @@ export const GUIDES: Guide[] = [
         ],
       },
       {
-        p: "None of this is hard — it's just relentless, which is why it dies as a manual process by February. [Via Tutela schedules the whole cadence automatically](/signup) on every recorded adoption: day-3 check-in, week-2 photo ask, month-6 hello, Gotcha Day every year. Your team writes nothing; adopters just feel remembered.",
+        p: "None of this is hard — it's just relentless, which is why it dies as a manual process by February. [Tutela schedules the whole cadence automatically](/signup) on every recorded adoption: day-3 check-in, week-2 photo ask, month-6 hello, Gotcha Day every year. Your team writes nothing; adopters just feel remembered.",
       },
       {
         tip: "When a return does happen, make it shame-free and information-rich: a returned animal with honest behavior notes is dramatically easier to place right the second time.",
@@ -394,7 +394,7 @@ export const GUIDES: Guide[] = [
       },
     ],
     cta: {
-      text: "Automatic post-adoption check-ins ship with every Via Tutela adoption.",
+      text: "Automatic post-adoption check-ins ship with every Tutela adoption.",
       label: "See the lifecycle features",
       to: "/#features",
     },
@@ -436,7 +436,7 @@ export const GUIDES: Guide[] = [
       },
       { h2: "Systems from day one, not day 400" },
       {
-        p: "The pattern every rescue regrets: records live in texts, three spreadsheets, and one founder's memory until the day a vet asks for a vaccine date mid-emergency and nobody can find it. Start with real shelter software while you're small — animal records, medical timelines, adopter history, donation receipts in one place. [Via Tutela's Starter plan is $9 a month plus $1 per adoption](/signup) precisely so brand-new rescues can afford real systems from intake #1 — and if you're already drowning in spreadsheets, the [free importer](/import) turns them into organized records in an afternoon.",
+        p: "The pattern every rescue regrets: records live in texts, three spreadsheets, and one founder's memory until the day a vet asks for a vaccine date mid-emergency and nobody can find it. Start with real shelter software while you're small — animal records, medical timelines, adopter history, donation receipts in one place. [Tutela's Starter plan is $9 a month plus $1 per adoption](/signup) precisely so brand-new rescues can afford real systems from intake #1 — and if you're already drowning in spreadsheets, the [free importer](/import) turns them into organized records in an afternoon.",
       },
       {
         tip: "Open the bank account and start donation receipts in month one. Retroactively reconstructing finances for your 990 (or a grant application) is the most expensive spreadsheet archaeology there is.",
@@ -456,7 +456,7 @@ export const GUIDES: Guide[] = [
       },
       {
         q: "What software does a new rescue need?",
-        a: "One system that holds animals, medical records, people, adoptions, and donations together — from day one, so history never lives in texts and memory. Via Tutela's Starter plan ($9/month + $1 per adoption) exists exactly for this stage.",
+        a: "One system that holds animals, medical records, people, adoptions, and donations together — from day one, so history never lives in texts and memory. Tutela's Starter plan ($9/month + $1 per adoption) exists exactly for this stage.",
       },
     ],
     cta: {
@@ -469,10 +469,10 @@ export const GUIDES: Guide[] = [
   // ---------------------------------------------------------------- compare
   {
     slug: "shelterluv-alternative",
-    title: "Shelterluv Alternative: Via Tutela vs Shelterluv (2026)",
+    title: "Shelterluv Alternative: Tutela vs Shelterluv (2026)",
     h1: "Looking at Shelterluv? Here's an honest comparison",
     description:
-      "Shelterluv vs Via Tutela: per-adoption pricing compared, data export, website builder, AI features, and how to migrate without losing records.",
+      "Shelterluv vs Tutela: per-adoption pricing compared, data export, website builder, AI features, and how to migrate without losing records.",
     category: "Compare",
     minutes: 5,
     updated: "2026-07-19",
@@ -482,9 +482,9 @@ export const GUIDES: Guide[] = [
       },
       { h2: "The pricing shapes are different" },
       {
-        p: "Shelterluv's model is usage-based at $2 per adoption (per their published pricing as of mid-2026 — always verify current rates). Via Tutela's Starter is $9 a month plus $1 per adoption, with flat tiers at $39 (Rescue) and $79/month (Shelter Pro) above it. A rescue doing 30 adoptions a month pays $60/month on pure per-adoption pricing at $2; on Via Tutela that volume lands on the flat $39 tier. Higher volume widens the gap; tiny volume narrows it — run your own numbers with the [savings calculator](/#savings).",
+        p: "Shelterluv's model is usage-based at $2 per adoption (per their published pricing as of mid-2026 — always verify current rates). Tutela's Starter is $9 a month plus $1 per adoption, with flat tiers at $39 (Rescue) and $79/month (Shelter Pro) above it. A rescue doing 30 adoptions a month pays $60/month on pure per-adoption pricing at $2; on Tutela that volume lands on the flat $39 tier. Higher volume widens the gap; tiny volume narrows it — run your own numbers with the [savings calculator](/#savings).",
       },
-      { h2: "Where Via Tutela goes further" },
+      { h2: "Where Tutela goes further" },
       {
         list: [
           "A full website builder with themes, custom domain, and auto-SSL — your whole web presence, not only adoption listings",
@@ -505,11 +505,11 @@ export const GUIDES: Guide[] = [
     ],
     faq: [
       {
-        q: "Is Via Tutela cheaper than Shelterluv?",
-        a: "It depends on volume. At Shelterluv's published $2/adoption, 30 adoptions is $60/month; Via Tutela's flat Rescue tier is $39/month, and Starter ($9 + $1/adoption) is cheaper still at low volume. Check both calculators with your real numbers.",
+        q: "Is Tutela cheaper than Shelterluv?",
+        a: "It depends on volume. At Shelterluv's published $2/adoption, 30 adoptions is $60/month; Tutela's flat Rescue tier is $39/month, and Starter ($9 + $1/adoption) is cheaper still at low volume. Check both calculators with your real numbers.",
       },
       {
-        q: "Can I import my Shelterluv data into Via Tutela?",
+        q: "Can I import my Shelterluv data into Tutela?",
         a: "Yes — export CSVs from Shelterluv and use the free importer (no account required to try it). Adopter relationships, medical history, and bonded pairs come through intact, with a flagged-rows report for anything ambiguous.",
       },
     ],
@@ -522,10 +522,10 @@ export const GUIDES: Guide[] = [
 
   {
     slug: "petpoint-alternative",
-    title: "PetPoint Alternative: Via Tutela vs PetPoint (2026)",
+    title: "PetPoint Alternative: Tutela vs PetPoint (2026)",
     h1: "Beyond PetPoint: what 'free' costs, and what the alternative looks like",
     description:
-      "PetPoint vs Via Tutela: the microchip-and-insurance model explained, data portability compared, and a migration path that keeps your history.",
+      "PetPoint vs Tutela: the microchip-and-insurance model explained, data portability compared, and a migration path that keeps your history.",
     category: "Compare",
     minutes: 5,
     updated: "2026-07-19",
@@ -537,7 +537,7 @@ export const GUIDES: Guide[] = [
       {
         p: "PetPoint is operated by Pethealth, and the no-cost tiers are built around shelters promoting 24PetWatch microchips and insurance offers to adopters (per their published materials as of mid-2026). For some shelters that's a fine trade — the chips get registered, the software costs nothing. But it means your software vendor's customer is partly the adopter-data pipeline, not only you, and your workflows carry someone else's product placement.",
       },
-      { h2: "The Via Tutela trade instead" },
+      { h2: "The Tutela trade instead" },
       {
         p: "We charge money — $9/month + $1 per adoption to start, flat $39–$79 tiers above — and in exchange the incentives point one direction: at you. No product pushes at your adoption table, no strings on your adopter data, and a one-click export of every table whenever you want it. Your data is the product you own, not the price you pay.",
       },
@@ -566,7 +566,7 @@ export const GUIDES: Guide[] = [
         a: "The no-cost tiers are subsidized by promoting 24PetWatch microchip and insurance products to your adopters (per published materials as of mid-2026). Whether that trade suits your shelter is a values question as much as a budget one.",
       },
       {
-        q: "Can I migrate from PetPoint to Via Tutela?",
+        q: "Can I migrate from PetPoint to Tutela?",
         a: "Yes. Export your reports as CSVs while your access is active, then use the free importer — it preserves adopter relationships and medical history and flags anything ambiguous for review before committing.",
       },
     ],
@@ -579,10 +579,10 @@ export const GUIDES: Guide[] = [
 
   {
     slug: "rescuegroups-alternative",
-    title: "RescueGroups Alternative: Via Tutela vs RescueGroups (2026)",
+    title: "RescueGroups Alternative: Tutela vs RescueGroups (2026)",
     h1: "Outgrowing RescueGroups? Here's the honest comparison",
     description:
-      "RescueGroups.org vs Via Tutela: modular add-ons vs all-in-one, website capabilities, AI features, and how to migrate your data intact.",
+      "RescueGroups.org vs Tutela: modular add-ons vs all-in-one, website capabilities, AI features, and how to migrate your data intact.",
     category: "Compare",
     minutes: 5,
     updated: "2026-07-19",
@@ -606,7 +606,7 @@ export const GUIDES: Guide[] = [
       },
       { h2: "The honest price comparison" },
       {
-        p: "RescueGroups' modular pricing ($75–$100/year range) is genuinely hard to beat on raw dollars, and for an all-volunteer rescue with simple needs it may stay the right answer. Via Tutela's Starter is $9/month + $1 per adoption — more per year, in exchange for the all-in-one workspace, the AI tools, and the hours of volunteer glue-work it removes. Price the hours, not just the subscription.",
+        p: "RescueGroups' modular pricing ($75–$100/year range) is genuinely hard to beat on raw dollars, and for an all-volunteer rescue with simple needs it may stay the right answer. Tutela's Starter is $9/month + $1 per adoption — more per year, in exchange for the all-in-one workspace, the AI tools, and the hours of volunteer glue-work it removes. Price the hours, not just the subscription.",
       },
       { h2: "Migration is the easy part" },
       {
@@ -615,11 +615,11 @@ export const GUIDES: Guide[] = [
     ],
     faq: [
       {
-        q: "What does RescueGroups.org cost compared to Via Tutela?",
-        a: "RescueGroups' modular services run roughly $75–$100/year (published pricing, mid-2026). Via Tutela Starter is $9/month + $1 per adoption with flat $39–$79 tiers above — more dollars, one integrated system. For many rescues the deciding line item is volunteer hours, not subscription cost.",
+        q: "What does RescueGroups.org cost compared to Tutela?",
+        a: "RescueGroups' modular services run roughly $75–$100/year (published pricing, mid-2026). Tutela Starter is $9/month + $1 per adoption with flat $39–$79 tiers above — more dollars, one integrated system. For many rescues the deciding line item is volunteer hours, not subscription cost.",
       },
       {
-        q: "Can I move my RescueGroups data to Via Tutela?",
+        q: "Can I move my RescueGroups data to Tutela?",
         a: "Yes — export your animals, contacts, and adoptions as CSVs and run them through the free importer. It preserves relationships (adopter history, bonded pairs) and gives you a flagged-rows report before anything commits.",
       },
     ],
@@ -674,7 +674,7 @@ GUIDES.push(
       {
         tip: "Price the year, not the month — seasonality means your July and your January bills can differ wildly under usage pricing.",
       },
-      { h2: "Where Via Tutela sits, transparently" },
+      { h2: "Where Tutela sits, transparently" },
       {
         p: "We're a hybrid on purpose: [Starter is $9/month plus $1 per adoption](/#pricing) — usage-shaped while you're small — with flat tiers at $39 (Rescue) and $79/month (Shelter Pro) that you graduate to right around 30 adoptions a month, where the math says you should. Everything is on one pricing page, the [savings calculator](/#savings) does the math against your real volume, exports are always free and complete, and the [importer](/import) is free even if you never become a customer.",
       },
@@ -690,7 +690,7 @@ GUIDES.push(
       },
       {
         q: "When does per-adoption pricing stop making sense?",
-        a: "Multiply the per-adoption fee by your honest monthly average. When it exceeds a flat tier you'd otherwise choose (for Via Tutela, that crossover is about 30 adoptions a month), switch shapes.",
+        a: "Multiply the per-adoption fee by your honest monthly average. When it exceeds a flat tier you'd otherwise choose (for Tutela, that crossover is about 30 adoptions a month), switch shapes.",
       },
     ],
     cta: {
@@ -729,7 +729,7 @@ GUIDES.push(
       },
       { h2: "What purpose-built looks like, for less than lunch" },
       {
-        p: "This category used to start at $40+/month, which made spreadsheet loyalty rational. It's why [Via Tutela's Starter plan is $9 a month plus $1 per adoption](/#pricing): animal records with medical timelines and reminders, adopter relationships, a public adoption page with applications, kennel QR cards, donation receipts — the whole nervous system, at a price a brand-new rescue can justify in month one.",
+        p: "This category used to start at $40+/month, which made spreadsheet loyalty rational. It's why [Tutela's Starter plan is $9 a month plus $1 per adoption](/#pricing): animal records with medical timelines and reminders, adopter relationships, a public adoption page with applications, kennel QR cards, donation receipts — the whole nervous system, at a price a brand-new rescue can justify in month one.",
       },
       { h2: "The migration is genuinely the easy part" },
       {
@@ -742,11 +742,11 @@ GUIDES.push(
     faq: [
       {
         q: "Is there free software for animal rescues?",
-        a: "Truly free options are spreadsheets (with the breaking points above) or 'free' platforms funded by promoting products to your adopters. The honest budget answer is very-cheap purpose-built software — Via Tutela starts at $9/month plus $1 per adoption, with a free importer to bring your spreadsheet along.",
+        a: "Truly free options are spreadsheets (with the breaking points above) or 'free' platforms funded by promoting products to your adopters. The honest budget answer is very-cheap purpose-built software — Tutela starts at $9/month plus $1 per adoption, with a free importer to bring your spreadsheet along.",
       },
       {
         q: "Can I import my rescue's spreadsheet into shelter software?",
-        a: "Yes — Via Tutela's importer accepts CSV and Excel exports exactly as messy as they are, maps columns, preserves relationships, and flags ambiguous rows for human review before anything commits. It's free to try with no account.",
+        a: "Yes — Tutela's importer accepts CSV and Excel exports exactly as messy as they are, maps columns, preserves relationships, and flags ambiguous rows for human review before anything commits. It's free to try with no account.",
       },
     ],
     cta: {
@@ -758,10 +758,10 @@ GUIDES.push(
 
   {
     slug: "petstablished-alternative",
-    title: "Petstablished Alternative: Via Tutela vs Petstablished",
+    title: "Petstablished Alternative: Tutela vs Petstablished",
     h1: "Comparing Petstablished? The honest rundown",
     description:
-      "Petstablished vs Via Tutela: funding models, feature depth, data portability, and a migration path — an honest comparison for rescues evaluating both.",
+      "Petstablished vs Tutela: funding models, feature depth, data portability, and a migration path — an honest comparison for rescues evaluating both.",
     category: "Compare",
     minutes: 5,
     updated: "2026-07-19",
@@ -771,9 +771,9 @@ GUIDES.push(
       },
       { h2: "Understand the funding model first" },
       {
-        p: "Petstablished's low-cost model is built around its payment processing and adopter-facing services rather than subscription fees (per their published materials — verify current terms directly, as models evolve). As with every low-cost platform, the practical questions are: what percentage rides on your donations and fees, what does the adopter experience carry, and what happens to your workflows if the model changes? Via Tutela's model is the boring inverse: [transparent subscription pricing](/#pricing) ($9/month + $1 per adoption to start), no cut of donations, incentives pointed only at you.",
+        p: "Petstablished's low-cost model is built around its payment processing and adopter-facing services rather than subscription fees (per their published materials — verify current terms directly, as models evolve). As with every low-cost platform, the practical questions are: what percentage rides on your donations and fees, what does the adopter experience carry, and what happens to your workflows if the model changes? Tutela's model is the boring inverse: [transparent subscription pricing](/#pricing) ($9/month + $1 per adoption to start), no cut of donations, incentives pointed only at you.",
       },
-      { h2: "Where Via Tutela is meaningfully different" },
+      { h2: "Where Tutela is meaningfully different" },
       {
         list: [
           "A full website builder — themes, custom domain, auto-SSL — not just embeddable listings",
@@ -798,7 +798,7 @@ GUIDES.push(
         a: "Its model centers on payment processing and adopter-facing services rather than software subscriptions (per published materials — verify current terms). The evaluation question for any low-cost platform: whose product does your adoption desk carry, and what rides on your transactions?",
       },
       {
-        q: "Can I migrate from Petstablished to Via Tutela?",
+        q: "Can I migrate from Petstablished to Tutela?",
         a: "Yes — export CSVs of animals, people, and adoptions, then use the free importer. It preserves relationships and medical history, flags ambiguous rows for review, and requires no account to try.",
       },
     ],
@@ -811,10 +811,10 @@ GUIDES.push(
 
   {
     slug: "pawlytics-alternative",
-    title: "Pawlytics Alternative: Via Tutela vs Pawlytics",
+    title: "Pawlytics Alternative: Tutela vs Pawlytics",
     h1: "Looking at Pawlytics? Here's how we compare",
     description:
-      "Pawlytics vs Via Tutela: modern rescue software compared on features, AI, websites, pricing philosophy, and data portability.",
+      "Pawlytics vs Tutela: modern rescue software compared on features, AI, websites, pricing philosophy, and data portability.",
     category: "Compare",
     minutes: 4,
     updated: "2026-07-19",
@@ -824,7 +824,7 @@ GUIDES.push(
       },
       { h2: "Two modern tools, two scopes" },
       {
-        p: "The core difference is scope. Pawlytics centers on the record-keeping heart of rescue: animals, people, medical, adoptions, done cleanly (see their site for current tiers and pricing — we won't quote numbers we can't guarantee). Via Tutela's bet is that a rescue's software should also carry its public face and its busywork: a [website builder](/#features) with your own domain, share-first adoption pages with flyers and videos, marketing and supporter email, volunteer shifts, donor CRM, and AI assistance across the workflow — bios, photo enhancement, application triage, grant drafts — all human-approved.",
+        p: "The core difference is scope. Pawlytics centers on the record-keeping heart of rescue: animals, people, medical, adoptions, done cleanly (see their site for current tiers and pricing — we won't quote numbers we can't guarantee). Tutela's bet is that a rescue's software should also carry its public face and its busywork: a [website builder](/#features) with your own domain, share-first adoption pages with flyers and videos, marketing and supporter email, volunteer shifts, donor CRM, and AI assistance across the workflow — bios, photo enhancement, application triage, grant drafts — all human-approved.",
       },
       { h2: "Questions that will decide it for you" },
       {
@@ -837,7 +837,7 @@ GUIDES.push(
       },
       { h2: "Pricing philosophy" },
       {
-        p: "Via Tutela's is on one page: [Starter at $9/month plus $1 per adoption](/#pricing), flat $39 and $79 tiers above, importer free forever. Compare against Pawlytics' current published tiers at your real volume — five minutes with both calculators beats any comparison page, including this one.",
+        p: "Tutela's is on one page: [Starter at $9/month plus $1 per adoption](/#pricing), flat $39 and $79 tiers above, importer free forever. Compare against Pawlytics' current published tiers at your real volume — five minutes with both calculators beats any comparison page, including this one.",
       },
       { h2: "Switching either direction" },
       {
@@ -846,11 +846,11 @@ GUIDES.push(
     ],
     faq: [
       {
-        q: "What's the main difference between Pawlytics and Via Tutela?",
-        a: "Scope. Pawlytics focuses on clean rescue record-keeping; Via Tutela bundles records plus the public-facing layer (website builder, share-first adoption pages, marketing) and AI drafting across the workflow. Which is right depends on whether you want one system or best-of-breed pieces.",
+        q: "What's the main difference between Pawlytics and Tutela?",
+        a: "Scope. Pawlytics focuses on clean rescue record-keeping; Tutela bundles records plus the public-facing layer (website builder, share-first adoption pages, marketing) and AI drafting across the workflow. Which is right depends on whether you want one system or best-of-breed pieces.",
       },
       {
-        q: "Can I try Via Tutela without committing?",
+        q: "Can I try Tutela without committing?",
         a: "Two ways, no account required: the live demo (a fully seeded shelter, reset every 6 hours) and the free importer, which shows your own data organized without saving anything until you claim it.",
       },
     ],
@@ -875,5 +875,5 @@ export function relatedGuides(guide: Guide, n = 3): Guide[] {
 export const GUIDE_CATEGORIES: { key: Guide["category"]; label: string; blurb: string }[] = [
   { key: "Playbooks", label: "🐾 Playbooks", blurb: "Field-tested tactics for adoptions, photos, social, grants, and keeping forever homes forever." },
   { key: "Switching", label: "📦 Switching software", blurb: "Move systems without losing a record or a relationship." },
-  { key: "Compare", label: "⚖️ Honest comparisons", blurb: "How Via Tutela stacks up — including where the other tool wins." },
+  { key: "Compare", label: "⚖️ Honest comparisons", blurb: "How Tutela stacks up — including where the other tool wins." },
 ];

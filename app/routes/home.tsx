@@ -28,9 +28,9 @@ import {
 
 export function meta(_: Route.MetaArgs) {
   return marketingMeta({
-    title: "Via Tutela — Every animal deserves a way home.",
+    title: "Tutela — Every animal deserves a way home.",
     description:
-      "The all-in-one platform for shelters, rescues, and fosters. Move in free, keep your data, keep your money.",
+      "The all-in-one platform for shelters, rescues, and fosters. $9 a month, your data always yours, and a free importer that carries every relationship over.",
     path: "/",
   });
 }
@@ -41,7 +41,7 @@ const HOME_JSONLD = JSON.stringify({
     {
       "@type": "Organization",
       "@id": `${SITE_ORIGIN}#org`,
-      name: "Via Tutela",
+      name: "Tutela",
       url: SITE_ORIGIN,
       logo: `${SITE_ORIGIN}/art/logo-dog.webp`,
       description: "The all-in-one platform for animal shelters, rescues, and fosters.",
@@ -49,13 +49,13 @@ const HOME_JSONLD = JSON.stringify({
     {
       "@type": "WebSite",
       "@id": `${SITE_ORIGIN}#site`,
-      name: "Via Tutela",
+      name: "Tutela",
       url: SITE_ORIGIN,
       publisher: { "@id": `${SITE_ORIGIN}#org` },
     },
     {
       "@type": "SoftwareApplication",
-      name: "Via Tutela",
+      name: "Tutela",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       url: SITE_ORIGIN,
@@ -141,7 +141,7 @@ const FEATURE_TABS: { key: string; label: string; features: Feature[] }[] = [
     label: "🐾 Daily care",
     features: [
       {
-        title: "Move in free — relationships and all",
+        title: "The importer is free — relationships and all",
         body: "Upload the messy exports from your old system. Adopters stay linked to their animals, medical history follows every friend, and bonded pairs stay bonded. Flagged rows land in a tidy report instead of the void.",
         screen: ImporterScreen,
         link: { label: "Try the importer", to: "/import" },
@@ -210,7 +210,7 @@ const FEATURE_TABS: { key: string; label: string; features: Feature[] }[] = [
       },
       {
         title: "The rescue network, working together",
-        body: "Full and need space? Have room to help? One board shared by every rescue on Via Tutela — species, counts, urgency, and a contact button. The 40-message group text, retired.",
+        body: "Full and need space? Have room to help? One board shared by every rescue on Tutela — species, counts, urgency, and a contact button. The 40-message group text, retired.",
         screen: NetworkScreen,
       },
     ],
@@ -240,7 +240,7 @@ const PRICING = [
     name: "Starter",
     price: "$9",
     priceNote: "+ $1 per adoption",
-    tagline: "Start for next to nothing. Free to move in, $9 a month plus $1 for every animal you send home.",
+    tagline: "Start for next to nothing: $9 a month plus $1 for every animal you send home.",
     features: ["Free importer", "Animal management", "Adoption portal", "Basic donor CRM", "Mobile kennel QR", "Up to 2 staff seats"],
     cta: "Get started",
     highlight: false,
@@ -420,8 +420,8 @@ export default function Home() {
               <span className="text-meadow-deep">way home</span>.
             </h1>
             <p className="mt-5 text-lg sm:text-xl text-charcoal-soft max-w-lg">
-              The all-in-one platform for shelters, rescues, and fosters. Move in
-              free, keep your data, keep your money.
+              The all-in-one platform for shelters, rescues, and fosters. Keep your
+              data, keep your money — software that works as hard as you do.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
@@ -438,7 +438,7 @@ export default function Home() {
               </a>
             </div>
             <p className="mt-3 text-sm text-charcoal-soft">
-              Free to move in — Starter is $9/mo plus $1 per adoption sent home. Migrating?{" "}
+              Starter is $9/mo plus $1 per adoption sent home — and switching costs nothing. Migrating?{" "}
               <Link to="/import" className="font-semibold text-meadow-deep hover:underline">
                 The free importer keeps every relationship →
               </Link>
@@ -508,14 +508,14 @@ export default function Home() {
               best cases, not promises. Every stat keeps its source on the card.
             </p>
             <p className="mt-8 font-display font-semibold text-lg">
-              Via Tutela builds these advantages in — AI-assisted photos and bios,
+              Tutela builds these advantages in — AI-assisted photos and bios,
               one-click listing syndication, and shareable adoption pages.
             </p>
             <a
               href="#features"
               className="mt-4 inline-block rounded-full bg-sunflower px-6 py-3 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"
             >
-              See how Via Tutela helps you do this
+              See how Tutela helps you do this
             </a>
           </Reveal>
         </div>
@@ -638,7 +638,7 @@ export default function Home() {
             <thead>
               <tr className="text-left">
                 <th className="p-4"></th>
-                <th className="p-4 bg-sunflower rounded-t-2xl font-display text-base">Via Tutela</th>
+                <th className="p-4 bg-sunflower rounded-t-2xl font-display text-base">Tutela</th>
                 <th className="p-4 font-semibold text-charcoal-soft">Shelterluv</th>
                 <th className="p-4 font-semibold text-charcoal-soft">PetPoint</th>
                 <th className="p-4 font-semibold text-charcoal-soft">RescueGroups</th>
@@ -736,7 +736,7 @@ export default function Home() {
             <img src="/art/cat.webp" alt="" width={512} height={512} className="w-24 h-24 rounded-3xl shadow-soft -rotate-2" />
             <blockquote className="mt-4 text-lg">
               “It's just me, a spare bedroom, and three foster kittens at a time.
-              Via Tutela treats my little operation like it matters — because it
+              Tutela treats my little operation like it matters — because it
               does.”
             </blockquote>
             <p className="mt-4 font-semibold text-charcoal-soft">
@@ -759,12 +759,12 @@ export default function Home() {
 
       {/* ---------- Final CTA ---------- */}
       <section className="mx-auto max-w-4xl px-4 sm:px-6 py-16 text-center">
-        <div className="rounded-blob bg-meadow text-white shadow-lift p-10 sm:p-14 relative overflow-hidden">
+        <div className="rounded-blob bg-meadow-deep text-white shadow-lift p-10 sm:p-14 relative overflow-hidden">
           <BirdDoodle className="absolute -top-2 right-6 w-20 h-20 text-white/40 vt-wiggle" />
           <h2 className="text-3xl sm:text-5xl font-display font-semibold">
-            Move in free. We'll carry the boxes.
+            Switching is the scary part. We'll carry the boxes.
           </h2>
-          <p className="mt-4 text-lg text-white/90">
+          <p className="mt-4 text-lg text-white/95">
             Two minutes to a working shelter platform — and if you're coming from
             another system, the importer brings every animal, adopter, and bonded
             pair along with the relationships intact.

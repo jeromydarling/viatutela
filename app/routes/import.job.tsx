@@ -5,7 +5,7 @@ import { SiteHeader, SiteFooter } from "../components/site";
 import { BirdDoodle, CatDoodle } from "../components/doodles";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Your import — Via Tutela" }];
+  return [{ title: "Your import — Tutela" }];
 }
 
 // ---------- types mirrored from the API ----------
@@ -617,7 +617,7 @@ function ClaimForm({ jobId }: { jobId: string }) {
         Keep this data — create your free home
       </h2>
       <p className="text-center text-sm text-charcoal-soft">
-        One click and everything above moves into your own Via Tutela account.
+        One click and everything above moves into your own Tutela account.
         Free tier, no card, no strings.
       </p>
       <label className="block">

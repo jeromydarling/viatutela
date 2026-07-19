@@ -12,8 +12,8 @@ import { cloudflareContext } from "../cloudflare-context";
 
 export function meta(_: Route.MetaArgs) {
   return marketingMeta({
-    title: "Get started — Via Tutela",
-    description: "Set up your shelter on Via Tutela in minutes — $9 a month plus $1 per adoption, importer included.",
+    title: "Get started — Tutela",
+    description: "Set up your shelter on Tutela in minutes — $9 a month plus $1 per adoption, importer included.",
     path: "/signup",
   });
 }
@@ -75,8 +75,8 @@ export default function Signup() {
           <Logo className="w-16 h-16 mx-auto" />
           <h1 className="mt-2 text-3xl font-display font-semibold text-center">Get started</h1>
           <p className="mt-1 text-center text-sm text-charcoal-soft">
-            Two minutes to a working shelter platform. Free to move in — Starter is $9 a month
-            plus $1 for every animal you send home.
+            Two minutes to a working shelter platform. Starter is $9 a month plus $1 for
+            every animal you send home — and the importer is free if you're migrating.
           </p>
           <Form method="post" className="mt-6 space-y-4">
             <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />

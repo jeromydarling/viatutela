@@ -5,7 +5,7 @@ import { marketingMeta, SITE_ORIGIN } from "../lib/seo";
 import { getGuide, relatedGuides, type Guide } from "../lib/guides";
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  if (!loaderData?.guide) return [{ title: "Guide not found — Via Tutela" }];
+  if (!loaderData?.guide) return [{ title: "Guide not found — Tutela" }];
   return marketingMeta({
     title: loaderData.guide.title,
     description: loaderData.guide.description,
@@ -27,8 +27,8 @@ function guideJsonLd(guide: Guide): string {
       description: guide.description,
       dateModified: guide.updated,
       url: `${SITE_ORIGIN}/guides/${guide.slug}`,
-      author: { "@type": "Organization", name: "Via Tutela", url: SITE_ORIGIN },
-      publisher: { "@type": "Organization", name: "Via Tutela", url: SITE_ORIGIN },
+      author: { "@type": "Organization", name: "Tutela", url: SITE_ORIGIN },
+      publisher: { "@type": "Organization", name: "Tutela", url: SITE_ORIGIN },
     },
     {
       "@type": "BreadcrumbList",

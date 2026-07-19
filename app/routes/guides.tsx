@@ -6,7 +6,7 @@ import { GUIDES, GUIDE_CATEGORIES } from "../lib/guides";
 
 export function meta(_: Route.MetaArgs) {
   return marketingMeta({
-    title: "Shelter Guides — Via Tutela",
+    title: "Shelter Guides — Tutela",
     description:
       "Practical playbooks for animal shelters and rescues: adoptions, photos, social media, grants, software migrations, and honest tool comparisons.",
     path: "/guides",
@@ -75,7 +75,7 @@ export default function Guides() {
             The software these guides assume you deserve
           </h2>
           <p className="mt-2 text-white/95 max-w-xl mx-auto">
-            Everything above is doable by hand. Via Tutela just does the relentless parts for you —
+            Everything above is doable by hand. Tutela just does the relentless parts for you —
             from $9 a month plus $1 per adoption.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">

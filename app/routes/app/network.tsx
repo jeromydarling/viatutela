@@ -4,7 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Transfer network — Via Tutela" }];
+  return [{ title: "Transfer network — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
@@ -42,7 +42,7 @@ export async function action({ context, request }: Route.ActionArgs) {
         str("note").slice(0, 500) || null, email.slice(0, 200),
       )
       .run();
-    return { ok: "Posted to the network — every rescue on Via Tutela can see it for 14 days." };
+    return { ok: "Posted to the network — every rescue on Tutela can see it for 14 days." };
   }
 
   if (intent === "resolve") {
@@ -71,7 +71,7 @@ export default function TransferNetwork({ loaderData, actionData }: Route.Compon
       <div>
         <h1 className="text-2xl font-display font-semibold">Transfer network</h1>
         <p className="text-sm text-charcoal-soft">
-          The board every rescue on Via Tutela shares. Full and need space? Have room to help? Say so here instead of the group text.
+          The board every rescue on Tutela shares. Full and need space? Have room to help? Say so here instead of the group text.
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export default function TransferNetwork({ loaderData, actionData }: Route.Compon
             Post it
           </button>
         </Form>
-        <p className="mt-2 text-xs text-charcoal-soft">Posts show your rescue's name and this email to every Via Tutela shelter, and expire after 14 days.</p>
+        <p className="mt-2 text-xs text-charcoal-soft">Posts show your rescue's name and this email to every Tutela shelter, and expire after 14 days.</p>
       </section>
 
       <section className="space-y-3">

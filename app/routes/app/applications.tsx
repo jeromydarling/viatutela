@@ -11,7 +11,7 @@ import { sendSms } from "../../../workers/lib/sms";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Applications — Via Tutela" }];
+  return [{ title: "Applications — Tutela" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {

@@ -60,7 +60,7 @@ function MiniStat({ n, label }: { n: string; label: string }) {
 
 export function ImporterScreen() {
   return (
-    <BrowserFrame url="viatutela.app/import" className="vt-float">
+    <BrowserFrame url="viatutela.com/import" className="vt-float">
       <p className="text-[10px] font-display font-semibold">Reading shelter-export.csv…</p>
       <div className="mt-1.5 h-2 rounded-full bg-white overflow-hidden shadow-inner">
         <div className="h-full w-4/5 rounded-full bg-meadow" />
@@ -91,7 +91,7 @@ export function ImporterScreen() {
 
 export function AnimalScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/animals/biscuit" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/animals/biscuit" className="vt-float">
       <div className="flex gap-2">
         <div className="w-12 h-12 rounded-xl bg-white shadow-soft flex items-center justify-center shrink-0">
           <DogDoodle className="w-9 h-9 text-charcoal" />
@@ -134,7 +134,7 @@ export function AnimalScreen() {
 
 export function PortalScreen() {
   return (
-    <BrowserFrame url="viatutela.app/adopt/sunny-meadow" className="vt-float">
+    <BrowserFrame url="viatutela.com/adopt/sunny-meadow" className="vt-float">
       <div className="rounded-lg bg-meadow px-2 py-1.5 text-center">
         <p className="text-[9px] font-display font-bold text-white">Sunny Meadow Rescue</p>
         <p className="text-[7px] text-white/80">7 friends waiting for a way home</p>
@@ -171,7 +171,7 @@ export function PortalScreen() {
 
 export function FosterScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/fosters" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/fosters" className="vt-float">
       <p className="text-[10px] font-display font-semibold">Foster care · 3 active stays</p>
       <div className="mt-1.5 space-y-1.5">
         {[
@@ -198,7 +198,7 @@ export function FosterScreen() {
 
 export function DonationScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/donations" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/donations" className="vt-float">
       <div className="grid grid-cols-3 gap-1.5">
         <MiniStat n="$1,240" label="last 30 days" />
         <MiniStat n="$8,915" label="this year" />
@@ -262,7 +262,7 @@ export function ShareScreen() {
 
 export function WebsiteScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/website" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/website" className="vt-float">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-display font-semibold">Your website</p>
         <Chip tone="sky">✨ AI drafted 6 pages</Chip>
@@ -325,7 +325,7 @@ export function MatchScreen() {
 
 export function TriageScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/applications" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/applications" className="vt-float">
       <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
         <div className="flex items-center gap-1.5">
           <span className="font-display font-bold text-[9px]">Frances B.</span>
@@ -357,7 +357,7 @@ export function TriageScreen() {
 
 export function BrandScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/brand" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/brand" className="vt-float">
       <p className="text-[10px] font-display font-semibold">Brand Studio</p>
       <div className="mt-1.5 flex gap-1.5">
         {["#2e7d54", "#f6a445", "#2e2a26", "#fff6ea"].map((c) => (
@@ -385,7 +385,7 @@ export function BrandScreen() {
 
 export function MarketingScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/marketing" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/marketing" className="vt-float">
       <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
         <div className="flex items-center gap-1">
           <span className="font-display font-bold text-[9px]">Meet Trailmix!</span>
@@ -468,7 +468,7 @@ export function LifecycleScreen() {
 
 export function VolunteerScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/volunteers" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/volunteers" className="vt-float">
       <div className="grid grid-cols-2 gap-1.5">
         <MiniStat n="1,204" label="volunteer hours (12 mo)" />
         <MiniStat n="23" label="active volunteers" />
@@ -495,7 +495,7 @@ export function VolunteerScreen() {
 
 export function GrantScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/grants" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/grants" className="vt-float">
       <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
         <div className="flex items-center gap-1"><span className="font-display font-bold text-[9px]">Petco Love · $10,000</span><Chip tone="sky">✨ drafted</Chip></div>
         <p className="mt-1 text-charcoal-soft leading-tight">"## Statement of Need — In the last twelve months our foothills community brought us <strong>212 animals</strong>; we found homes for <strong>196</strong> in a median of <strong>19 days</strong>…"</p>
@@ -516,7 +516,7 @@ export function GrantScreen() {
 
 export function PaperworkScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/animals/new" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/animals/new" className="vt-float">
       <div className="rounded-xl bg-white shadow-soft p-2 text-[8px]">
         <div className="flex items-center gap-1.5">
           <span className="w-8 h-8 rounded-lg bg-cream flex items-center justify-center text-sm">📸</span>
@@ -546,7 +546,7 @@ export function PaperworkScreen() {
 
 export function NetworkScreen() {
   return (
-    <BrowserFrame url="viatutela.app/app/network" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/network" className="vt-float">
       <div className="space-y-1.5 text-[8px]">
         <div className="rounded-xl bg-white shadow-soft p-2">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -565,7 +565,7 @@ export function NetworkScreen() {
         </div>
       </div>
       <p className="mt-1.5 text-[8px] text-center font-semibold text-charcoal-soft">
-        one board, every rescue on Via Tutela — the group text, retired
+        one board, every rescue on Tutela — the group text, retired
       </p>
     </BrowserFrame>
   );
@@ -576,7 +576,7 @@ export function NetworkScreen() {
 export function ReportsScreen() {
   const bars = [3, 5, 4, 7, 6, 9, 8, 11, 9, 12, 10, 14];
   return (
-    <BrowserFrame url="viatutela.app/app/reports" className="vt-float">
+    <BrowserFrame url="viatutela.com/app/reports" className="vt-float">
       <p className="text-[10px] font-display font-semibold">Adoptions by month</p>
       <div className="mt-1.5 flex items-end gap-1 h-16 rounded-xl bg-white shadow-soft p-2">
         {bars.map((b, i) => (

@@ -164,7 +164,7 @@ export function ShelterSiteFooter({
         {address && <span>{address}</span>}
       </p>
       <p className="mt-3 opacity-60">
-        Powered by <a href="https://viatutela.app" className="font-semibold hover:underline">Via Tutela</a> · peace
+        Powered by <a href="https://viatutela.com" className="font-semibold hover:underline">Tutela</a> · peace
         and all good things to you and your animals.
       </p>
     </footer>
