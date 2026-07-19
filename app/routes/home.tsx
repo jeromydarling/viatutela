@@ -2,14 +2,7 @@ import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { SiteHeader, SiteFooter } from "../components/site";
 import { SavingsCalculator } from "../components/savings-calculator";
-import {
-  BirdDoodle,
-  CatDoodle,
-  DogDoodle,
-  HeartPawDoodle,
-  PawDoodle,
-  WolfDoodle,
-} from "../components/doodles";
+import { BirdDoodle, HeartPawDoodle } from "../components/doodles";
 import {
   AnimalScreen,
   DonationScreen,
@@ -177,16 +170,21 @@ export default function Home() {
               </a>
             </div>
           </div>
-          <div className="relative h-72 sm:h-96" aria-hidden="true">
-            {/* sunny meadow at golden hour */}
-            <div className="absolute inset-x-0 bottom-0 h-40 rounded-t-[50%] bg-meadow/25" />
-            <div className="absolute inset-x-10 bottom-0 h-24 rounded-t-[50%] bg-meadow/30" />
-            <div className="absolute right-6 top-2 w-24 h-24 rounded-full bg-sunflower/70" />
-            <DogDoodle className="absolute bottom-10 left-4 w-32 h-32 text-charcoal vt-float" />
-            <CatDoodle className="absolute bottom-14 left-40 w-24 h-24 text-terracotta-deep vt-wiggle" />
-            <WolfDoodle className="absolute bottom-8 right-24 w-28 h-28 text-sky-deep vt-float" />
-            <BirdDoodle className="absolute top-10 left-24 w-16 h-16 text-meadow-deep vt-wiggle" />
-            <PawDoodle className="absolute top-24 right-4 w-12 h-12 text-sunflower" />
+          <div className="relative" aria-hidden="true">
+            <img
+              src="/art/meadow.webp"
+              alt=""
+              width={1000}
+              height={750}
+              className="rounded-blob shadow-lift rotate-1 w-full"
+            />
+            <img
+              src="/art/wander.webp"
+              alt=""
+              width={512}
+              height={512}
+              className="absolute -bottom-8 -left-6 w-24 h-24 rounded-full shadow-soft -rotate-6 vt-float bg-cream"
+            />
           </div>
         </div>
       </section>
@@ -370,7 +368,7 @@ export default function Home() {
         </h2>
         <div className="mt-10 grid md:grid-cols-2 gap-6">
           <div className="rounded-blob bg-white shadow-soft p-8">
-            <CatDoodle className="w-16 h-16 text-terracotta-deep" />
+            <img src="/art/cat.webp" alt="" width={512} height={512} className="w-24 h-24 rounded-3xl shadow-soft -rotate-2" />
             <blockquote className="mt-4 text-lg">
               “It's just me, a spare bedroom, and three foster kittens at a time.
               Via Tutela treats my little operation like it matters — because it
@@ -381,7 +379,7 @@ export default function Home() {
             </p>
           </div>
           <div className="rounded-blob bg-white shadow-soft p-8">
-            <DogDoodle className="w-16 h-16 text-sky-deep" />
+            <img src="/art/dog-bounce.webp" alt="" width={512} height={512} className="w-24 h-24 rounded-3xl shadow-soft rotate-2" />
             <blockquote className="mt-4 text-lg">
               “We move four hundred animals a year through two buildings and a
               van. Everything finally lives in one place — and the kennel QR

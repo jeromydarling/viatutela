@@ -12,6 +12,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", type: "image/png", href: "/art/favicon.png" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -65,22 +66,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-8 text-center">
-      <svg
-        viewBox="0 0 120 120"
-        className="w-28 h-28 text-terracotta"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        aria-hidden="true"
-      >
-        {/* wandering pup, line-art */}
-        <path d="M25 80 Q30 60 50 62 Q75 64 82 52 Q88 42 96 46" />
-        <circle cx="98" cy="44" r="7" />
-        <path d="M97 38 l3 -6 l4 5" />
-        <path d="M35 80 v14 M48 80 v14 M65 78 v16 M78 74 v20" />
-        <path d="M25 80 q-8 -2 -6 -12" />
-      </svg>
+      <img
+        src="/art/wander.webp"
+        alt=""
+        width={512}
+        height={512}
+        className="w-40 h-40 rounded-blob shadow-soft -rotate-3"
+      />
       <h1 className="text-6xl font-display font-semibold text-charcoal">{message}</h1>
       <p className="max-w-md text-lg text-charcoal-soft">{details}</p>
       <Link

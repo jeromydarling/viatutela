@@ -1,7 +1,7 @@
 import { Form, Link, NavLink, Outlet } from "react-router";
 import type { Route } from "./+types/layout";
 import { requireUser } from "../../lib/auth.server";
-import { BirdDoodle } from "../../components/doodles";
+import { Logo } from "../../components/site";
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
@@ -31,7 +31,7 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
       <header className="sticky top-0 z-40 bg-cream/95 backdrop-blur border-b border-sunflower-soft">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 flex items-center justify-between h-14">
           <Link to="/app" className="flex items-center gap-2 font-display font-semibold text-lg truncate">
-            <BirdDoodle className="w-8 h-8 shrink-0 text-meadow-deep" />
+            <Logo className="w-8 h-8 shrink-0" />
             <span className="truncate">{user.org_name}</span>
           </Link>
           <div className="flex items-center gap-3">
