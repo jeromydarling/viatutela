@@ -1,4 +1,4 @@
-import { Form, useSearchParams } from "react-router";
+import { Form, Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/people";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
@@ -29,9 +29,20 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     sql += ` AND c.roles LIKE ?`;
     binds.push(`%${role}%`);
   }
-  sql += ` ORDER BY c.name LIMIT 500`;
+  // keyset pagination: contacts grow without bound (public forms feed
+  // them), so page by (name, id) instead of ever raising the LIMIT
+  const afterName = url.searchParams.get("after_name");
+  const afterId = url.searchParams.get("after_id");
+  if (afterName && afterId) {
+    sql += ` AND (c.name > ? OR (c.name = ? AND c.id > ?))`;
+    binds.push(afterName, afterName, afterId);
+  }
+  const PAGE = 120;
+  sql += ` ORDER BY c.name, c.id LIMIT ${PAGE + 1}`;
   const contacts = await env.DB.prepare(sql).bind(...binds).all<Record<string, unknown>>();
-  return { contacts: contacts.results };
+  const hasMore = contacts.results.length > PAGE;
+  const pageRows = hasMore ? contacts.results.slice(0, PAGE) : contacts.results;
+  return { contacts: pageRows, hasMore };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
@@ -93,7 +104,7 @@ function RoleChecks({ defaults }: { defaults?: string | null }) {
 }
 
 export default function People({ loaderData, actionData }: Route.ComponentProps) {
-  const { contacts } = loaderData;
+  const { contacts, hasMore } = loaderData;
   const [params] = useSearchParams();
 
   return (
@@ -167,6 +178,22 @@ export default function People({ loaderData, actionData }: Route.ComponentProps)
                 </Form>
               </details>
             ))}
+            {hasMore && contacts.length > 0 && (() => {
+              const last = contacts[contacts.length - 1];
+              const next = new URLSearchParams(params);
+              next.set("after_name", String(last.name ?? ""));
+              next.set("after_id", String(last.id));
+              return (
+                <div className="text-center pt-2">
+                  <Link
+                    to={`?${next.toString()}`}
+                    className="inline-block rounded-full bg-sunflower px-5 py-2 text-sm font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
+                  >
+                    Next 120 →
+                  </Link>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
