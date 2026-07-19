@@ -4,12 +4,12 @@ import { SiteHeader, SiteFooter } from "../components/site";
 import { marketingMeta, SITE_ORIGIN } from "../lib/seo";
 import { getGuide, relatedGuides, type Guide } from "../lib/guides";
 
-export function meta({ data }: Route.MetaArgs) {
-  if (!data?.guide) return [{ title: "Guide not found — Via Tutela" }];
+export function meta({ loaderData }: Route.MetaArgs) {
+  if (!loaderData?.guide) return [{ title: "Guide not found — Via Tutela" }];
   return marketingMeta({
-    title: data.guide.title,
-    description: data.guide.description,
-    path: `/guides/${data.guide.slug}`,
+    title: loaderData.guide.title,
+    description: loaderData.guide.description,
+    path: `/guides/${loaderData.guide.slug}`,
   });
 }
 

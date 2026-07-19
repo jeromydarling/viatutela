@@ -9,6 +9,8 @@ export default [
   route("demo", "routes/demo.tsx"),
   route("unsub/:token", "routes/unsub.tsx"),
   route("guides", "routes/guides.tsx"),
+  route("guides/start-a-rescue", "routes/guides.states.tsx"),
+  route("guides/start-a-rescue/:state", "routes/guides.state.tsx"),
   route("guides/:slug", "routes/guides.article.tsx"),
   route("privacy", "routes/privacy.tsx"),
   route("terms", "routes/terms.tsx"),

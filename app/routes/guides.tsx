@@ -56,6 +56,20 @@ export default function Guides() {
           );
         })}
 
+        <section className="mt-14 rounded-blob bg-white shadow-soft p-8">
+          <h2 className="text-2xl font-display font-semibold">🗺️ Starting a rescue? We wrote your state's guide.</h2>
+          <p className="mt-2 text-charcoal-soft max-w-2xl">
+            Incorporation, licensing, and the regional rescue realities — one founder's guide for
+            each of the 50 states.
+          </p>
+          <Link
+            to="/guides/start-a-rescue"
+            className="mt-4 inline-block rounded-full bg-sunflower px-6 py-3 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"
+          >
+            Find your state →
+          </Link>
+        </section>
+
         <div className="mt-16 rounded-blob bg-meadow-deep text-white p-8 sm:p-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-display font-semibold">
             The software these guides assume you deserve

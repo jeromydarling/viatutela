@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { GUIDES, getGuide, relatedGuides } from "../../../app/lib/guides";
+import { STATES, getState, nearbyStates, REGION_NOTES } from "../../../app/lib/guide-states";
 
-const KNOWN_ROUTES = ["/", "/import", "/signup", "/demo", "/login", "/guides", "/privacy", "/terms"];
+const KNOWN_ROUTES = ["/", "/import", "/signup", "/demo", "/login", "/guides", "/privacy", "/terms", "/guides/start-a-rescue"];
 
 function isValidInternalLink(to: string): boolean {
   if (to.startsWith("/#")) return true;
+  if (KNOWN_ROUTES.includes(to)) return true;
+  if (to.startsWith("/guides/start-a-rescue/")) {
+    return STATES.some((s) => `/guides/start-a-rescue/${s.slug}` === to);
+  }
   if (to.startsWith("/guides/")) return GUIDES.some((g) => `/guides/${g.slug}` === to);
-  return KNOWN_ROUTES.includes(to);
+  return false;
 }
 
 describe("guides registry", () => {
@@ -42,6 +47,21 @@ describe("guides registry", () => {
     const rel = relatedGuides(GUIDES[0]);
     expect(rel.length).toBe(3);
     expect(rel.map((g) => g.slug)).not.toContain(GUIDES[0].slug);
+  });
+
+  it("covers all 50 states with unique slugs and a region note each", () => {
+    expect(STATES.length).toBe(50);
+    expect(new Set(STATES.map((s) => s.slug)).size).toBe(50);
+    for (const s of STATES) {
+      expect(s.slug).toMatch(/^[a-z-]+$/);
+      expect(REGION_NOTES[s.region]).toBeDefined();
+      expect(s.corp.length).toBeGreaterThan(5);
+    }
+    expect(getState("texas")?.abbr).toBe("TX");
+    expect(getState("narnia")).toBeUndefined();
+    const near = nearbyStates(getState("colorado")!);
+    expect(near.length).toBeGreaterThan(0);
+    expect(near.map((s) => s.slug)).not.toContain("colorado");
   });
 
   it("comparison pages stay consistent with the home-page chart claims", () => {

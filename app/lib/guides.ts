@@ -441,6 +441,9 @@ export const GUIDES: Guide[] = [
       {
         tip: "Open the bank account and start donation receipts in month one. Retroactively reconstructing finances for your 990 (or a grant application) is the most expensive spreadsheet archaeology there is.",
       },
+      {
+        p: "Licensing and filing details differ meaningfully by state — Colorado wants a PACFA license, Virginia wants releasing-agency registration, Texas leaves it to your county. We wrote a [founder's guide for every state](/guides/start-a-rescue) with the specifics.",
+      },
     ],
     faq: [
       {
@@ -627,6 +630,237 @@ export const GUIDES: Guide[] = [
     },
   },
 ];
+
+GUIDES.push(
+  {
+    slug: "shelter-software-pricing",
+    title: "Shelter Software Pricing Explained (2026 Guide)",
+    h1: "What shelter software actually costs — every pricing model, decoded",
+    description:
+      "Flat monthly, per-adoption, modular add-ons, and 'free' with strings: how every shelter software pricing model works, and how to compute your real total cost.",
+    category: "Playbooks",
+    minutes: 7,
+    updated: "2026-07-19",
+    blocks: [
+      {
+        p: "Shelter software pricing is a zoo of its own: flat subscriptions, per-adoption metering, modular add-ons, and 'free' that isn't quite. None of these models is a scam — but each one fits a different shelter, and picking the wrong shape costs real money every month. Here's the whole landscape, plainly.",
+      },
+      { h2: "Model 1: Flat monthly subscription" },
+      {
+        p: "One predictable bill regardless of volume ($39–$149/month across the market). Best for shelters with steady or high adoption volume — the per-animal cost shrinks as you grow. The risk: paying full freight during slow seasons or your first tiny months.",
+      },
+      { h2: "Model 2: Per-adoption pricing" },
+      {
+        p: "You pay when an animal goes home — Shelterluv's published $2 per adoption is the best-known example (as of mid-2026). It's genuinely fair for small rescues: no adoptions, no bill. The math flips at volume: 40 adoptions a month is $80, more than most flat tiers. Know your monthly number and do the multiplication before signing.",
+      },
+      { h2: "Model 3: Modular add-ons" },
+      {
+        p: "A low base price with each capability sold separately — RescueGroups' $75–$100/year services are the classic (published pricing, mid-2026). Unbeatable raw dollars for all-volunteer rescues with simple needs. The hidden cost is assembly: separate pieces mean volunteer hours spent stitching data and workflows together, and those hours are your scarcest currency.",
+      },
+      { h2: "Model 4: 'Free' — read the funding model" },
+      {
+        p: "When software is free, something else pays for it. PetPoint's no-cost tiers are built around promoting 24PetWatch microchips and insurance to your adopters (per published materials, mid-2026). That can be an acceptable trade — but understand it's a trade: your adoption desk carries someone's product placement, and your data has strings. Ask any 'free' vendor one question: who is your paying customer?",
+      },
+      { h2: "How to compute your real cost" },
+      {
+        list: [
+          "Subscription + per-unit fees at YOUR monthly adoption volume (use a real average, not your best month)",
+          "Add-ons you'll actually need by month six: website, email, payments, volunteer tools",
+          "Volunteer hours spent fighting or stitching the tool, at any honest hourly value",
+          "Payment-processing spreads on donations and fees — a hidden percentage beats a visible subscription at low volume, and reverses at high volume",
+          "Exit cost: can you export everything, free, on the day you leave?",
+        ],
+      },
+      {
+        tip: "Price the year, not the month — seasonality means your July and your January bills can differ wildly under usage pricing.",
+      },
+      { h2: "Where Via Tutela sits, transparently" },
+      {
+        p: "We're a hybrid on purpose: [Starter is $9/month plus $1 per adoption](/#pricing) — usage-shaped while you're small — with flat tiers at $39 (Rescue) and $79/month (Shelter Pro) that you graduate to right around 30 adoptions a month, where the math says you should. Everything is on one pricing page, the [savings calculator](/#savings) does the math against your real volume, exports are always free and complete, and the [importer](/import) is free even if you never become a customer.",
+      },
+    ],
+    faq: [
+      {
+        q: "How much does shelter management software cost?",
+        a: "Across the market (mid-2026): flat plans $39–$149/month, per-adoption pricing around $2 per animal, modular services from ~$75/year, and free tiers funded by product placement toward your adopters. Total cost depends mostly on your monthly adoption volume — compute at your real average.",
+      },
+      {
+        q: "Is free shelter software really free?",
+        a: "The software fee is zero, but the funding model matters: free platforms are typically paid for by promoting microchip registrations, insurance, or other products to your adopters, or by processing spreads on payments. Decide whether that trade suits your shelter, deliberately.",
+      },
+      {
+        q: "When does per-adoption pricing stop making sense?",
+        a: "Multiply the per-adoption fee by your honest monthly average. When it exceeds a flat tier you'd otherwise choose (for Via Tutela, that crossover is about 30 adoptions a month), switch shapes.",
+      },
+    ],
+    cta: {
+      text: "Run your real numbers — the calculator recommends the cheapest shape for your volume.",
+      label: "Open the savings calculator",
+      to: "/#savings",
+    },
+  },
+
+  {
+    slug: "spreadsheets-vs-shelter-software",
+    title: "Running a Rescue on Spreadsheets? Read This First",
+    h1: "Spreadsheets vs shelter software: when free stops being free",
+    description:
+      "Google Sheets and Airtable can run a young rescue — until they can't. The honest breaking points, and what switching costs (spoiler: $9/month, migration included).",
+    category: "Switching",
+    minutes: 6,
+    updated: "2026-07-19",
+    blocks: [
+      {
+        p: "Let's start with respect: a well-kept spreadsheet has run many a fine rescue, and if you're three volunteers with four cats, Sheets or Airtable genuinely is the right tool this month. This guide isn't spreadsheet-shaming. It's a field guide to the breaking points — so you recognize them the week they arrive, not a year of tangled data later.",
+      },
+      { h2: "The five breaking points, in the order they arrive" },
+      {
+        list: [
+          "The relationship problem: adopters in one tab, animals in another, and 'who adopted Biscuit in 2023?' takes archaeology. Spreadsheets store rows; rescues run on relationships.",
+          "The vaccine due-date problem: nothing reminds you. Every overdue rabies booster is a liability sitting quietly in column Q.",
+          "The two-editors problem: the moment two people update the sheet, versions fork — and the definitive truth lives in nobody's copy.",
+          "The public-face problem: the spreadsheet can't show adopters anything. Every listing gets retyped into Petfinder, Facebook, and your website — three chances to be out of date.",
+          "The bus-factor problem: the whole system lives in one founder's head and Google account. Rescues have lost their entire history to a forgotten password.",
+        ],
+      },
+      { h2: "What Airtable fixes — and what it can't" },
+      {
+        p: "Airtable is a real upgrade: linked records solve the relationship problem, and forms help intake. But you're now the software vendor — building views, automations, and permissions instead of walking dogs — and it still can't produce an adoption page, a kennel card, a Petfinder feed, a donation receipt, or a vaccine reminder without you engineering each one. Paid seats for a whole team often cost more than purpose-built shelter software.",
+      },
+      { h2: "What purpose-built looks like, for less than lunch" },
+      {
+        p: "This category used to start at $40+/month, which made spreadsheet loyalty rational. It's why [Via Tutela's Starter plan is $9 a month plus $1 per adoption](/#pricing): animal records with medical timelines and reminders, adopter relationships, a public adoption page with applications, kennel QR cards, donation receipts — the whole nervous system, at a price a brand-new rescue can justify in month one.",
+      },
+      { h2: "The migration is genuinely the easy part" },
+      {
+        p: "Your spreadsheet's mess is normal — every rescue's sheet has merged name columns and dates in three formats. The [free importer](/import) was built for exactly this: upload the CSVs as they are, map the columns it couldn't guess, and get organized records with relationships intact and every ambiguous row flagged for review. No account needed to try it; the [five-step migration guide](/guides/switch-shelter-software) covers the rest.",
+      },
+      {
+        tip: "The right moment to switch is BEFORE the busy season, not during it. A quiet Tuesday in the slow month is worth three panicked weekends in kitten season.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is there free software for animal rescues?",
+        a: "Truly free options are spreadsheets (with the breaking points above) or 'free' platforms funded by promoting products to your adopters. The honest budget answer is very-cheap purpose-built software — Via Tutela starts at $9/month plus $1 per adoption, with a free importer to bring your spreadsheet along.",
+      },
+      {
+        q: "Can I import my rescue's spreadsheet into shelter software?",
+        a: "Yes — Via Tutela's importer accepts CSV and Excel exports exactly as messy as they are, maps columns, preserves relationships, and flags ambiguous rows for human review before anything commits. It's free to try with no account.",
+      },
+    ],
+    cta: {
+      text: "Upload the spreadsheet as-is and watch it become a shelter system.",
+      label: "Try the free importer",
+      to: "/import",
+    },
+  },
+
+  {
+    slug: "petstablished-alternative",
+    title: "Petstablished Alternative: Via Tutela vs Petstablished",
+    h1: "Comparing Petstablished? The honest rundown",
+    description:
+      "Petstablished vs Via Tutela: funding models, feature depth, data portability, and a migration path — an honest comparison for rescues evaluating both.",
+    category: "Compare",
+    minutes: 5,
+    updated: "2026-07-19",
+    blocks: [
+      {
+        p: "Petstablished has earned a real place in rescue: a broad feature set (animals, adoptions, medical, volunteers, donations) at little to no software cost, which has made it a default for many volunteer-run organizations. If it's working for your rescue, this page won't talk you out of it — it's for rescues comparing options with clear eyes.",
+      },
+      { h2: "Understand the funding model first" },
+      {
+        p: "Petstablished's low-cost model is built around its payment processing and adopter-facing services rather than subscription fees (per their published materials — verify current terms directly, as models evolve). As with every low-cost platform, the practical questions are: what percentage rides on your donations and fees, what does the adopter experience carry, and what happens to your workflows if the model changes? Via Tutela's model is the boring inverse: [transparent subscription pricing](/#pricing) ($9/month + $1 per adoption to start), no cut of donations, incentives pointed only at you.",
+      },
+      { h2: "Where Via Tutela is meaningfully different" },
+      {
+        list: [
+          "A full website builder — themes, custom domain, auto-SSL — not just embeddable listings",
+          "AI through the whole workflow: match quiz, application triage, bio writer, photo studio, grant writer, marketing drafts — every output human-approved",
+          "Share-first animal pages: one-tap share bar, print flyers, videos, embed widgets",
+          "Post-adoption lifecycle automation through yearly Gotcha Day cards",
+          "One-click full export of every table, always — leaving must always be easy",
+        ],
+      },
+      { h2: "Where Petstablished may fit better" },
+      {
+        p: "If minimizing cash outlay is the binding constraint and its processing-funded model sits fine with your team, Petstablished's breadth at low cost is legitimately hard to argue with. Rescues deeply invested in its payment flows also face real switching friction — worth weighing honestly.",
+      },
+      { h2: "If you do switch" },
+      {
+        p: "Export your animals, people, and adoption records as CSVs, then run them through the [free importer](/import) — relationships preserved, ambiguities flagged, nothing committed until you approve. The [migration guide](/guides/switch-shelter-software) has the full five-step plan, including the parallel-running week.",
+      },
+    ],
+    faq: [
+      {
+        q: "How does Petstablished make money if it's low-cost?",
+        a: "Its model centers on payment processing and adopter-facing services rather than software subscriptions (per published materials — verify current terms). The evaluation question for any low-cost platform: whose product does your adoption desk carry, and what rides on your transactions?",
+      },
+      {
+        q: "Can I migrate from Petstablished to Via Tutela?",
+        a: "Yes — export CSVs of animals, people, and adoptions, then use the free importer. It preserves relationships and medical history, flags ambiguous rows for review, and requires no account to try.",
+      },
+    ],
+    cta: {
+      text: "See your Petstablished export as one organized workspace — free to try.",
+      label: "Try the free importer",
+      to: "/import",
+    },
+  },
+
+  {
+    slug: "pawlytics-alternative",
+    title: "Pawlytics Alternative: Via Tutela vs Pawlytics",
+    h1: "Looking at Pawlytics? Here's how we compare",
+    description:
+      "Pawlytics vs Via Tutela: modern rescue software compared on features, AI, websites, pricing philosophy, and data portability.",
+    category: "Compare",
+    minutes: 4,
+    updated: "2026-07-19",
+    blocks: [
+      {
+        p: "Pawlytics belongs to the newer generation of rescue software — clean interface, rescue-first design, subscription pricing — and it's a credible pick, especially for foster-based rescues who found the legacy tools heavy. This comparison is for rescues weighing the two modern options against each other.",
+      },
+      { h2: "Two modern tools, two scopes" },
+      {
+        p: "The core difference is scope. Pawlytics centers on the record-keeping heart of rescue: animals, people, medical, adoptions, done cleanly (see their site for current tiers and pricing — we won't quote numbers we can't guarantee). Via Tutela's bet is that a rescue's software should also carry its public face and its busywork: a [website builder](/#features) with your own domain, share-first adoption pages with flyers and videos, marketing and supporter email, volunteer shifts, donor CRM, and AI assistance across the workflow — bios, photo enhancement, application triage, grant drafts — all human-approved.",
+      },
+      { h2: "Questions that will decide it for you" },
+      {
+        list: [
+          "Do you want your website, listings, and records in one system, or are you happy running a separate website tool?",
+          "How much volunteer time goes to writing — bios, posts, grant narratives? (That's where AI drafting pays for itself.)",
+          "What does your monthly cost look like at YOUR adoption volume under each tool's current pricing?",
+          "Can you export everything, free, the day you want to leave? (Ask both vendors. Our answer is [one click, always](/privacy).)",
+        ],
+      },
+      { h2: "Pricing philosophy" },
+      {
+        p: "Via Tutela's is on one page: [Starter at $9/month plus $1 per adoption](/#pricing), flat $39 and $79 tiers above, importer free forever. Compare against Pawlytics' current published tiers at your real volume — five minutes with both calculators beats any comparison page, including this one.",
+      },
+      { h2: "Switching either direction" },
+      {
+        p: "CSV exports plus the [free importer](/import) get you moved with relationships intact and ambiguities flagged. The [migration guide](/guides/switch-shelter-software) applies to any source system.",
+      },
+    ],
+    faq: [
+      {
+        q: "What's the main difference between Pawlytics and Via Tutela?",
+        a: "Scope. Pawlytics focuses on clean rescue record-keeping; Via Tutela bundles records plus the public-facing layer (website builder, share-first adoption pages, marketing) and AI drafting across the workflow. Which is right depends on whether you want one system or best-of-breed pieces.",
+      },
+      {
+        q: "Can I try Via Tutela without committing?",
+        a: "Two ways, no account required: the live demo (a fully seeded shelter, reset every 6 hours) and the free importer, which shows your own data organized without saving anything until you claim it.",
+      },
+    ],
+    cta: {
+      text: "Poke around a fully seeded shelter — no signup, resets every 6 hours.",
+      label: "Take the live demo for a spin",
+      to: "/demo",
+    },
+  },
+);
 
 export function getGuide(slug: string): Guide | undefined {
   return GUIDES.find((g) => g.slug === slug);
