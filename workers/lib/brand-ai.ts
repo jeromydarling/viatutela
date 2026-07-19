@@ -6,7 +6,7 @@
  */
 
 import { structured } from "./ai-shelter";
-import { validateBrand, FONT_PAIRS, WORDMARK_FONTS, type Brand } from "./brand";
+import { validateBrand, FONT_PAIRS, WORDMARK_FONTS, SITE_THEMES, type Brand } from "./brand";
 
 export async function generateBrandProposal(
   env: Env,
@@ -27,6 +27,7 @@ export async function generateBrandProposal(
         additionalProperties: false,
       },
       typography: { type: "string", enum: Object.keys(FONT_PAIRS) },
+      theme: { type: "string", enum: Object.keys(SITE_THEMES) },
       wordmark: {
         type: "object",
         properties: {
@@ -41,7 +42,7 @@ export async function generateBrandProposal(
       tagline: { type: "string" },
       voice: { type: "string" },
     },
-    required: ["palette", "typography", "wordmark", "tagline", "voice"],
+    required: ["palette", "typography", "theme", "wordmark", "tagline", "voice"],
     additionalProperties: false,
   };
 
@@ -54,6 +55,7 @@ The vibe they want: ${args.vibe.slice(0, 300)}
 Rules:
 - palette: 4 hex colors (#rrggbb). primary = structural brand color; accent = warm CTA/donate color with good contrast on white; ink = near-black with a hint of the brand; bg = near-white warm page background. Never pure #000000/#ffffff.
 - typography: one pairing key. ${Object.entries(FONT_PAIRS).map(([k, v]) => `"${k}" (${v.label})`).join("; ")}.
+- theme: one site design language. ${Object.entries(SITE_THEMES).map(([k, v]) => `"${k}" (${v.blurb})`).join("; ")}.
 - wordmark: font key from ${Object.keys(WORDMARK_FONTS).join(", ")}; case upper/title/lower; tracking -50..300 (em/1000); weight 400..800.
 - tagline: one short warm sentence, no religious language.
 - voice: 2 sentences describing their written tone — this will steer ALL their future copy, so make it specific to them, not generic.`;

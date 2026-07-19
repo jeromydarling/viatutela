@@ -74,7 +74,7 @@ export default function ShelterSitePage({ loaderData, actionData }: Route.Compon
           sections={sections}
           ctx={{
             orgSlug: org.slug,
-            accent: brand.accent,
+            brand,
             liveAnimals,
             newsletterState: actionData?.newsletter,
           }}

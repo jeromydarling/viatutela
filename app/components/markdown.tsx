@@ -52,6 +52,18 @@ export function Markdown({ text, className = "" }: { text: string; className?: s
   return (
     <div className={`space-y-4 ${className}`}>
       {blocks.map((block, bi) => {
+        const img = block.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)$/);
+        if (img) {
+          return (
+            <img
+              key={bi}
+              src={img[2]}
+              alt={img[1]}
+              loading="lazy"
+              className="site-photo rounded-2xl shadow-soft w-full object-cover max-h-[28rem]"
+            />
+          );
+        }
         if (block.startsWith("### ")) {
           return <h3 key={bi} className="text-xl font-display font-semibold">{renderInline(block.slice(4), `h3-${bi}`)}</h3>;
         }
