@@ -1,0 +1,6 @@
+Record ID,Animal ID,Date,Procedure,Details,Veterinarian
+M-9001,A-1001,02/01/2026,Vaccine,DHPP booster,Dr. Rivo
+M-9002,A-1001,02/15/2026,Exam,Annual wellness — all clear,Dr. Rivo
+M-9003,A-1003,Feb 10 2026,Spay,Routine spay surgery,Dr. Chen
+M-9004,A-1005,03/14/2026,Vaccine,Rabies 1yr,Dr. Rivo
+M-9005,A-9999,03/20/2026,Exam,References an animal that does not exist,Dr. Chen

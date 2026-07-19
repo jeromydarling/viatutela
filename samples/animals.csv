@@ -1,0 +1,8 @@
+Animal ID,Pet Name,Type,Primary Breed,Gender,DOB,Fixed,Microchip #,Adoption Status,Bonded With,Intake Date,Photo URL,Notes
+A-1001,Biscuit,K9,Terrier Mix,M,03/15/2021,Yes,985112004567890,Adoptable,A-1002,01/10/2026,https://placedog.net/400/300?id=1,"Sweet boy, loves squeaky toys"
+A-1002,Waffle,doggo,Terrier Mix,F,3/15/21,fixed,985112004567891,up for adoption,A-1001,01/10/2026,https://placedog.net/400/300?id=2,Biscuit's littermate — must go home together
+A-1003,Mochi,Feline,Domestic Shorthair,girl,Jan 3 2023,spayed,,adoptable,,02/01/2026,,Shy at first then a total lap cat
+A-1004,Peanut,cat,Siamese mix,F,2022-08-20,s/n,981020012345678,Rehomed,,11/05/2025,,Adopted by the Woods family
+A-1005,Ranger,Canine,German Shepherd,Male,44927,neutered,985112004567999,pending,,03/12/2026,,Excel-exported birthday — knows sit and stay
+A-1006,,dog,Lab Mix,M,05/01/2020,intact,,available,,04/01/2026,,Row missing a name on purpose
+A-1007,Clover,rabbit,Holland Lop,F,not-a-date,no,,adoptable,,05/20/2026,,Date should get flagged
