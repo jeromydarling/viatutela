@@ -17,6 +17,7 @@ import {
   clampAdjustments,
   describeAdjustments,
   isNoop,
+  makeCleanBackdrop,
   makeSocialCrops,
   r2ToVisionImage,
   reviewPhotos,
@@ -240,6 +241,37 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       .run();
     await logAiWrite(env, user.org_id, user.user_id, "photo_enhance", `photo ${photo.id}: ${describeAdjustments(adj)}`);
     return { ok: "Enhanced version accepted — it's what everyone sees now. The original is safe; revert anytime. ✨" };
+  }
+
+  if (intent === "ai-photo-backdrop") {
+    const photo = await getPhoto(str("photo_id"));
+    if (!photo || photo.kind !== "photo") return { error: "Pick a photo first." };
+    const srcKey = photo.original_key ?? photo.r2_key;
+    const previewKey = `${previewPrefix}${photo.id}-${newId("pv")}.jpg`;
+    const ok = await makeCleanBackdrop(env, srcKey, previewKey);
+    if (!ok) {
+      return { error: "Background removal isn't available on this account yet — it's a beta Cloudflare Images feature. The rest of the studio still works." };
+    }
+    return { backdrop: { photoId: photo.id, srcKey, previewKey } };
+  }
+
+  if (intent === "photo-backdrop-apply") {
+    const photo = await getPhoto(str("photo_id"));
+    if (!photo || photo.kind !== "photo") return { error: "That photo seems to be gone." };
+    const srcKey = photo.original_key ?? photo.r2_key;
+    const destKey = `orgs/${user.org_id}/photos/enh-${photo.id}-${newId("e")}.jpg`;
+    const ok = await makeCleanBackdrop(env, srcKey, destKey);
+    if (!ok) return { error: "The photo editor isn't available right now — try again in a moment." };
+    if (photo.original_key && photo.r2_key !== photo.original_key) {
+      ctx.waitUntil(env.MEDIA.delete(photo.r2_key)); // superseded derivative
+    }
+    const preview = str("preview_key");
+    if (preview?.startsWith(previewPrefix)) ctx.waitUntil(env.MEDIA.delete(preview));
+    await env.DB.prepare(`UPDATE animal_photos SET r2_key = ?, original_key = ?, enhance_json = ? WHERE id = ? AND org_id = ?`)
+      .bind(destKey, srcKey, JSON.stringify({ backdrop: true }), photo.id, user.org_id)
+      .run();
+    await logAiWrite(env, user.org_id, user.user_id, "photo_backdrop", `photo ${photo.id}: clean backdrop`);
+    return { ok: "Clean backdrop accepted — it's what everyone sees now. The original is safe; revert anytime. 🪄" };
   }
 
   if (intent === "photo-enhance-discard") {
@@ -492,6 +524,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
         handoff?: HandoffPack;
         ocr?: OcrRecord[];
         enhance?: { photoId: string; srcKey: string; previewKey: string; adjustments: Adjustments; rationale: string; summary: string };
+        backdrop?: { photoId: string; srcKey: string; previewKey: string };
         crops?: { label: string; key: string }[];
       }
     | undefined;
@@ -652,6 +685,20 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                         </Form>
                       </>
                     )}
+                    {p.kind === "photo" && (
+                      <Form method="post">
+                        <input type="hidden" name="intent" value="ai-photo-backdrop" />
+                        <input type="hidden" name="photo_id" value={p.id} />
+                        <button
+                          aria-label="Lift them onto a clean backdrop"
+                          title="Beta: remove the background — kennel bars and clutter gone, animal untouched. You approve before anything changes"
+                          disabled={nav.state !== "idle"}
+                          className="w-6 h-6 rounded-full bg-white/90 text-xs shadow disabled:opacity-50"
+                        >
+                          🪄
+                        </button>
+                      </Form>
+                    )}
                     {p.original_key && (
                       <Form method="post">
                         <input type="hidden" name="intent" value="photo-enhance-revert" />
@@ -714,6 +761,45 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                 </div>
                 <p className="mt-2 text-xs text-charcoal-soft">
                   Tone and sharpness only — never generative. The original stays saved either way.
+                </p>
+              </div>
+            )}
+
+            {ai?.backdrop && (
+              <div className="mt-4 rounded-2xl bg-cream p-4">
+                <p className="font-display font-semibold text-sm">🪄 Clean backdrop — your call <span className="ml-1 rounded-full bg-sky/20 text-sky-deep px-1.5 py-0.5 text-[10px] uppercase tracking-wide">beta</span></p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-semibold text-charcoal-soft">
+                  <div>
+                    <img src={`/api/media/${ai.backdrop.srcKey}`} alt="Before" className="w-full aspect-square object-cover rounded-xl" />
+                    <p className="mt-1">Before</p>
+                  </div>
+                  <div>
+                    <img src={`/api/media/${ai.backdrop.previewKey}`} alt="After" className="w-full aspect-square object-cover rounded-xl" />
+                    <p className="mt-1">After · clean backdrop</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="photo-backdrop-apply" />
+                    <input type="hidden" name="photo_id" value={ai.backdrop.photoId} />
+                    <input type="hidden" name="preview_key" value={ai.backdrop.previewKey} />
+                    <button
+                      disabled={nav.state !== "idle"}
+                      className="rounded-full bg-meadow text-white px-4 py-2 text-sm font-display font-semibold shadow-soft disabled:opacity-50"
+                    >
+                      Use the clean backdrop
+                    </button>
+                  </Form>
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="photo-enhance-discard" />
+                    <input type="hidden" name="preview_key" value={ai.backdrop.previewKey} />
+                    <button className="rounded-full border-2 border-charcoal/20 px-4 py-2 text-sm font-semibold text-charcoal-soft">
+                      Keep the original
+                    </button>
+                  </Form>
+                </div>
+                <p className="mt-2 text-xs text-charcoal-soft">
+                  The animal is untouched — we only lift them off the background. Never generative, and the original stays saved either way.
                 </p>
               </div>
             )}
