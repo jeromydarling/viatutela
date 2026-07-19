@@ -132,6 +132,30 @@ export async function applyAdjustments(
   }
 }
 
+/** Warm cream — matches the brand and flatters most coats. */
+export const BACKDROP_COLOR = "#fff9f0";
+
+/**
+ * BETA: lift the subject off the background (Images `segment` feature)
+ * and flatten onto a warm backdrop. Nothing about the animal is altered
+ * or generated — pixels are kept or dropped, never invented.
+ */
+export async function makeCleanBackdrop(env: Env, srcKey: string, destKey: string): Promise<boolean> {
+  const obj = await env.MEDIA.get(srcKey);
+  if (!obj) return false;
+  try {
+    const result = await env.IMAGES.input(obj.body)
+      .transform({ segment: "foreground" })
+      .transform({ background: BACKDROP_COLOR })
+      .output({ format: "image/jpeg", quality: 88 });
+    await env.MEDIA.put(destKey, result.image(), { httpMetadata: { contentType: "image/jpeg" } });
+    return true;
+  } catch (err) {
+    console.log(`[photo backdrop failed] ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+}
+
 /** Cut the three social crops around a focal point; returns stored keys. */
 export async function makeSocialCrops(
   env: Env,
