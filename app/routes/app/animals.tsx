@@ -13,11 +13,17 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const q = url.searchParams.get("q")?.trim() ?? "";
   const status = url.searchParams.get("status") ?? "";
   const species = url.searchParams.get("species") ?? "";
+  const location = url.searchParams.get("location") ?? "";
 
   let sql = `SELECT a.id, a.name, a.species, a.breed, a.sex, a.status, a.kennel, a.bonded_group_id, a.is_public,
+    l.name location_name,
     (SELECT r2_key FROM animal_photos p WHERE p.animal_id = a.id LIMIT 1) photo_key
-    FROM animals a WHERE a.org_id = ?`;
+    FROM animals a LEFT JOIN locations l ON l.id = a.location_id WHERE a.org_id = ?`;
   const binds: unknown[] = [user.org_id];
+  if (location) {
+    sql += ` AND a.location_id = ?`;
+    binds.push(location);
+  }
   if (q) {
     sql += ` AND (a.name LIKE ? OR a.breed LIKE ? OR a.microchip = ? OR a.kennel = ?)`;
     binds.push(`%${q}%`, `%${q}%`, q, q);
@@ -32,18 +38,21 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   }
   sql += ` ORDER BY a.name LIMIT 500`;
 
-  const [animals, speciesList, statusList] = await Promise.all([
+  const [animals, speciesList, statusList, locationList] = await Promise.all([
     env.DB.prepare(sql).bind(...binds).all<Record<string, string>>(),
     env.DB.prepare(`SELECT DISTINCT species FROM animals WHERE org_id = ? AND species IS NOT NULL ORDER BY species`)
       .bind(user.org_id).all<{ species: string }>(),
     env.DB.prepare(`SELECT DISTINCT status FROM animals WHERE org_id = ? ORDER BY status`)
       .bind(user.org_id).all<{ status: string }>(),
+    env.DB.prepare(`SELECT id, name FROM locations WHERE org_id = ? ORDER BY name`)
+      .bind(user.org_id).all<{ id: string; name: string }>(),
   ]);
 
   return {
     animals: animals.results,
     speciesOptions: speciesList.results.map((r) => r.species),
     statusOptions: statusList.results.map((r) => r.status),
+    locationOptions: locationList.results,
   };
 }
 
@@ -54,7 +63,7 @@ const SPECIES_DOODLE: Record<string, typeof DogDoodle> = {
 };
 
 export default function Animals({ loaderData }: Route.ComponentProps) {
-  const { animals, speciesOptions, statusOptions } = loaderData;
+  const { animals, speciesOptions, statusOptions, locationOptions } = loaderData;
   const [params] = useSearchParams();
 
   return (
@@ -88,6 +97,14 @@ export default function Animals({ loaderData }: Route.ComponentProps) {
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+        {locationOptions.length > 0 && (
+          <select name="location" defaultValue={params.get("location") ?? ""} className="rounded-xl border-2 border-cream bg-white px-3 py-2">
+            <option value="">All locations</option>
+            {locationOptions.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+        )}
         <button className="rounded-full bg-meadow text-white px-5 py-2 font-semibold">Filter</button>
       </Form>
 
@@ -129,6 +146,9 @@ export default function Animals({ loaderData }: Route.ComponentProps) {
                     <span className="rounded-full bg-sky/20 text-sky-deep px-2 py-0.5">{a.status}</span>
                     {a.kennel && (
                       <span className="rounded-full bg-sunflower-soft px-2 py-0.5">{a.kennel}</span>
+                    )}
+                    {a.location_name && (
+                      <span className="rounded-full bg-meadow/15 text-meadow-deep px-2 py-0.5">{a.location_name}</span>
                     )}
                     {a.bonded_group_id && (
                       <span className="rounded-full bg-terracotta/20 text-terracotta-deep px-2 py-0.5">bonded</span>

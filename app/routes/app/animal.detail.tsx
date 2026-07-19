@@ -15,7 +15,7 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
     .first<Record<string, unknown>>();
   if (!animal) throw new Response("Not found", { status: 404 });
 
-  const [photos, medical, adoptions, fosters, contacts, bonded] = await Promise.all([
+  const [photos, medical, adoptions, fosters, contacts, locations, bonded] = await Promise.all([
     env.DB.prepare(`SELECT id, r2_key FROM animal_photos WHERE animal_id = ? ORDER BY created_at`)
       .bind(animal.id).all<{ id: string; r2_key: string }>(),
     env.DB.prepare(`SELECT * FROM medical_records WHERE animal_id = ? ORDER BY date DESC, created_at DESC`)
@@ -30,6 +30,8 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
     ).bind(animal.id).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT id, name, roles FROM contacts WHERE org_id = ? ORDER BY name LIMIT 500`)
       .bind(user.org_id).all<{ id: string; name: string; roles: string | null }>(),
+    env.DB.prepare(`SELECT id, name FROM locations WHERE org_id = ? AND active = 1 ORDER BY name`)
+      .bind(user.org_id).all<{ id: string; name: string }>(),
     animal.bonded_group_id
       ? env.DB.prepare(
           `SELECT id, name FROM animals WHERE org_id = ? AND bonded_group_id = ? AND id != ?`,
@@ -44,6 +46,7 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
     adoptions: adoptions.results,
     fosters: fosters.results,
     contacts: contacts.results,
+    locations: locations.results,
     bonded: bonded.results,
     orgSlug: user.slug,
   };
@@ -63,9 +66,15 @@ export async function action({ context, request, params }: Route.ActionArgs) {
   if (intent === "update") {
     const name = str("name");
     if (!name) return { error: "Every friend needs a name." };
+    const locationId = str("location_id");
+    const validLocation = locationId
+      ? await env.DB.prepare(`SELECT id FROM locations WHERE id = ? AND org_id = ?`)
+          .bind(locationId, user.org_id)
+          .first()
+      : null;
     await env.DB.prepare(
       `UPDATE animals SET name=?, species=?, breed=?, sex=?, dob=?, altered=?, microchip=?,
-         status=?, description=?, kennel=?, color=?, weight=?, intake_date=?, is_public=?
+         status=?, description=?, kennel=?, color=?, weight=?, intake_date=?, is_public=?, location_id=?
        WHERE id=? AND org_id=?`,
     )
       .bind(
@@ -74,6 +83,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
         str("microchip"), str("status") ?? "available", str("description"),
         str("kennel"), str("color"), str("weight"), str("intake_date"),
         f.get("is_public") ? 1 : 0,
+        validLocation ? locationId : null,
         animal.id, user.org_id,
       )
       .run();
@@ -113,10 +123,13 @@ export async function action({ context, request, params }: Route.ActionArgs) {
 
   if (intent === "add-medical") {
     await env.DB.prepare(
-      `INSERT INTO medical_records (id, org_id, animal_id, date, type, description, vet)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO medical_records (id, org_id, animal_id, date, type, description, vet, due_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-      .bind(newId("md"), user.org_id, animal.id, str("date"), str("type"), str("description"), str("vet"))
+      .bind(
+        newId("md"), user.org_id, animal.id, str("date"), str("type"),
+        str("description"), str("vet"), str("due_date"),
+      )
       .run();
     return { ok: "Medical record added." };
   }
@@ -190,7 +203,7 @@ const inputCls =
   "rounded-xl border-2 border-cream bg-cream px-3 py-2 text-sm focus:border-meadow outline-none";
 
 export default function AnimalDetail({ loaderData, actionData }: Route.ComponentProps) {
-  const { animal, photos, medical, adoptions, fosters, contacts, bonded, orgSlug } = loaderData;
+  const { animal, photos, medical, adoptions, fosters, contacts, locations, bonded, orgSlug } = loaderData;
   const nav = useNavigation();
   const activeFoster = fosters.find((fa) => fa.active);
 
@@ -247,7 +260,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
           <h2 className="font-display font-semibold text-xl">Details</h2>
           <Form method="post" className="mt-4">
             <input type="hidden" name="intent" value="update" />
-            <AnimalFields animal={animal} />
+            <AnimalFields animal={animal} locations={locations} />
             <button
               disabled={nav.state !== "idle"}
               className="mt-5 rounded-full bg-meadow text-white px-6 py-2.5 font-display font-semibold shadow-soft disabled:opacity-50"
@@ -361,12 +374,16 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
       {/* medical */}
       <section className="rounded-blob bg-white shadow-soft p-6">
         <h2 className="font-display font-semibold text-xl">Medical history</h2>
-        <Form method="post" className="mt-3 flex flex-wrap gap-2">
+        <Form method="post" className="mt-3 flex flex-wrap gap-2 items-end">
           <input type="hidden" name="intent" value="add-medical" />
-          <input name="date" type="date" className={inputCls} />
+          <input name="date" type="date" aria-label="Date given" className={inputCls} />
           <input name="type" placeholder="vaccine, exam, surgery…" className={inputCls} />
           <input name="description" placeholder="Details" className={`${inputCls} flex-1 min-w-40`} />
           <input name="vet" placeholder="Vet / clinic" className={inputCls} />
+          <label className="text-xs font-semibold text-charcoal-soft">
+            next due
+            <input name="due_date" type="date" className={`${inputCls} block mt-0.5`} />
+          </label>
           <button className="rounded-full bg-meadow text-white px-4 py-2 text-sm font-semibold">Add</button>
         </Form>
         {medical.length === 0 ? (
@@ -380,6 +397,7 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                   <th className="py-2 pr-4">Type</th>
                   <th className="py-2 pr-4">Details</th>
                   <th className="py-2 pr-4">Vet</th>
+                  <th className="py-2 pr-4">Next due</th>
                   <th></th>
                 </tr>
               </thead>
@@ -390,6 +408,21 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
                     <td className="py-2 pr-4">{String(m.type ?? "")}</td>
                     <td className="py-2 pr-4">{String(m.description ?? "")}</td>
                     <td className="py-2 pr-4">{String(m.vet ?? "")}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">
+                      {m.due_date ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            String(m.due_date) <= new Date().toISOString().slice(0, 10)
+                              ? "bg-terracotta/20 text-terracotta-deep"
+                              : "bg-sunflower-soft"
+                          }`}
+                        >
+                          {String(m.due_date)}
+                        </span>
+                      ) : (
+                        ""
+                      )}
+                    </td>
                     <td className="py-2 text-right">
                       <Form method="post">
                         <input type="hidden" name="intent" value="delete-medical" />

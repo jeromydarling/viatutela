@@ -29,7 +29,9 @@ versus what is actually built and deployed. Updated 2026-07-19.
 | Printable kennel cards with QR | ✅ | Server-rendered SVG QR |
 | Mobile QR quick-lookup (`/a/:id`) | ✅ | Staff see medical/chip/foster; public see adoption view; hidden animals stay hidden |
 | Bonded-pair badges & cross-links | ✅ | |
-| Vaccine due-date reminders | ❌ | Medical records store dates; no reminder engine yet |
+| Vaccine/medical reminders | ✅ | "Next due" dates on records, dashboard "Coming up" panel with mark-handled, weekly Monday email digest per org (cron) |
+| Multi-location | ✅ | Locations managed in Settings; assign on profiles, filter the list, census in Reports |
+| Reports & analytics | ✅ | 12-month intake/adoption/donation charts, census by status/species/location, avg days-to-adoption, application funnel |
 
 ## Adoption pipeline
 
@@ -86,15 +88,13 @@ versus what is actually built and deployed. Updated 2026-07-19.
 | Rescue: SMS | ❌ |
 | Shelter Pro: fundraising campaigns | ✅ |
 | Shelter Pro: Petfinder/Adopt-a-Pet sync | 🟡 feed built; API push not |
-| Shelter Pro: multi-location | ❌ only a per-animal kennel/location text field |
-| Shelter Pro: reports & analytics | 🟡 dashboard stats + donation totals; no dedicated reports page |
+| Shelter Pro: multi-location | ✅ |
+| Shelter Pro: reports & analytics | ✅ |
 | Custom: SSO, pipelines, integrations | ❌ sales-tier scope, intentionally later |
 
-## Suggested build order for the gaps
+## Remaining gaps (in suggested order)
 
-1. **Reports & analytics page** (intake/outcome trends, length-of-stay, adoption rate) — pure D1 queries, high demo value
-2. **Multi-location** (locations table, animal assignment, filters)
-3. **Vaccine/medical reminders** (due dates surfacing on dashboard + email digest)
-4. **Plan limits + Stripe billing** (once the Stripe connector is authorized)
-5. **Volunteer scheduling** (shifts, sign-ups)
-6. **SMS** (provider decision needed)
+1. **Plan limits + Stripe billing** — blocked on Stripe connector authorization
+2. **Volunteer scheduling** (shifts, sign-ups)
+3. **SMS** — blocked on provider decision (e.g. Twilio)
+4. **Petfinder/Adopt-a-Pet API push** (feed URL already works for scheduled ingestion)

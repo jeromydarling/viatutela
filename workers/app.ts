@@ -19,4 +19,9 @@ export default {
     context.set(cloudflareContext, { env, ctx });
     return requestHandler(request, context);
   },
+
+  async scheduled(_event, env, ctx) {
+    const { sendMedicalDigests } = await import("./lib/digest");
+    ctx.waitUntil(sendMedicalDigests(env, env.APP_ORIGIN));
+  },
 } satisfies ExportedHandler<Env>;

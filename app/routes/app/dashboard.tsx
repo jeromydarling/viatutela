@@ -12,7 +12,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
   const org = user.org_id;
 
-  const [counts, apps, fosters, donations30, tasks, recentAnimals] = await Promise.all([
+  const [counts, apps, fosters, donations30, tasks, recentAnimals, medicalDue] = await Promise.all([
     env.DB.prepare(
       `SELECT
         (SELECT COUNT(*) FROM animals WHERE org_id = ?1) animals,
@@ -40,6 +40,13 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     env.DB.prepare(
       `SELECT id, name, species, status FROM animals WHERE org_id = ? ORDER BY created_at DESC LIMIT 5`,
     ).bind(org).all<Record<string, string>>(),
+    env.DB.prepare(
+      `SELECT m.id, m.type, m.description, m.due_date, a.name animal_name, a.id animal_id
+       FROM medical_records m JOIN animals a ON a.id = m.animal_id
+       WHERE m.org_id = ? AND m.due_date IS NOT NULL AND m.due_date <= date('now', '+30 days')
+         AND a.status NOT IN ('adopted','deceased','transferred')
+       ORDER BY m.due_date LIMIT 10`,
+    ).bind(org).all<Record<string, string>>(),
   ]);
 
   return {
@@ -49,6 +56,8 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     donations30: donations30 ?? { total: 0, n: 0 },
     tasks: tasks.results,
     recentAnimals: recentAnimals.results,
+    medicalDue: medicalDue.results,
+    today: new Date().toISOString().slice(0, 10),
   };
 }
 
@@ -72,6 +81,11 @@ export async function action({ context, request }: Route.ActionArgs) {
       .bind(String(form.get("task_id")), user.org_id)
       .run();
   }
+  if (intent === "clear-due") {
+    await env.DB.prepare(`UPDATE medical_records SET due_date = NULL WHERE id = ? AND org_id = ?`)
+      .bind(String(form.get("record_id")), user.org_id)
+      .run();
+  }
   return null;
 }
 
@@ -80,7 +94,7 @@ function fmtMoney(n: number) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { counts, newApplications, activeFosters, donations30, tasks, recentAnimals } = loaderData;
+  const { counts, newApplications, activeFosters, donations30, tasks, recentAnimals, medicalDue, today } = loaderData;
 
   return (
     <div className="space-y-8">
@@ -101,6 +115,41 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </div>
         ))}
       </div>
+
+      {medicalDue.length > 0 && (
+        <section className="rounded-blob bg-white shadow-soft p-6 border-2 border-sunflower">
+          <h2 className="font-display font-semibold text-xl">Coming up — vaccines & care</h2>
+          <ul className="mt-3 divide-y divide-cream">
+            {medicalDue.map((m) => {
+              const overdue = m.due_date <= today;
+              return (
+                <li key={m.id} className="py-2.5 flex items-center gap-3 text-sm">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
+                      overdue ? "bg-terracotta/20 text-terracotta-deep" : "bg-sunflower-soft"
+                    }`}
+                  >
+                    {overdue ? `overdue · ${m.due_date}` : m.due_date}
+                  </span>
+                  <Link to={`/app/animals/${m.animal_id}`} className="font-semibold hover:underline">
+                    {m.animal_name}
+                  </Link>
+                  <span className="flex-1 truncate text-charcoal-soft">
+                    {[m.type, m.description].filter(Boolean).join(" — ")}
+                  </span>
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="clear-due" />
+                    <input type="hidden" name="record_id" value={m.id} />
+                    <button className="text-xs font-semibold text-meadow-deep hover:underline whitespace-nowrap">
+                      mark handled
+                    </button>
+                  </Form>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="rounded-blob bg-white shadow-soft p-6">
