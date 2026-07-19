@@ -43,7 +43,7 @@
 	],
 	/** Monday 13:00 UTC — weekly medical/vaccine care digest per org. */
 	"triggers": {
-		"crons": ["0 13 * * 1"]
+		"crons": ["0 13 * * 1", "15 */6 * * *"]
 	},
 	"d1_databases": [
 		{

@@ -96,6 +96,15 @@ export default function Login() {
             </Link>{" "}
             — your account is created when you keep the data.
           </p>
+          <div className="mt-4 border-t border-cream pt-4 text-center">
+            <a
+              href="/demo"
+              className="inline-block rounded-full bg-sunflower px-5 py-2.5 text-sm font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
+            >
+              🌻 Or take the demo shelter for a spin
+            </a>
+            <p className="mt-1.5 text-xs text-charcoal-soft">No signup — a full rescue with real-feeling data, reset every 6 hours.</p>
+          </div>
         </div>
       </main>
       <SiteFooter />
