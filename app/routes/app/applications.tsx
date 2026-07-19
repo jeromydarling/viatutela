@@ -2,6 +2,7 @@ import { Form, Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/applications";
 import { requireUser } from "../../lib/auth.server";
 import { newId } from "../../../workers/lib/ids";
+import { sendAppEmail } from "../../../workers/lib/email";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Via Tutela" }];
@@ -35,7 +36,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
-  const { env, user } = await requireUser(context, request);
+  const { env, ctx, user } = await requireUser(context, request);
   const f = await request.formData();
   const intent = String(f.get("intent"));
   const appId = String(f.get("application_id") ?? "");
@@ -45,11 +46,32 @@ export async function action({ context, request }: Route.ActionArgs) {
   ).bind(appId, user.org_id).first<Record<string, unknown>>();
   if (!app) return { error: "Application not found." };
 
+  const org = await env.DB.prepare(`SELECT name, email FROM orgs WHERE id = ?`)
+    .bind(user.org_id)
+    .first<{ name: string; email: string | null }>();
+  const animalName = app.animal_id
+    ? (await env.DB.prepare(`SELECT name FROM animals WHERE id = ?`)
+        .bind(app.animal_id)
+        .first<{ name: string }>())?.name ?? "our friend"
+    : "our friend";
+
   if (intent === "deny") {
     await env.DB.prepare(
       `UPDATE applications SET status = 'denied', decided_at = datetime('now') WHERE id = ?`,
     ).bind(appId).run();
-    return { ok: "Marked as denied — be gentle when you tell them." };
+    ctx.waitUntil(
+      sendAppEmail(env, {
+        to: String(app.email),
+        subject: `About your application to ${org?.name ?? "the rescue"}`,
+        heading: `Thank you for asking about ${animalName}`,
+        paragraphs: [
+          `${String(app.name)}, thank you truly for offering your home.`,
+          `This time it wasn't the right match for ${animalName}, but that takes nothing away from your kindness. There are many friends still looking — we hope you'll keep an open door.`,
+        ],
+        ...(org?.email ? { replyTo: org.email } : {}),
+      }),
+    );
+    return { ok: "Marked as denied — a gentle note is on its way to them." };
   }
 
   if (intent === "approve") {
@@ -92,7 +114,19 @@ export async function action({ context, request }: Route.ActionArgs) {
       );
     }
     await env.DB.batch(stmts);
-    return { ok: "Approved! Adoption recorded and the adopter is in your people list." };
+    ctx.waitUntil(
+      sendAppEmail(env, {
+        to: String(app.email),
+        subject: `Wonderful news about ${animalName} 🏡`,
+        heading: `${animalName} is coming home with you`,
+        paragraphs: [
+          `${String(app.name)}, your application was approved!`,
+          `${org?.name ?? "The rescue"} will be in touch with the next steps. Thank you for giving ${animalName} a way home.`,
+        ],
+        ...(org?.email ? { replyTo: org.email } : {}),
+      }),
+    );
+    return { ok: "Approved! Adoption recorded, adopter added, and the happy email is on its way." };
   }
   return null;
 }

@@ -21,8 +21,24 @@
 	},
 	"upload_source_maps": true,
 	"vars": {
-		"APP_ENV": "production"
+		"APP_ENV": "production",
+		/**
+		 * Sender for all app email. Must be an address on a domain you've
+		 * onboarded in Cloudflare Email Service (dash -> Email -> Sending).
+		 * Until the domain is verified, sends fail softly and are logged.
+		 */
+		"EMAIL_FROM": "Via Tutela <no-reply@viatutela.app>"
 	},
+	/**
+	 * Cloudflare Email Service — app email (application confirmations,
+	 * approvals, donation receipts, welcome notes). Simulated locally by
+	 * `wrangler dev`; real sends require an onboarded sender domain.
+	 */
+	"send_email": [
+		{
+			"name": "EMAIL"
+		}
+	],
 	"d1_databases": [
 		{
 			"binding": "DB",

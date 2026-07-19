@@ -1,7 +1,9 @@
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/adopt.animal";
+import { cloudflareContext } from "../cloudflare-context";
 import { getEnv } from "../lib/auth.server";
 import { newId } from "../../workers/lib/ids";
+import { sendAppEmail } from "../../workers/lib/email";
 import { CatDoodle, DogDoodle, HeartPawDoodle, PawDoodle } from "../components/doodles";
 
 export function meta({ loaderData: data }: Route.MetaArgs) {
@@ -41,9 +43,10 @@ export async function loader({ context, params }: Route.LoaderArgs) {
 
 export async function action({ context, request, params }: Route.ActionArgs) {
   const env = getEnv(context);
-  const org = await env.DB.prepare(`SELECT id FROM orgs WHERE slug = ?`)
+  const { ctx } = context.get(cloudflareContext);
+  const org = await env.DB.prepare(`SELECT id, name, email FROM orgs WHERE slug = ?`)
     .bind(params.slug)
-    .first<{ id: string }>();
+    .first<{ id: string; name: string; email: string | null }>();
   if (!org) throw new Response("Not found", { status: 404 });
 
   const f = await request.formData();
@@ -67,6 +70,41 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       String(f.get("message") ?? "").trim().slice(0, 2000) || null,
     )
     .run();
+
+  const animal = await env.DB.prepare(`SELECT name FROM animals WHERE id = ?`)
+    .bind(params.animalId)
+    .first<{ name: string }>();
+  const animalName = animal?.name ?? "one of our friends";
+  const origin = new URL(request.url).origin;
+
+  // confirmation to the applicant + heads-up to the rescue — never blocks the response
+  ctx.waitUntil(
+    Promise.all([
+      sendAppEmail(env, {
+        to: email,
+        subject: `We got your application for ${animalName} 🐾`,
+        heading: `Your application for ${animalName} is on its way`,
+        paragraphs: [
+          `Thank you for opening your home, ${name}.`,
+          `${org.name} has your application and will reach out soon. Applying starts a conversation — it doesn't commit you to anything.`,
+        ],
+        ...(org.email ? { replyTo: org.email } : {}),
+      }),
+      org.email
+        ? sendAppEmail(env, {
+            to: org.email,
+            subject: `New adoption application: ${animalName}`,
+            heading: `${name} wants to meet ${animalName}`,
+            paragraphs: [
+              `A new application just arrived from ${name} (${email}).`,
+              `Review it when you have a quiet moment — no rush, but warm hearts cool fast.`,
+            ],
+            cta: { label: "Review the application", url: `${origin}/app/applications` },
+          })
+        : Promise.resolve(false),
+    ]),
+  );
+
   return { ok: true };
 }
 
