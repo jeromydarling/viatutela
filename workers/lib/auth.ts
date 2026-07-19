@@ -1,6 +1,16 @@
 export const AUTH_COOKIE = "vt_session";
 
-export async function getAuthedUser(env: Env, request: Request) {
+export interface AuthedUser {
+  user_id: string;
+  email: string;
+  user_name: string | null;
+  org_id: string;
+  org_name: string;
+  slug: string;
+  plan: string;
+}
+
+export async function getAuthedUser(env: Env, request: Request): Promise<AuthedUser | null> {
   const cookie = request.headers.get("cookie") ?? "";
   const match = cookie.match(new RegExp(`${AUTH_COOKIE}=([a-f0-9]{48})`));
   if (!match) return null;
@@ -10,6 +20,14 @@ export async function getAuthedUser(env: Env, request: Request) {
      WHERE s.token = ? AND s.expires_at > datetime('now')`,
   )
     .bind(match[1])
-    .first<Record<string, unknown>>();
-  return row;
+    .first<AuthedUser>();
+  return row ?? null;
+}
+
+export function sessionCookie(token: string, maxAge = 30 * 24 * 3600): string {
+  return `${AUTH_COOKIE}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+}
+
+export function clearSessionCookie(): string {
+  return `${AUTH_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
 }

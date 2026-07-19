@@ -1,0 +1,225 @@
+import { Form, Link, useNavigation } from "react-router";
+import type { Route } from "./+types/adopt.animal";
+import { getEnv } from "../lib/auth.server";
+import { newId } from "../../workers/lib/ids";
+import { CatDoodle, DogDoodle, HeartPawDoodle, PawDoodle } from "../components/doodles";
+
+export function meta({ loaderData: data }: Route.MetaArgs) {
+  return [
+    { title: `Meet ${data?.animal?.name ?? "a friend"} — ${data?.org?.name ?? ""}` },
+    { name: "description", content: data?.animal?.description ?? "This friend is looking for a home." },
+  ];
+}
+
+export async function loader({ context, params }: Route.LoaderArgs) {
+  const env = getEnv(context);
+  const org = await env.DB.prepare(`SELECT id, name, slug, email, phone FROM orgs WHERE slug = ?`)
+    .bind(params.slug)
+    .first<Record<string, string | null>>();
+  if (!org) throw new Response("Not found", { status: 404 });
+
+  const animal = await env.DB.prepare(
+    `SELECT id, name, species, breed, sex, dob, altered, status, description, bonded_group_id, color, weight
+     FROM animals WHERE id = ? AND org_id = ? AND is_public = 1`,
+  )
+    .bind(params.animalId, org.id)
+    .first<Record<string, unknown>>();
+  if (!animal) throw new Response("Not found", { status: 404 });
+
+  const [photos, bonded] = await Promise.all([
+    env.DB.prepare(`SELECT r2_key FROM animal_photos WHERE animal_id = ? ORDER BY created_at LIMIT 8`)
+      .bind(animal.id).all<{ r2_key: string }>(),
+    animal.bonded_group_id
+      ? env.DB.prepare(
+          `SELECT id, name FROM animals WHERE org_id = ? AND bonded_group_id = ? AND id != ? AND is_public = 1`,
+        ).bind(org.id, animal.bonded_group_id, animal.id).all<{ id: string; name: string }>()
+      : Promise.resolve({ results: [] as { id: string; name: string }[] }),
+  ]);
+
+  return { org, animal, photos: photos.results, bonded: bonded.results };
+}
+
+export async function action({ context, request, params }: Route.ActionArgs) {
+  const env = getEnv(context);
+  const org = await env.DB.prepare(`SELECT id FROM orgs WHERE slug = ?`)
+    .bind(params.slug)
+    .first<{ id: string }>();
+  if (!org) throw new Response("Not found", { status: 404 });
+
+  const f = await request.formData();
+  // honeypot: real people leave this empty
+  if (String(f.get("website") ?? "")) return { ok: true };
+
+  const name = String(f.get("name") ?? "").trim();
+  const email = String(f.get("email") ?? "").trim().toLowerCase();
+  if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    return { error: "We need your name and a real email so the rescue can reach you." };
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO applications (id, org_id, animal_id, name, email, phone, home_type, message)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(
+      newId("ap"), org.id, params.animalId, name, email,
+      String(f.get("phone") ?? "").trim() || null,
+      String(f.get("home_type") ?? "").trim() || null,
+      String(f.get("message") ?? "").trim().slice(0, 2000) || null,
+    )
+    .run();
+  return { ok: true };
+}
+
+function ageLabel(dob: unknown): string | null {
+  if (typeof dob !== "string" || !dob) return null;
+  const years = (Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000);
+  if (!isFinite(years) || years < 0) return null;
+  if (years < 1) return `${Math.max(1, Math.round(years * 12))} months old`;
+  return `${Math.floor(years)} year${years >= 2 ? "s" : ""} old`;
+}
+
+const inputCls =
+  "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none";
+
+export default function AdoptAnimal({ loaderData, actionData }: Route.ComponentProps) {
+  const { org, animal, photos, bonded } = loaderData;
+  const nav = useNavigation();
+  const Doodle = animal.species === "cat" ? CatDoodle : animal.species === "dog" ? DogDoodle : PawDoodle;
+
+  return (
+    <div>
+      <header className="bg-meadow text-white">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6">
+          <Link to={`/adopt/${org.slug}`} className="font-semibold text-white/90 hover:text-white">
+            ← All friends at {org.name}
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 py-10 grid lg:grid-cols-2 gap-10">
+        <div>
+          {photos.length > 0 ? (
+            <div className="space-y-3">
+              <img
+                src={`/api/media/${photos[0].r2_key}`}
+                alt={String(animal.name)}
+                className="w-full rounded-blob object-cover max-h-[28rem] shadow-soft"
+              />
+              {photos.length > 1 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {photos.slice(1).map((p) => (
+                    <img
+                      key={p.r2_key}
+                      src={`/api/media/${p.r2_key}`}
+                      alt=""
+                      className="w-full aspect-square object-cover rounded-2xl"
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-blob bg-white shadow-soft h-72 flex items-center justify-center">
+              <Doodle className="w-32 h-32 text-charcoal-soft" />
+            </div>
+          )}
+
+          <h1 className="mt-6 text-4xl font-display font-bold">{String(animal.name)}</h1>
+          <p className="mt-1 text-lg text-charcoal-soft">
+            {[animal.breed ?? animal.species, animal.sex, ageLabel(animal.dob), animal.color, animal.weight]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2 text-sm font-semibold">
+            {Boolean(animal.altered) && (
+              <span className="rounded-full bg-meadow/15 text-meadow-deep px-3 py-1">spayed/neutered</span>
+            )}
+            {animal.status !== "available" && (
+              <span className="rounded-full bg-sunflower-soft px-3 py-1">
+                {animal.status === "pending" ? "adoption pending" : String(animal.status)}
+              </span>
+            )}
+          </div>
+          {bonded.length > 0 && (
+            <p className="mt-4 rounded-2xl bg-terracotta/10 text-terracotta-deep px-4 py-3 font-semibold">
+              ♥ {String(animal.name)} is bonded with{" "}
+              {bonded.map((b, i) => (
+                <span key={b.id}>
+                  {i > 0 && ", "}
+                  <Link to={`/adopt/${org.slug}/${b.id}`} className="underline">{b.name}</Link>
+                </span>
+              ))}{" "}
+              — they go home together.
+            </p>
+          )}
+          {Boolean(animal.description) && (
+            <p className="mt-4 text-lg leading-relaxed">{String(animal.description)}</p>
+          )}
+        </div>
+
+        <div>
+          {actionData?.ok ? (
+            <div className="rounded-blob bg-white shadow-lift p-8 text-center">
+              <HeartPawDoodle className="w-20 h-20 mx-auto text-meadow" />
+              <h2 className="mt-4 text-2xl font-display font-semibold">
+                Your application is on its way.
+              </h2>
+              <p className="mt-2 text-charcoal-soft">
+                {org.name} will reach out soon. Thank you for opening your home.
+              </p>
+            </div>
+          ) : (
+            <Form method="post" className="rounded-blob bg-white shadow-lift p-8 space-y-4 sticky top-8">
+              <h2 className="text-2xl font-display font-semibold">
+                Ask about {String(animal.name)}
+              </h2>
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+              <label className="block">
+                <span className="font-semibold text-sm">Your name *</span>
+                <input name="name" required className={inputCls} />
+              </label>
+              <label className="block">
+                <span className="font-semibold text-sm">Email *</span>
+                <input name="email" type="email" required className={inputCls} />
+              </label>
+              <label className="block">
+                <span className="font-semibold text-sm">Phone</span>
+                <input name="phone" className={inputCls} />
+              </label>
+              <label className="block">
+                <span className="font-semibold text-sm">Your home</span>
+                <select name="home_type" className={inputCls}>
+                  <option value="">Choose…</option>
+                  <option>House with a yard</option>
+                  <option>House, no yard</option>
+                  <option>Apartment</option>
+                  <option>Farm / rural</option>
+                  <option>Other</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="font-semibold text-sm">
+                  Tell {org.name} about your family, other pets, experience…
+                </span>
+                <textarea name="message" rows={4} className={inputCls} />
+              </label>
+              {actionData?.error && (
+                <p className="font-semibold text-terracotta-deep" role="alert">{actionData.error}</p>
+              )}
+              <button
+                disabled={nav.state !== "idle"}
+                className="w-full rounded-full bg-sunflower px-6 py-3.5 font-display font-semibold text-lg shadow-soft hover:shadow-lift transition-shadow disabled:opacity-50"
+              >
+                {nav.state !== "idle" ? "Sending…" : "Send application"}
+              </button>
+              <p className="text-xs text-charcoal-soft text-center">
+                Applying is free and doesn't commit you — it starts a conversation.
+              </p>
+            </Form>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}

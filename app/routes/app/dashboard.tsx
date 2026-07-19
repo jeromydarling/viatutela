@@ -1,0 +1,219 @@
+import { Form, Link } from "react-router";
+import type { Route } from "./+types/dashboard";
+import { requireUser } from "../../lib/auth.server";
+import { newId } from "../../../workers/lib/ids";
+import { PawDoodle } from "../../components/doodles";
+
+export function meta(_: Route.MetaArgs) {
+  return [{ title: "Dashboard — Via Tutela" }];
+}
+
+export async function loader({ context, request }: Route.LoaderArgs) {
+  const { env, user } = await requireUser(context, request);
+  const org = user.org_id;
+
+  const [counts, apps, fosters, donations30, tasks, recentAnimals] = await Promise.all([
+    env.DB.prepare(
+      `SELECT
+        (SELECT COUNT(*) FROM animals WHERE org_id = ?1) animals,
+        (SELECT COUNT(*) FROM animals WHERE org_id = ?1 AND status = 'available') available,
+        (SELECT COUNT(*) FROM contacts WHERE org_id = ?1) contacts,
+        (SELECT COUNT(*) FROM adoptions WHERE org_id = ?1) adoptions`,
+    ).bind(org).first<{ animals: number; available: number; contacts: number; adoptions: number }>(),
+    env.DB.prepare(
+      `SELECT a.id, a.name, a.email, a.status, a.created_at, an.name animal_name, an.id animal_id
+       FROM applications a LEFT JOIN animals an ON an.id = a.animal_id
+       WHERE a.org_id = ? AND a.status = 'new' ORDER BY a.created_at DESC LIMIT 5`,
+    ).bind(org).all<Record<string, string>>(),
+    env.DB.prepare(
+      `SELECT COUNT(*) n FROM foster_assignments WHERE org_id = ? AND active = 1`,
+    ).bind(org).first<{ n: number }>(),
+    env.DB.prepare(
+      `SELECT COALESCE(SUM(amount), 0) total, COUNT(*) n FROM donations
+       WHERE org_id = ? AND date >= date('now', '-30 days')`,
+    ).bind(org).first<{ total: number; n: number }>(),
+    env.DB.prepare(
+      `SELECT t.id, t.title, t.due_date, t.done, a.name animal_name, a.id animal_id
+       FROM tasks t LEFT JOIN animals a ON a.id = t.animal_id
+       WHERE t.org_id = ? AND t.done = 0 ORDER BY t.due_date IS NULL, t.due_date LIMIT 8`,
+    ).bind(org).all<Record<string, string>>(),
+    env.DB.prepare(
+      `SELECT id, name, species, status FROM animals WHERE org_id = ? ORDER BY created_at DESC LIMIT 5`,
+    ).bind(org).all<Record<string, string>>(),
+  ]);
+
+  return {
+    counts: counts ?? { animals: 0, available: 0, contacts: 0, adoptions: 0 },
+    newApplications: apps.results,
+    activeFosters: fosters?.n ?? 0,
+    donations30: donations30 ?? { total: 0, n: 0 },
+    tasks: tasks.results,
+    recentAnimals: recentAnimals.results,
+  };
+}
+
+export async function action({ context, request }: Route.ActionArgs) {
+  const { env, user } = await requireUser(context, request);
+  const form = await request.formData();
+  const intent = form.get("intent");
+
+  if (intent === "add-task") {
+    const title = String(form.get("title") ?? "").trim();
+    if (title) {
+      await env.DB.prepare(
+        `INSERT INTO tasks (id, org_id, title, due_date) VALUES (?, ?, ?, ?)`,
+      )
+        .bind(newId("tk"), user.org_id, title, String(form.get("due_date") || "") || null)
+        .run();
+    }
+  }
+  if (intent === "complete-task") {
+    await env.DB.prepare(`UPDATE tasks SET done = 1 WHERE id = ? AND org_id = ?`)
+      .bind(String(form.get("task_id")), user.org_id)
+      .run();
+  }
+  return null;
+}
+
+function fmtMoney(n: number) {
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+export default function Dashboard({ loaderData }: Route.ComponentProps) {
+  const { counts, newApplications, activeFosters, donations30, tasks, recentAnimals } = loaderData;
+
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          ["friends in care", counts.animals],
+          ["ready for homes", counts.available],
+          ["people", counts.contacts],
+          ["adoptions", counts.adoptions],
+          ["active fosters", activeFosters],
+          [`raised (30d)`, fmtMoney(donations30.total)],
+        ].map(([label, n]) => (
+          <div key={label as string} className="rounded-blob bg-white shadow-soft p-4 text-center">
+            <div className="text-2xl font-display font-bold text-meadow-deep">
+              {typeof n === "number" ? n.toLocaleString() : n}
+            </div>
+            <div className="text-xs font-semibold text-charcoal-soft">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <section className="rounded-blob bg-white shadow-soft p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-semibold text-xl">New applications</h2>
+            <Link to="/app/applications" className="text-sm font-semibold text-meadow-deep hover:underline">
+              See all
+            </Link>
+          </div>
+          {newApplications.length === 0 ? (
+            <p className="mt-4 text-charcoal-soft">
+              Nothing waiting — every application has been answered.
+            </p>
+          ) : (
+            <ul className="mt-4 divide-y divide-cream">
+              {newApplications.map((a) => (
+                <li key={a.id} className="py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">{a.name}</div>
+                    <div className="text-sm text-charcoal-soft truncate">
+                      wants to adopt {a.animal_name ?? "any friend"}
+                    </div>
+                  </div>
+                  <Link
+                    to="/app/applications"
+                    className="shrink-0 rounded-full bg-sunflower px-3 py-1.5 text-sm font-semibold"
+                  >
+                    Review
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-blob bg-white shadow-soft p-6">
+          <h2 className="font-display font-semibold text-xl">To-do</h2>
+          <Form method="post" className="mt-3 flex gap-2">
+            <input type="hidden" name="intent" value="add-task" />
+            <input
+              name="title"
+              placeholder="Add something to remember…"
+              required
+              className="flex-1 rounded-xl border-2 border-cream bg-cream px-3 py-2 text-sm focus:border-meadow outline-none"
+            />
+            <input
+              name="due_date"
+              type="date"
+              className="rounded-xl border-2 border-cream bg-cream px-2 py-2 text-sm focus:border-meadow outline-none"
+            />
+            <button className="rounded-full bg-meadow text-white px-4 text-sm font-semibold">
+              Add
+            </button>
+          </Form>
+          {tasks.length === 0 ? (
+            <p className="mt-4 text-charcoal-soft">All caught up. Go give someone a belly rub.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-cream">
+              {tasks.map((t) => (
+                <li key={t.id} className="py-2.5 flex items-center gap-3">
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="complete-task" />
+                    <input type="hidden" name="task_id" value={t.id} />
+                    <button
+                      aria-label={`Mark "${t.title}" done`}
+                      className="w-6 h-6 rounded-full border-2 border-meadow hover:bg-meadow/20"
+                    />
+                  </Form>
+                  <span className="flex-1">{t.title}</span>
+                  {t.animal_name && (
+                    <Link to={`/app/animals/${t.animal_id}`} className="text-sm text-sky-deep font-semibold">
+                      {t.animal_name}
+                    </Link>
+                  )}
+                  {t.due_date && <span className="text-sm text-charcoal-soft">{t.due_date}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <section className="rounded-blob bg-white shadow-soft p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-semibold text-xl">Newest friends</h2>
+          <Link
+            to="/app/animals/new"
+            className="rounded-full bg-sunflower px-4 py-2 text-sm font-display font-semibold shadow-soft"
+          >
+            + Add a friend
+          </Link>
+        </div>
+        {recentAnimals.length === 0 ? (
+          <div className="mt-6 text-center py-8">
+            <PawDoodle className="w-14 h-14 mx-auto text-sunflower" />
+            <p className="mt-3 font-semibold">
+              No friends here yet — add your first companion to get started.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap gap-3">
+            {recentAnimals.map((a) => (
+              <Link
+                key={a.id}
+                to={`/app/animals/${a.id}`}
+                className="rounded-full bg-cream px-4 py-2 text-sm font-semibold hover:bg-sunflower-soft transition-colors"
+              >
+                {a.name} <span className="text-charcoal-soft">· {a.species ?? "friend"} · {a.status}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

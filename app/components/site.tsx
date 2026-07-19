@@ -19,6 +19,9 @@ export function SiteHeader() {
           <a href="/#pricing" className="hidden sm:block px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
             Pricing
           </a>
+          <Link to="/login" className="px-2 py-1 rounded-lg hover:bg-sunflower-soft transition-colors">
+            Sign in
+          </Link>
           <Link
             to="/import"
             className="rounded-full bg-sunflower px-4 py-2 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"

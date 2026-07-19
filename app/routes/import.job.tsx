@@ -578,6 +578,7 @@ function ClaimForm({ jobId }: { jobId: string }) {
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -590,7 +591,7 @@ function ClaimForm({ jobId }: { jobId: string }) {
       const res = await fetch(`/api/import/${jobId}/claim`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ org_name: orgName, email, name }),
+        body: JSON.stringify({ org_name: orgName, email, name, password }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) throw new Error(data.error || "Could not create your account.");
@@ -640,6 +641,18 @@ function ClaimForm({ jobId }: { jobId: string }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Frances"
+          className="mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none"
+        />
+      </label>
+      <label className="block">
+        <span className="font-semibold text-sm">Pick a password (8+ characters)</span>
+        <input
+          required
+          type="password"
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
           className="mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none"
         />
       </label>

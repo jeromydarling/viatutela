@@ -16,6 +16,7 @@ import { normalizeRow } from "./lib/rows";
 import { toCsv } from "./lib/csv";
 import { promoteImport } from "./import/promote";
 import { AUTH_COOKIE, getAuthedUser } from "./lib/auth";
+import { hashPassword } from "./lib/password";
 
 type AppEnv = { Bindings: Env };
 
@@ -353,13 +354,17 @@ api.post("/import/:jobId/claim", async (c) => {
   if (job.status === "claimed") return c.json({ error: "This import already has a home." }, 409);
   if (job.status !== "done") return c.json({ error: "The import isn't finished yet." }, 400);
 
-  const { org_name, email, name } = (await c.req.json()) as {
+  const { org_name, email, name, password } = (await c.req.json()) as {
     org_name?: string;
     email?: string;
     name?: string;
+    password?: string;
   };
   if (!org_name?.trim() || !email?.trim()) {
     return c.json({ error: "We need an organization name and an email." }, 400);
+  }
+  if (!password || password.length < 8) {
+    return c.json({ error: "Please pick a password of at least 8 characters." }, 400);
   }
   const emailNorm = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailNorm)) {
@@ -370,6 +375,7 @@ api.post("/import/:jobId/claim", async (c) => {
     .first();
   if (existing) return c.json({ error: "That email already has an account." }, 409);
 
+  const pw = await hashPassword(password);
   const orgId = newId("org");
   const slugBase = org_name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "rescue";
   const slug = `${slugBase}-${orgId.slice(-6)}`;
@@ -381,9 +387,9 @@ api.post("/import/:jobId/claim", async (c) => {
     c.env.DB.prepare(`INSERT INTO orgs (id, name, slug, plan) VALUES (?, ?, ?, 'free')`).bind(
       orgId, org_name.trim(), slug,
     ),
-    c.env.DB.prepare(`INSERT INTO users (id, org_id, email, name) VALUES (?, ?, ?, ?)`).bind(
-      userId, orgId, emailNorm, name?.trim() || null,
-    ),
+    c.env.DB.prepare(
+      `INSERT INTO users (id, org_id, email, name, password_hash, password_salt) VALUES (?, ?, ?, ?, ?, ?)`,
+    ).bind(userId, orgId, emailNorm, name?.trim() || null, pw.hash, pw.salt),
     c.env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`).bind(
       sessionToken, userId, expires,
     ),
@@ -434,6 +440,101 @@ api.get("/animals", async (c) => {
     .bind(user.org_id)
     .all();
   return c.json({ animals: animals.results });
+});
+
+// ---------- one-click full data export ----------
+
+const EXPORT_TABLES: { name: string; sql: string }[] = [
+  { name: "animals", sql: `SELECT * FROM animals WHERE org_id = ?` },
+  { name: "contacts", sql: `SELECT * FROM contacts WHERE org_id = ?` },
+  { name: "medical_records", sql: `SELECT * FROM medical_records WHERE org_id = ?` },
+  { name: "adoptions", sql: `SELECT * FROM adoptions WHERE org_id = ?` },
+  { name: "applications", sql: `SELECT * FROM applications WHERE org_id = ?` },
+  { name: "foster_assignments", sql: `SELECT * FROM foster_assignments WHERE org_id = ?` },
+  { name: "donations", sql: `SELECT * FROM donations WHERE org_id = ?` },
+  { name: "campaigns", sql: `SELECT * FROM campaigns WHERE org_id = ?` },
+  { name: "animal_photos", sql: `SELECT * FROM animal_photos WHERE org_id = ?` },
+  { name: "tasks", sql: `SELECT * FROM tasks WHERE org_id = ?` },
+];
+
+api.get("/export.zip", async (c) => {
+  const user = await getAuthedUser(c.env, c.req.raw);
+  if (!user) return c.json({ error: "Please sign in." }, 401);
+
+  const { zipSync, strToU8 } = await import("fflate");
+  const files: Record<string, Uint8Array> = {};
+  for (const table of EXPORT_TABLES) {
+    const rows = await c.env.DB.prepare(table.sql).bind(user.org_id).all<Record<string, unknown>>();
+    const cols = rows.results.length ? Object.keys(rows.results[0]) : [];
+    const csv = toCsv([
+      cols,
+      ...rows.results.map((r) => cols.map((col) => (r[col] == null ? "" : String(r[col])))),
+    ]);
+    files[`${table.name}.csv`] = strToU8(csv);
+  }
+  files["README.txt"] = strToU8(
+    `Via Tutela full export for ${user.org_name}\n` +
+      `Exported ${new Date().toISOString()}\n\n` +
+      `Every table you own, in plain CSV. This data is yours — no strings attached.\n` +
+      `Photo files referenced in animal_photos.csv can be fetched at /api/media/<r2_key>.\n`,
+  );
+  const zipped = zipSync(files, { level: 6 });
+
+  return new Response(zipped.slice().buffer as ArrayBuffer, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="via-tutela-export.zip"`,
+    },
+  });
+});
+
+// ---------- Petfinder-format public feed ----------
+
+api.get("/feeds/:slug/petfinder.csv", async (c) => {
+  const org = await c.env.DB.prepare(`SELECT id, name FROM orgs WHERE slug = ?`)
+    .bind(c.req.param("slug"))
+    .first<{ id: string; name: string }>();
+  if (!org) return c.text("not found", 404);
+
+  const origin = new URL(c.req.url).origin;
+  const animals = await c.env.DB.prepare(
+    `SELECT a.*, (SELECT GROUP_CONCAT(r2_key, '|') FROM animal_photos p WHERE p.animal_id = a.id) photo_keys
+     FROM animals a WHERE a.org_id = ? AND a.is_public = 1 AND a.status = 'available'
+     ORDER BY a.name`,
+  )
+    .bind(org.id)
+    .all<Record<string, unknown>>();
+
+  const csv = toCsv([
+    ["ID", "Name", "Type", "Breed", "Sex", "Age", "Altered", "Description", "Status", "Photo1", "Photo2", "Photo3"],
+    ...animals.results.map((a) => {
+      const photos = String(a.photo_keys ?? "")
+        .split("|")
+        .filter(Boolean)
+        .slice(0, 3)
+        .map((k) => `${origin}/api/media/${k}`);
+      return [
+        a.source_key ? String(a.source_key) : String(a.id),
+        String(a.name),
+        String(a.species ?? ""),
+        String(a.breed ?? ""),
+        a.sex === "male" ? "M" : a.sex === "female" ? "F" : "U",
+        String(a.dob ?? ""),
+        a.altered == null ? "" : a.altered ? "Yes" : "No",
+        String(a.description ?? ""),
+        "Available",
+        photos[0] ?? "",
+        photos[1] ?? "",
+        photos[2] ?? "",
+      ];
+    }),
+  ]);
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Cache-Control": "public, max-age=300",
+    },
+  });
 });
 
 api.notFound((c) =>
