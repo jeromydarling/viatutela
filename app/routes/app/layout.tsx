@@ -5,24 +5,26 @@ import { Logo } from "../../components/site";
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
-  // demo self-heal: a signed-in demo session must never see an empty
-  // workspace (e.g. mid-reset, or after a manual wipe) — reseed on sight
-  if (user.demo) {
-    const { isDemoSeeded, resetDemoData } = await import("../../../workers/lib/demo");
+  // one round trip: the badge count, plus (for demo sessions) the health
+  // numbers the self-heal needs — a demo must never render empty
+  const counts = await env.DB.prepare(
+    `SELECT (SELECT COUNT(*) FROM applications WHERE org_id = ?1 AND status = 'new') new_apps` +
+      (user.demo
+        ? `, (SELECT COUNT(*) FROM animals WHERE org_id = ?1) demo_animals,
+             (SELECT COUNT(*) FROM animal_photos WHERE org_id = ?1) demo_photos`
+        : ``),
+  )
+    .bind(user.org_id)
+    .first<{ new_apps: number; demo_animals?: number; demo_photos?: number }>();
+  if (user.demo && !((counts?.demo_animals ?? 0) > 0 && (counts?.demo_photos ?? 0) > 1)) {
     try {
-      if (!(await isDemoSeeded(env))) {
-        await resetDemoData(env, new URL(request.url).origin);
-      }
+      const { resetDemoData } = await import("../../../workers/lib/demo");
+      await resetDemoData(env, new URL(request.url).origin);
     } catch (err) {
       console.log(`[demo self-heal failed] ${err instanceof Error ? err.message : err}`);
     }
   }
-  const newApps = await env.DB.prepare(
-    `SELECT COUNT(*) n FROM applications WHERE org_id = ? AND status = 'new'`,
-  )
-    .bind(user.org_id)
-    .first<{ n: number }>();
-  return { user, newApps: newApps?.n ?? 0 };
+  return { user, newApps: counts?.new_apps ?? 0 };
 }
 
 const NAV = [
@@ -77,6 +79,7 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
               key={item.to}
               to={item.to}
               end={item.end}
+              prefetch="intent"
               className={({ isActive }) =>
                 `whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
                   isActive ? "bg-sunflower text-charcoal" : "text-charcoal-soft hover:bg-sunflower-soft"

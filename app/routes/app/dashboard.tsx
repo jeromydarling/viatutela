@@ -12,7 +12,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
   const org = user.org_id;
 
-  const [counts, apps, fosters, donations30, tasks, recentAnimals, medicalDue] = await Promise.all([
+  const [counts, apps, fosters, donations30, tasks, recentAnimals, medicalDue, setup] = await Promise.all([
     env.DB.prepare(
       `SELECT
         (SELECT COUNT(*) FROM animals WHERE org_id = ?1) animals,
@@ -47,16 +47,14 @@ export async function loader({ context, request }: Route.LoaderArgs) {
          AND a.status NOT IN ('adopted','deceased','transferred')
        ORDER BY m.due_date LIMIT 10`,
     ).bind(org).all<Record<string, string>>(),
+    env.DB.prepare(
+      `SELECT
+        (SELECT COUNT(*) FROM pages WHERE org_id = ?1 AND status = 'published') published_pages,
+        (SELECT COUNT(*) FROM pages WHERE org_id = ?1) total_pages,
+        (SELECT brand_json IS NOT NULL FROM orgs WHERE id = ?1) brand_set,
+        (SELECT COUNT(*) FROM animals WHERE org_id = ?1 AND is_public = 1) public_animals`,
+    ).bind(org).first<{ published_pages: number; total_pages: number; brand_set: number; public_animals: number }>(),
   ]);
-
-  // getting-started state (cheap; only matters for young orgs)
-  const setup = await env.DB.prepare(
-    `SELECT
-      (SELECT COUNT(*) FROM pages WHERE org_id = ?1 AND status = 'published') published_pages,
-      (SELECT COUNT(*) FROM pages WHERE org_id = ?1) total_pages,
-      (SELECT brand_json IS NOT NULL FROM orgs WHERE id = ?1) brand_set,
-      (SELECT COUNT(*) FROM animals WHERE org_id = ?1 AND is_public = 1) public_animals`,
-  ).bind(org).first<{ published_pages: number; total_pages: number; brand_set: number; public_animals: number }>();
 
   return {
     setup: setup ?? { published_pages: 0, total_pages: 0, brand_set: 0, public_animals: 0 },

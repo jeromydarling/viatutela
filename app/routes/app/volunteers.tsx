@@ -17,7 +17,7 @@ function hoursBetween(start: string | null, end: string | null): number {
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
-  const [shifts, volunteers, stats, top] = await Promise.all([
+  const [shifts, volunteers, stats, top, signups] = await Promise.all([
     env.DB.prepare(
       `SELECT s.*, (SELECT COUNT(*) FROM shift_signups g WHERE g.shift_id = s.id) filled
        FROM shifts s WHERE s.org_id = ? AND s.date >= date('now','-1 day') ORDER BY s.date, s.start_time LIMIT 40`,
@@ -33,11 +33,11 @@ export async function loader({ context, request }: Route.LoaderArgs) {
        WHERE g.org_id = ? AND g.created_at >= datetime('now','-12 months')
        GROUP BY g.contact_id ORDER BY h DESC LIMIT 5`,
     ).bind(user.org_id).all<{ name: string; h: number }>(),
+    env.DB.prepare(
+      `SELECT g.id, g.shift_id, c.name FROM shift_signups g JOIN contacts c ON c.id = g.contact_id
+       WHERE g.org_id = ? ORDER BY g.created_at LIMIT 400`,
+    ).bind(user.org_id).all<{ id: string; shift_id: string; name: string }>(),
   ]);
-  const signups = await env.DB.prepare(
-    `SELECT g.id, g.shift_id, c.name FROM shift_signups g JOIN contacts c ON c.id = g.contact_id
-     WHERE g.org_id = ? ORDER BY g.created_at LIMIT 400`,
-  ).bind(user.org_id).all<{ id: string; shift_id: string; name: string }>();
   return {
     shifts: shifts.results,
     volunteers: volunteers.results,

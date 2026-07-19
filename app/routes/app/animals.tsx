@@ -123,6 +123,7 @@ export default function Animals({ loaderData }: Route.ComponentProps) {
               <Link
                 key={a.id}
                 to={`/app/animals/${a.id}`}
+                prefetch="intent"
                 className="rounded-blob bg-white shadow-soft p-4 flex gap-3 hover:shadow-lift transition-shadow"
               >
                 {a.photo_key ? (

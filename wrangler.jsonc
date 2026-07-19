@@ -19,6 +19,12 @@
 	"observability": {
 		"enabled": true
 	},
+	/**
+	 * Run the worker near D1 instead of at the visitor's PoP: app loaders
+	 * make several sequential DB round trips, so cutting each from a
+	 * cross-region hop to ~1ms beats edge proximity for logged-in pages.
+	 */
+	"placement": { "mode": "smart" },
 	"upload_source_maps": true,
 	"vars": {
 		"APP_ENV": "production",
