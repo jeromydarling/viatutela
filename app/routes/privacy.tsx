@@ -21,7 +21,7 @@ const SECTIONS: { h: string; ps: string[] }[] = [
     h: "What we collect",
     ps: [
       "Account data: your name, email, and a salted password hash. Organization data: everything your shelter enters — animals, medical records, contacts, applications, donations, photos and videos, website content. Adopter data submitted through public forms (applications, waitlist signups, volunteer signups) is collected on behalf of the shelter it was submitted to, and that shelter controls it.",
-      "We keep minimal technical logs (errors and usage counters) to keep the service healthy. We do not use tracking pixels or third-party analytics on your dashboard, and shelters' public sites get no advertising trackers from us.",
+      "We keep minimal technical logs (errors and usage counters) to keep the service healthy. We do not use tracking pixels or third-party analytics on your dashboard, and we add no advertising trackers of our own to shelters' public sites. A shelter can optionally connect its own analytics (Google Analytics, Tag Manager, Meta Pixel, or Plausible) to its public pages; those trackers belong to and are controlled by the shelter, which is responsible for disclosing them in its own privacy policy.",
     ],
   },
   {

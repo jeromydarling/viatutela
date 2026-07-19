@@ -35,12 +35,15 @@ function anonCacheTtl(request: Request, url: URL): number {
   return 0;
 }
 
+// Workers-runtime cache (lib.dom's CacheStorage type lacks `default`)
+const edgeCache = () => (caches as unknown as { default: Cache }).default;
+
 export default {
   async fetch(request, env, ctx) {
     try {
       const ttl = anonCacheTtl(request, new URL(request.url));
       if (ttl) {
-        const hit = await caches.default.match(request);
+        const hit = await edgeCache().match(request);
         if (hit) return hit;
       }
       const resp = await handleFetch(request, env, ctx);
@@ -49,7 +52,7 @@ export default {
         const headers = new Headers(copy.headers);
         headers.set("Cache-Control", `public, s-maxage=${ttl}`);
         ctx.waitUntil(
-          caches.default.put(
+          edgeCache().put(
             request,
             new Response(copy.body, { status: copy.status, statusText: copy.statusText, headers }),
           ),

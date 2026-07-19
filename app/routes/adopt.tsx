@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/adopt";
 import { getEnv } from "../lib/auth.server";
+import { parseSeo } from "../lib/site.server";
+import { TrackingTags } from "../components/tracking";
 import { subscribeWaitlist } from "../../workers/lib/waitlist";
 import {
   EMPTY_FILTER,
@@ -23,11 +25,13 @@ export function meta({ loaderData: data }: Route.MetaArgs) {
 export async function loader({ context, params }: Route.LoaderArgs) {
   const env = getEnv(context);
   const org = await env.DB.prepare(
-    `SELECT id, name, slug, about, website, email, phone, address FROM orgs WHERE slug = ?`,
+    `SELECT id, name, slug, about, website, email, phone, address, seo_json FROM orgs WHERE slug = ?`,
   )
     .bind(params.slug)
     .first<Record<string, string | null>>();
   if (!org) throw new Response("Not found", { status: 404 });
+  const tracking = parseSeo(org.seo_json).tracking;
+  delete org.seo_json;
 
   const animals = await env.DB.prepare(
     `SELECT a.id, a.name, a.species, a.breed, a.sex, a.dob, a.status, a.bonded_group_id, a.description,
@@ -39,7 +43,7 @@ export async function loader({ context, params }: Route.LoaderArgs) {
     .bind(org.id)
     .all<Record<string, string | null>>();
 
-  return { org, animals: animals.results };
+  return { org, animals: animals.results, tracking };
 }
 
 export async function action({ context, request, params }: Route.ActionArgs) {
@@ -236,10 +240,11 @@ function FilterableAnimals({ animals, orgSlug }: { animals: PortalAnimal[]; orgS
 }
 
 export default function AdoptPortal({ loaderData, actionData }: Route.ComponentProps) {
-  const { org, animals } = loaderData;
+  const { org, animals, tracking } = loaderData;
   const wl = actionData as { waitlist?: boolean; waitlistError?: string } | undefined;
   return (
     <div>
+      <TrackingTags tracking={tracking} />
       <header className="bg-meadow text-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 text-center">
           <BirdDoodle className="w-16 h-16 mx-auto text-white/80" />
