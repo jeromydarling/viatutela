@@ -1,5 +1,5 @@
 /**
- * Via Tutela — Cloudflare Worker configuration.
+ * Tutela — Cloudflare Worker configuration.
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
@@ -27,9 +27,9 @@
 		 * onboarded in Cloudflare Email Service (dash -> Email -> Sending).
 		 * Until the domain is verified, sends fail softly and are logged.
 		 */
-		"EMAIL_FROM": "Via Tutela <no-reply@viatutela.app>",
+		"EMAIL_FROM": "Tutela <no-reply@viatutela.com>",
 		/** Public origin used in emails sent outside a request (cron digests). */
-		"APP_ORIGIN": "https://viatutela.app"
+		"APP_ORIGIN": "https://viatutela.com"
 	},
 	/**
 	 * Cloudflare Email Service — app email (application confirmations,
