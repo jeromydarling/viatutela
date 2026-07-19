@@ -10,7 +10,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { validateSections, SECTION_TYPES, type Section } from "./site-sections";
 
-const MODEL = "claude-opus-4-8";
+export const MODEL = "claude-opus-4-8";
 
 export function getAnthropic(env: Env): Anthropic | null {
   const key = (env as unknown as { ANTHROPIC_API_KEY?: string }).ANTHROPIC_API_KEY;

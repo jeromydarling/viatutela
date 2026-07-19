@@ -57,6 +57,12 @@ export default function AdoptPortal({ loaderData }: Route.ComponentProps) {
           <p className="mt-3 text-lg text-white/90 max-w-2xl mx-auto">
             {org.about ?? "Every one of these friends is ready to meet you."}
           </p>
+          <Link
+            to={`/adopt/${org.slug}/match`}
+            className="mt-5 inline-block rounded-full bg-sunflower text-charcoal px-6 py-2.5 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
+          >
+            💛 Take the 60-second match quiz
+          </Link>
           <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm font-semibold text-white/90">
             {org.email && <span>{org.email}</span>}
             {org.phone && <span>{org.phone}</span>}

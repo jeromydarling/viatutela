@@ -49,6 +49,20 @@ versus what is actually built and deployed. Updated 2026-07-19.
 | Custom domains (CNAME + auto-SSL via Cloudflare for SaaS) | 🟡 | Save/normalize/DNS-check/self-activation all built; runs in **manual mode** until Cloudflare for SaaS is enabled and `CF_API_TOKEN` (zone-scoped) + `CF_ZONE_ID` + `CUSTOM_DOMAIN_TARGET` are set |
 | Tenant isolation on custom domains (staff app/login/API blocked) | ✅ | Only the public site surface is served on shelter hosts |
 
+## AI for shelters (work smarter, match better)
+
+All five run server-side on the Anthropic API, are audit-logged, never auto-apply output
+(staff click to accept), and degrade to a friendly note until the **`ANTHROPIC_API_KEY`
+Worker secret** is set — that single secret activates everything below plus the AI site designer.
+
+| Feature | Status | Notes |
+|---|---|---|
+| Adopter–animal match quiz (public, `/adopt/:slug/match`) | 🟡 | Six questions → top matches from the shelter's real available animals, with reasons. Honeypot + per-IP (5/hr) and per-org (60/hr) rate limits |
+| Application triage (score, green/red flags, better-fit suggestions, draft reply) | 🟡 | One click per application in the inbox; cached on the application; flags drawn only from what applicants actually wrote |
+| Bio writer (adoption bio + Petfinder blurb + social post) | 🟡 | On the animal profile; staff type two facts, apply the bio only if they like it |
+| Shelter insights (long-stay alerts, trends, cheap next steps) | 🟡 | On Reports; reads 12-month stats + longest-waiting friends; cached 7 days in KV, refresh anytime |
+| Handoff summaries (warm adopter paragraph + clinical vet brief) | 🟡 | On the animal profile; built from real medical records and foster notes only |
+
 ## Adoption pipeline
 
 | Feature | Status | Notes |
