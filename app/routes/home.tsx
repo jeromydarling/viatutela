@@ -5,11 +5,17 @@ import { SavingsCalculator } from "../components/savings-calculator";
 import { BirdDoodle, HeartPawDoodle } from "../components/doodles";
 import {
   AnimalScreen,
+  BrandScreen,
   DonationScreen,
   FosterScreen,
   ImporterScreen,
+  MarketingScreen,
+  MatchScreen,
   PortalScreen,
   ReportsScreen,
+  ShareScreen,
+  TriageScreen,
+  WebsiteScreen,
 } from "../components/feature-screens";
 
 export function meta(_: Route.MetaArgs) {
@@ -46,7 +52,7 @@ const PAIN_RELIEF: { pain: string; relief: string }[] = [
   },
   {
     pain: "“We pay for five different tools.”",
-    relief: "One platform: animals, adoptions, fosters, donors, website.",
+    relief: "One platform: animals, adoptions, fosters, donors, website, brand, marketing.",
   },
 ];
 
@@ -56,6 +62,31 @@ const FEATURES: {
   screen: React.ComponentType;
   link?: { label: string; to: string };
 }[] = [
+  {
+    title: "A real website, designed in one conversation",
+    body: "Answer five questions and the AI designer drafts your whole site — home, about, adopt, donate — as drafts you approve, never auto-published. Build with friendly blocks, publish on your own domain with automatic SSL, and your sitemap and Google structured data come along for free.",
+    screen: WebsiteScreen,
+  },
+  {
+    title: "A matchmaker that knows your actual animals",
+    body: "Adopters answer six quick questions and the AI ranks your real, currently-available friends for their home — energy, kids, other pets, experience. Bonded pairs stay together. Fewer mismatches, fewer returns, more forever homes.",
+    screen: MatchScreen,
+  },
+  {
+    title: "An inbox that triages itself",
+    body: "Every application gets a fit score, green and red flags drawn only from what the applicant actually wrote, better-fit suggestions, and a warm draft reply. AI ranks and flags — your people always make the call.",
+    screen: TriageScreen,
+  },
+  {
+    title: "Your brand, in a box",
+    body: "Palette, typography, a typeset wordmark that never breaks, your tagline, your voice — defined once and applied to your website, emails, flyers, and a downloadable social kit any volunteer can grab. No designer needed; three answers and the AI proposes the whole identity.",
+    screen: BrandScreen,
+  },
+  {
+    title: "Marketing that drafts itself",
+    body: "New arrival? A launch kit appears. Adoption day? A success story is waiting. Eleven channels — Facebook to press releases to Google Ad Grants — drafted in your voice, on a calendar, sent to your supporter list with polite one-click unsubscribe. Nothing ever posts without you.",
+    screen: MarketingScreen,
+  },
   {
     title: "Move in free — relationships and all",
     body: "Upload the messy exports from your old system. Adopters stay linked to their animals, medical history follows every friend, and bonded pairs stay bonded. Flagged rows land in a tidy report instead of the void.",
@@ -97,6 +128,9 @@ const COMPARE_ROWS: [string, string, string, string, string, string][] = [
   ["Free relationship-preserving importer", "Yes", "No", "No", "No", "No"],
   ["Mobile kennel QR lookup", "Yes", "Limited", "Limited", "No", "No"],
   ["Adoption portal + Petfinder/Adopt-a-Pet sync", "Yes", "Yes", "Yes", "Yes", "Partial"],
+  ["Share bar, flyers, videos, embed on every animal", "Yes", "Limited", "Limited", "Limited", "No"],
+  ["Website builder + custom domain + auto SSL", "Yes", "No", "No", "Basic", "No"],
+  ["AI matchmaker, triage, bios & marketing copilot", "Yes", "No", "No", "No", "No"],
   ["Foster + volunteer coordination", "Yes", "Add-on", "Limited", "Limited", "Yes (focus)"],
   ["Donor CRM + fundraising", "Yes", "Add-on", "Limited", "Add-on", "Limited"],
   ["Reliable payments (deposits/refunds)", "Yes", "Yes", "Yes", "Basic", "Basic"],
@@ -108,7 +142,7 @@ const PRICING = [
     name: "Little Nest",
     price: "$0",
     tagline: "For solo fosters and tiny rescues — free forever, with our whole heart.",
-    features: ["Up to 25 animals", "Free importer", "Adoption portal", "Kennel QR cards", "One-click export"],
+    features: ["Up to 25 animals", "Free importer", "Adoption pages with share superpowers", "Website builder", "Kennel QR cards", "One-click export"],
     cta: "Start free",
     highlight: false,
   },
@@ -116,7 +150,7 @@ const PRICING = [
     name: "Rescue",
     price: "$39",
     tagline: "For growing rescues who need every hand coordinated.",
-    features: ["Unlimited animals", "Foster + volunteer tools", "Donor CRM", "Email + SMS", "Everything in Little Nest"],
+    features: ["Unlimited animals", "Foster + volunteer tools", "Donor CRM + supporter email", "AI matchmaker, triage & bio writer", "Custom domain + auto SSL", "Everything in Little Nest"],
     cta: "Move in free",
     highlight: true,
   },
@@ -124,7 +158,7 @@ const PRICING = [
     name: "Shelter Pro",
     price: "$79",
     tagline: "For shelters with a lobby, a van, and a waiting list.",
-    features: ["Multi-location", "Petfinder / Adopt-a-Pet sync", "Fundraising campaigns", "Reports & analytics", "Everything in Rescue"],
+    features: ["Multi-location", "Brand + Marketing studios", "AI site designer & insights", "Petfinder sync + fundraising", "Reports & analytics", "Everything in Rescue"],
     cta: "Move in free",
     highlight: false,
   },
@@ -185,6 +219,42 @@ export default function Home() {
               height={512}
               className="absolute -bottom-8 -left-6 w-24 h-24 rounded-full shadow-soft -rotate-6 vt-float bg-cream"
             />
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Spotlight: the adoption page ---------- */}
+      <section className="bg-meadow py-16 overflow-hidden">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 grid md:grid-cols-2 gap-10 items-center">
+          <div className="max-w-sm w-full mx-auto md:order-2 md:-rotate-1">
+            <ShareScreen />
+          </div>
+          <div className="text-white md:order-1">
+            <p className="font-display font-semibold text-sunflower uppercase tracking-wide text-sm">
+              The heart of it all
+            </p>
+            <h2 className="mt-2 text-3xl sm:text-5xl font-display font-semibold leading-tight">
+              Every animal gets the internet's best adoption page.
+            </h2>
+            <p className="mt-4 text-lg text-white/90 leading-relaxed">
+              Photos <em>and videos</em>. A share bar with every channel your volunteers already use —
+              Facebook, Nextdoor, WhatsApp, texts, QR codes. A print-ready flyer in your brand. An embed
+              widget for the vet's website. A share kit anyone can download. Links that unfurl with the
+              animal's photo in every group chat.
+            </p>
+            <ul className="mt-5 space-y-2 text-white/95 font-semibold">
+              {[
+                "One-tap sharing to 10+ places — most adoptions start with a friend's repost",
+                "🖨️ Print a branded flyer → Save as PDF in ten seconds",
+                "🎬 30-second videos that play right on the page",
+                "💛 A 6-question AI match quiz that points adopters to the right friend",
+              ].map((li) => (
+                <li key={li} className="flex gap-2 items-start">
+                  <span aria-hidden>✓</span>
+                  {li}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
