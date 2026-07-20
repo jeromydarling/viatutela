@@ -99,7 +99,7 @@ export function SavingsCalculator() {
         </div>
         <p className="text-sm text-charcoal-soft">
           {result.plan.key === "starter"
-            ? `At your volume, Starter is the cheapest way in — and if you ever pass ~${(PLANS.rescue.monthlyCents - PLANS.starter.monthlyCents) / PLANS.starter.perAdoptionCents} adoptions a month, the flat $39 tier takes over automatically in this math.`
+            ? `At your volume, Starter is the cheapest way in — and per-adoption fees cap at $${(PLANS.rescue.monthlyCents - PLANS.starter.monthlyCents) / 100}/month, so a busy month can never cost more than the flat tier.`
             : "At your volume the flat tier wins — unlimited adoptions, one predictable bill."}
         </p>
       </div>

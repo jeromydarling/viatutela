@@ -145,7 +145,7 @@ function marketingSeoFile(url: URL): Response | null {
 
 > The all-in-one platform for animal shelters, rescues, and fosters: animal management, adoption pages and applications, foster tracking, donor CRM with online giving, a website builder with custom domains, marketing tools, integrations (webhooks, read API, official Zapier app, calendar feeds), Adopter Radar (public adoption-intent posts surfaced for human replies), per-animal press kits, and AI assistance (matchmaking, application triage, bio writing, photo enhancement, grant drafting). Warm by design — animals are "friends" here.
 
-Pricing: Starter is $9/month plus $1 per adoption. Rescue is $39/month flat. Shelter Pro is $79/month flat. Online giving carries a transparent 2% platform fee that donors are asked to cover. The migration importer is free and needs no account.
+Pricing: Starter is $9/month plus $1 per adoption (usage capped at $30/month — never more than the flat tier). Rescue is $39/month flat. Shelter Pro is $79/month flat. Online giving carries a transparent 2% platform fee that donors are asked to cover. The migration importer is free and needs no account.
 
 ## Pages
 

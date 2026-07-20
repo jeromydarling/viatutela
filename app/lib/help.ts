@@ -625,7 +625,7 @@ export const HELP: HelpArticle[] = [
     summary: "What each tier costs, what the $1/adoption means, and the online-giving 2%.",
     blocks: [
       {
-        p: "Starter is $9/month plus $1 per adoption recorded — tiny at the start, and the math flips you to flat pricing as you grow. Rescue is $39/month flat. Shelter Pro is $79/month flat. Every feature is on every plan; tiers differ by scale, not by held-back features.",
+        p: "Starter is $9/month plus $1 per adoption recorded, and the per-adoption fees cap at $30 a month — a busy month can never cost you more than the flat Rescue tier would have. Rescue is $39/month flat. Shelter Pro is $79/month flat. Every feature is on every plan; tiers differ by scale, not by held-back features. (And yes — marking a friend adopted always records the adoption, however you do it: it's what powers the check-ins, the stats, and the celebration.)",
       },
       {
         p: "Online giving, if you use it, carries a 2% platform fee that donors are asked to cover at checkout (clearly labeled, and most do). The importer is free forever, account or not. No setup fees, no export fees, no surprise line items — the [pricing section](/#pricing) and savings calculator show the full math.",

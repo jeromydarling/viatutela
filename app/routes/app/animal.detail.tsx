@@ -119,6 +119,41 @@ export async function action({ context, request, params }: Route.ActionArgs) {
         animal.id, user.org_id,
       )
       .run();
+
+    // Flipping the status dropdown to "adopted" is the same milestone as
+    // the Record Adoption button — so it gets the same record and the
+    // same celebrations. The adopter can be attached to the record later.
+    if (str("status") === "adopted" && animal.status !== "adopted") {
+      const existing = await env.DB.prepare(
+        `SELECT id FROM adoptions WHERE animal_id = ? AND org_id = ?`,
+      )
+        .bind(animal.id, user.org_id)
+        .first();
+      if (!existing) {
+        const adoptionId = newId("ad");
+        await env.DB.batch([
+          env.DB.prepare(
+            `INSERT INTO adoptions (id, org_id, animal_id, contact_id, date, status) VALUES (?, ?, ?, NULL, date('now'), 'completed')`,
+          ).bind(adoptionId, user.org_id, animal.id),
+          env.DB.prepare(
+            `UPDATE foster_assignments SET active = 0, end_date = date('now') WHERE animal_id = ? AND active = 1`,
+          ).bind(animal.id),
+        ]);
+        ctx.waitUntil(autoAdoption(env, user.org_id, String(animal.id)));
+        ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
+        ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
+        ctx.waitUntil(
+          emitEvent(env, ctx, user.org_id, "adoption.created", {
+            id: adoptionId,
+            animal_id: animal.id,
+            animal_name: animal.name,
+            contact_id: null,
+            date: new Date().toISOString().slice(0, 10),
+          }),
+        );
+        return { ok: "Saved — and the adoption is recorded! 🏡 Attach the adopter from the Adoption section whenever you're ready." };
+      }
+    }
     return { ok: "Saved." };
   }
 
