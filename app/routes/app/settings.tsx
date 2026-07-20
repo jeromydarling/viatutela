@@ -44,6 +44,21 @@ export async function action({ context, request }: Route.ActionArgs) {
   const intent = String(f.get("intent") ?? "org");
   const str = (k: string) => String(f.get(k) ?? "").trim() || null;
 
+  if (intent === "email-self-test") {
+    const { sendAppEmailDetailed } = await import("../../../workers/lib/email");
+    const result = await sendAppEmailDetailed(env, {
+      to: user.email,
+      subject: "Tutela email test 🐾",
+      heading: "Email delivery works!",
+      paragraphs: [
+        "This is the test email you asked for from Settings. If you're reading it, notifications, application confirmations, and adoption alerts are all flowing.",
+      ],
+    });
+    return result.ok
+      ? { ok: `Handed to the mail service — check ${user.email} (and spam, the first time).` }
+      : { error: `The mail service said no: "${result.error}" — this exact message is the clue.` };
+  }
+
   if (intent === "add-location") {
     const name = str("location_name");
     if (!name) return { error: "The location needs a name." };
@@ -279,6 +294,20 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
             </span>
           </p>
         </div>
+      </section>
+
+      <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">
+        <h2 className="font-display font-semibold text-lg">Email delivery</h2>
+        <p className="text-sm text-charcoal-soft">
+          Application confirmations, adoption alerts, and receipts all ride on email. One click checks
+          the whole pipe and tells you exactly what's wrong if something is.
+        </p>
+        <Form method="post">
+          <input type="hidden" name="intent" value="email-self-test" />
+          <button className="rounded-full bg-cream px-5 py-2.5 text-sm font-display font-semibold hover:bg-sunflower-soft">
+            📮 Send me a test email
+          </button>
+        </Form>
       </section>
 
       <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">

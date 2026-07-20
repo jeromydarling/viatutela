@@ -74,6 +74,28 @@ function renderText(mail: AppEmail): string {
   return lines.join("\n");
 }
 
+/** Diagnostic send — same pipeline, but the error comes back instead of
+ * vanishing into logs. Powers the Settings "send me a test email" button. */
+export async function sendAppEmailDetailed(env: Env, mail: AppEmail): Promise<{ ok: boolean; error?: string }> {
+  const binding = (env as unknown as { EMAIL?: EmailBinding }).EMAIL;
+  const from = (env as unknown as { EMAIL_FROM?: string }).EMAIL_FROM;
+  if (!binding) return { ok: false, error: "No send_email binding on this deployment." };
+  if (!from) return { ok: false, error: "EMAIL_FROM isn't configured." };
+  try {
+    await binding.send({
+      to: mail.to,
+      from,
+      subject: mail.subject,
+      html: renderHtml(mail),
+      text: renderText(mail),
+      ...(mail.replyTo ? { replyTo: mail.replyTo } : {}),
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 /** Fire-and-forget send. Returns true if handed to the mail service. */
 export async function sendAppEmail(env: Env, mail: AppEmail): Promise<boolean> {
   const binding = (env as unknown as { EMAIL?: EmailBinding }).EMAIL;
