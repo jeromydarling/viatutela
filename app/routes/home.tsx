@@ -220,7 +220,6 @@ const FEATURE_TABS: { key: string; label: string; features: Feature[] }[] = [
 
 const COMPARE_ROWS: [string, string, string, string, string, string][] = [
   ["Pricing", "Starter $9/mo + $1/adoption; flat $39–$79 tiers above", "$2 / adoption", "“Free”*", "$75–$100/yr modular", "$99–$149/mo"],
-  ["Takes a cut of your fees/donations", "No", "No", "Indirect (insurance/chip)", "No", "No"],
   ["Data strings attached", "None", "None", "Microchip + insurance push", "None", "None"],
   ["One-click full data export", "Yes", "Partial", "Limited", "Partial", "Partial"],
   ["Free relationship-preserving importer", "Yes", "No", "No", "No", "No"],
@@ -674,7 +673,8 @@ export default function Home() {
             Simple, flat, generous.
           </h2>
           <p className="text-center text-charcoal-soft mt-2 text-lg">
-            Tiny at the start, flat as you grow. No cut of donations. No strings on your data.
+            Tiny at the start, flat as you grow. Online giving adds a transparent 2% that donors
+            usually cover. No strings on your data.
           </p>
           <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {PRICING.map((tier) => (
