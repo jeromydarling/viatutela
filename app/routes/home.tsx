@@ -253,7 +253,7 @@ const PRICING = [
     name: "Starter",
     price: "$9",
     priceNote: "+ $1 per adoption",
-    tagline: "Start for next to nothing: $9 a month plus $1 for every animal you send home.",
+    tagline: "Start for next to nothing: $9 a month plus $1 for every animal you send home — capped at $30, so you never pay more than the flat tier.",
     features: ["Free importer", "Animal management", "Adoption portal", "Basic donor CRM", "Mobile kennel QR", "Up to 2 staff seats"],
     cta: "Get started",
     highlight: false,

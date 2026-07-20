@@ -18,6 +18,19 @@ export const PLANS: Record<string, Plan> = {
   pro: { key: "pro", label: "Shelter Pro", monthlyCents: 7900, perAdoptionCents: 0, seats: 25 },
 };
 
+/**
+ * Starter's per-adoption fees stop accruing once they'd exceed the gap
+ * to the flat Rescue tier — "you'll never pay more than flat pricing."
+ * The cap is derived, not hardcoded: $39 − $9 = $30 = 30 adoptions.
+ */
+export const STARTER_USAGE_CAP_CENTS = PLANS.rescue.monthlyCents - PLANS.starter.monthlyCents;
+
+/** The charge for the next adoption given what's already billed this month. */
+export function nextUsageChargeCents(billedThisMonthCents: number): number {
+  const remaining = STARTER_USAGE_CAP_CENTS - billedThisMonthCents;
+  return Math.max(0, Math.min(PLANS.starter.perAdoptionCents, remaining));
+}
+
 export function seatLimit(planKey: string): number {
   return (PLANS[planKey] ?? PLANS.starter).seats;
 }
