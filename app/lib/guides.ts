@@ -771,7 +771,7 @@ GUIDES.push(
       },
       { h2: "Understand the funding model first" },
       {
-        p: "Petstablished's low-cost model is built around its payment processing and adopter-facing services rather than subscription fees (per their published materials — verify current terms directly, as models evolve). As with every low-cost platform, the practical questions are: what percentage rides on your donations and fees, what does the adopter experience carry, and what happens to your workflows if the model changes? Tutela's model is the boring inverse: [transparent subscription pricing](/#pricing) ($9/month + $1 per adoption to start), no cut of donations, incentives pointed only at you.",
+        p: "Petstablished's low-cost model is built around its payment processing and adopter-facing services rather than subscription fees (per their published materials — verify current terms directly, as models evolve). As with every low-cost platform, the practical questions are: what percentage rides on your donations and fees, what does the adopter experience carry, and what happens to your workflows if the model changes? Tutela's model is the boring inverse: [transparent subscription pricing](/#pricing) ($9/month + $1 per adoption to start), plus a disclosed 2% on optional online giving that donors are asked to cover — every fee on the label, incentives pointed only at you.",
       },
       { h2: "Where Tutela is meaningfully different" },
       {
