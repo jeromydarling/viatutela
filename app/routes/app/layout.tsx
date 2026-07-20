@@ -43,6 +43,7 @@ const NAV = [
   { to: "/app/radar", label: "Radar" },
   { to: "/app/reports", label: "Reports" },
   { to: "/app/settings", label: "Settings" },
+  { to: "/app/help", label: "Help" },
 ];
 
 export default function AppLayout({ loaderData }: Route.ComponentProps) {
