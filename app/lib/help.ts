@@ -485,6 +485,7 @@ export const HELP: HelpArticle[] = [
           "Embed — a small widget any partner site (your vet!) can paste.",
           "Share kit — a zip of photos + ready-to-paste text anyone can download from the profile.",
           "📰 Press kit — press release, fact sheet, and photos per friend; email it to your local paper or TV station's pet-of-the-week segment. They are starved for exactly this.",
+          "📖 Booklet — a print-ready PDF keepsake (cover, story, particulars, QR back page). Email it to adopters or print it as a going-home gift.",
           "Petfinder-format feed — a live CSV link (in Settings) to point Petfinder/Adopt-a-Pet imports at.",
         ],
       },

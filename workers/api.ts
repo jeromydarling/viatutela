@@ -738,6 +738,82 @@ Photos: print-quality images are included in this kit and may be used with credi
   });
 });
 
+// ---------- the friend booklet (print-ready PDF keepsake) ----------
+
+api.get("/booklet/:slug/:file", async (c) => {
+  const animalId = c.req.param("file").replace(/\.pdf$/, "");
+  const org = await c.env.DB.prepare(
+    `SELECT id, name, slug, email, phone, address, website FROM orgs WHERE slug = ?`,
+  )
+    .bind(c.req.param("slug"))
+    .first<Record<string, string | null>>();
+  if (!org) return c.json({ error: "Not found" }, 404);
+  const animal = await c.env.DB.prepare(
+    `SELECT id, name, species, breed, sex, dob, description, bonded_group_id, microchip, intake_date
+     FROM animals WHERE id = ? AND org_id = ? AND is_public = 1`,
+  )
+    .bind(animalId, org.id)
+    .first<Record<string, unknown>>();
+  if (!animal) return c.json({ error: "Not found" }, 404);
+
+  const [photos, medical] = await Promise.all([
+    c.env.DB.prepare(
+      `SELECT r2_key FROM animal_photos WHERE animal_id = ? AND kind != 'video' ORDER BY created_at LIMIT 3`,
+    ).bind(animal.id).all<{ r2_key: string }>(),
+    c.env.DB.prepare(
+      `SELECT date, type, description FROM medical_records WHERE animal_id = ? ORDER BY date DESC LIMIT 10`,
+    ).bind(animal.id).all<{ date: string | null; type: string | null; description: string | null }>(),
+  ]);
+
+  // photos live as webp; pdf-lib wants jpeg — the Images binding converts
+  const photoJpegs: Uint8Array[] = [];
+  for (const p of photos.results) {
+    try {
+      const obj = await c.env.MEDIA.get(p.r2_key);
+      if (!obj) continue;
+      const jpeg = await c.env.IMAGES.input(obj.body)
+        .transform({ width: 1000 })
+        .output({ format: "image/jpeg", quality: 85 });
+      photoJpegs.push(new Uint8Array(await jpeg.response().arrayBuffer()));
+    } catch {
+      // skip unconvertible photos
+    }
+  }
+
+  const { buildBooklet } = await import("./lib/booklet");
+  const pdf = await buildBooklet({
+    animal: {
+      name: String(animal.name),
+      species: animal.species ? String(animal.species) : null,
+      breed: animal.breed ? String(animal.breed) : null,
+      sex: animal.sex ? String(animal.sex) : null,
+      dob: animal.dob ? String(animal.dob) : null,
+      description: animal.description ? String(animal.description) : null,
+      bonded: Boolean(animal.bonded_group_id),
+      microchip: animal.microchip ? String(animal.microchip) : null,
+      intake_date: animal.intake_date ? String(animal.intake_date) : null,
+    },
+    org: {
+      name: String(org.name),
+      email: org.email,
+      phone: org.phone,
+      address: org.address,
+      website: org.website,
+    },
+    medical: medical.results,
+    photoJpegs,
+    pageUrl: `${new URL(c.req.url).origin}/adopt/${org.slug}/${animal.id}`,
+  });
+
+  return new Response(pdf.slice().buffer as ArrayBuffer, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${String(animal.name).replace(/[^\w-]/g, "_")}-booklet.pdf"`,
+      "Cache-Control": "public, max-age=300",
+    },
+  });
+});
+
 // ---------- Petfinder-format public feed ----------
 
 api.get("/feeds/:slug/petfinder.csv", async (c) => {
