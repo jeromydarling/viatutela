@@ -27,6 +27,7 @@ export default [
 
   // shelter websites (block CMS)
   route("s/:slug/:pageSlug?", "routes/site.page.tsx"),
+  route("donate/:slug", "routes/donate.tsx"),
 
   // staff app
   route("app", "routes/app/layout.tsx", [

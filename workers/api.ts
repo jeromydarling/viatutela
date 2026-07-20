@@ -746,6 +746,134 @@ async function v1Auth(c: any): Promise<ApiKeyAuth | Response> {
   return key;
 }
 
+// ---------- Stripe webhooks (donations land here, incl. from connected accounts) ----------
+
+api.post("/stripe/webhook", async (c) => {
+  const { verifyStripeSignature } = await import("./lib/stripe");
+  const payload = await c.req.text();
+  const valid = await verifyStripeSignature(c.env, payload, c.req.header("stripe-signature") ?? null);
+  if (!valid) return c.json({ error: "bad signature" }, 400);
+
+  let event: { type?: string; account?: string; data?: { object?: Record<string, any> } };
+  try {
+    event = JSON.parse(payload);
+  } catch {
+    return c.json({ error: "bad payload" }, 400);
+  }
+  const obj = event.data?.object ?? {};
+
+  try {
+    if (event.type === "checkout.session.completed" && obj.mode === "payment") {
+      await recordStripeDonation(c, {
+        orgId: String(obj.metadata?.org_id ?? ""),
+        sessionId: String(obj.id ?? ""),
+        totalCents: Number(obj.amount_total ?? 0),
+        coverCents: Number(obj.metadata?.cover_cents ?? 0),
+        email: obj.customer_details?.email ? String(obj.customer_details.email) : null,
+        name: obj.customer_details?.name ? String(obj.customer_details.name) : null,
+        recurring: false,
+      });
+    } else if (event.type === "invoice.paid") {
+      const meta =
+        obj.subscription_details?.metadata ??
+        obj.parent?.subscription_details?.metadata ??
+        obj.lines?.data?.[0]?.metadata ??
+        {};
+      await recordStripeDonation(c, {
+        orgId: String(meta.org_id ?? ""),
+        sessionId: String(obj.id ?? ""), // invoice id — one donation row per billing cycle
+        totalCents: Number(obj.amount_paid ?? 0),
+        coverCents: Number(meta.cover_cents ?? 0),
+        email: obj.customer_email ? String(obj.customer_email) : null,
+        name: obj.customer_name ? String(obj.customer_name) : null,
+        recurring: true,
+      });
+    } else if (event.type === "account.updated" && obj.id) {
+      await c.env.DB.prepare(`UPDATE orgs SET stripe_charges_enabled = ? WHERE stripe_account_id = ?`)
+        .bind(obj.charges_enabled ? 1 : 0, String(obj.id))
+        .run();
+    }
+  } catch (err) {
+    // Log and 200 anyway: Stripe retries on non-2xx, and a poison event
+    // must not block the queue. Idempotency comes from stripe_session_id.
+    console.log(`[stripe webhook] ${event.type}: ${err instanceof Error ? err.message : err}`);
+  }
+  return c.json({ received: true });
+});
+
+async function recordStripeDonation(
+  c: { env: Env; executionCtx: unknown },
+  d: {
+    orgId: string;
+    sessionId: string;
+    totalCents: number;
+    coverCents: number;
+    email: string | null;
+    name: string | null;
+    recurring: boolean;
+  },
+): Promise<void> {
+  if (!d.orgId || !d.sessionId || d.totalCents <= 0) return;
+  const org = await c.env.DB.prepare(`SELECT id FROM orgs WHERE id = ?`).bind(d.orgId).first();
+  if (!org) return;
+  const existing = await c.env.DB.prepare(`SELECT id FROM donations WHERE stripe_session_id = ?`)
+    .bind(d.sessionId)
+    .first();
+  if (existing) return; // Stripe retried delivery — already recorded
+
+  // the gift is what the shelter keeps conceptually; fee cover is tracked apart
+  const baseCents = Math.max(d.totalCents - d.coverCents, 0);
+  const amount = baseCents / 100;
+  const feeCovered = d.coverCents > 0 ? d.coverCents / 100 : null;
+
+  let contactId: string | null = null;
+  if (d.email) {
+    const email = d.email.trim().toLowerCase();
+    const existingContact = await c.env.DB.prepare(
+      `SELECT id, roles FROM contacts WHERE org_id = ? AND email = ?`,
+    )
+      .bind(d.orgId, email)
+      .first<{ id: string; roles: string | null }>();
+    if (existingContact) {
+      contactId = existingContact.id;
+      const roles = new Set((existingContact.roles ?? "").split(",").filter(Boolean));
+      roles.add("donor");
+      await c.env.DB.prepare(`UPDATE contacts SET roles = ? WHERE id = ?`)
+        .bind([...roles].join(","), contactId)
+        .run();
+    } else {
+      contactId = newId("ct");
+      await c.env.DB.prepare(
+        `INSERT INTO contacts (id, org_id, name, email, roles) VALUES (?, ?, ?, ?, 'donor')`,
+      )
+        .bind(contactId, d.orgId, d.name?.slice(0, 120) || email.split("@")[0], email)
+        .run();
+    }
+  }
+
+  const id = newId("dn");
+  await c.env.DB.prepare(
+    `INSERT INTO donations (id, org_id, contact_id, donor_name, email, amount, method, note, date, stripe_session_id, recurring, fee_covered)
+     VALUES (?, ?, ?, ?, ?, ?, 'online', ?, date('now'), ?, ?, ?)`,
+  )
+    .bind(
+      id, d.orgId, contactId, contactId ? null : d.name?.slice(0, 120) ?? null,
+      d.email, amount, d.recurring ? "Monthly gift via Stripe" : "One-time gift via Stripe",
+      d.sessionId, d.recurring ? 1 : 0, feeCovered,
+    )
+    .run();
+
+  await emitEvent(c.env, c.executionCtx as unknown as ExecutionContext, d.orgId, "donation.created", {
+    id,
+    contact_id: contactId,
+    donor_name: d.name,
+    email: d.email,
+    amount,
+    method: "online",
+    date: new Date().toISOString().slice(0, 10),
+  });
+}
+
 // -- auth test / connection label (Zapier calls this when a key is connected)
 api.get("/v1/me", async (c) => {
   const key = await v1Auth(c);

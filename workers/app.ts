@@ -32,6 +32,10 @@ function anonCacheTtl(request: Request, url: URL): number {
   if (p.startsWith("/adopt/") || p.startsWith("/s/") || p.startsWith("/a/") || p.startsWith("/api/feeds/")) {
     return 60;
   }
+  // donate pages: cache the form briefly, but never the post-checkout thanks view
+  if (p.startsWith("/donate/") && !url.search.includes("thanks")) {
+    return 60;
+  }
   return 0;
 }
 
