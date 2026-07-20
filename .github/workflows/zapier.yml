@@ -36,12 +36,10 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: zapier
     env:
       ZAPIER_DEPLOY_KEY: ${{ secrets.ZAPIER_DEPLOY_KEY }}
     steps:
+      # no working-directory here: this step runs before checkout
       - name: Explain skip when no deploy key
         if: env.ZAPIER_DEPLOY_KEY == ''
         run: |
@@ -58,9 +56,11 @@ jobs:
           cache-dependency-path: zapier/package-lock.json
       - run: npm ci
         if: env.ZAPIER_DEPLOY_KEY != ''
+        working-directory: zapier
 
       - name: Register app (first run only)
         if: env.ZAPIER_DEPLOY_KEY != ''
+        working-directory: zapier
         run: |
           if [ ! -f .zapierapprc ]; then
             npx zapier register "Tutela" \
@@ -77,10 +77,12 @@ jobs:
 
       - name: Push version
         if: env.ZAPIER_DEPLOY_KEY != ''
+        working-directory: zapier
         run: npx zapier push
 
       - name: Commit .zapierapprc back (first run only)
         if: env.ZAPIER_DEPLOY_KEY != ''
+        working-directory: zapier
         run: |
           if ! git ls-files --error-unmatch .zapierapprc >/dev/null 2>&1; then
             git config user.name "github-actions[bot]"
