@@ -29,7 +29,20 @@ npm test                       # schema/unit tests only
 BASE_URL=http://localhost:5173 TUTELA_API_KEY=vt_live_… npm test
 ```
 
-## Publish (needs the Tutela Zapier account)
+## Publish — via CI (preferred)
+
+`.github/workflows/zapier.yml` validates this app on every change and pushes it
+to the Zapier platform from `main`. One-time setup:
+
+1. Get a deploy key from your Zapier developer account — either
+   [developer.zapier.com](https://developer.zapier.com) → account settings →
+   Deploy Keys, or run `zapier login` anywhere and copy the key from `~/.zapierrc`.
+2. Add it to this GitHub repo as an Actions secret named `ZAPIER_DEPLOY_KEY`.
+3. Re-run the "Zapier app" workflow (Actions tab → Run workflow). The first run
+   registers the app automatically and commits `.zapierapprc` (the app id — not
+   a secret) back to the repo; every later push of `zapier/**` uploads a new version.
+
+## Publish — manually (alternative)
 
 ```bash
 npm install -g zapier-platform-cli
@@ -40,7 +53,9 @@ zapier push                    # uploads this version
 zapier validate                # checks against Zapier's publishing rules
 ```
 
-Then in the [developer dashboard](https://developer.zapier.com):
+## After the first push
+
+In the [developer dashboard](https://developer.zapier.com):
 1. Test one Zap end-to-end with a real Tutela key (turn a Zap on → confirm the
    subscription appears in Settings → Integrations → Webhooks, fire an event, watch it run).
 2. Sharing → copy the **invite link** — that's the private beta. Anyone with the
