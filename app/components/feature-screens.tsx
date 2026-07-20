@@ -202,7 +202,7 @@ export function DonationScreen() {
       <div className="grid grid-cols-3 gap-1.5">
         <MiniStat n="$1,240" label="last 30 days" />
         <MiniStat n="$8,915" label="this year" />
-        <MiniStat n="$0" label="our cut, ever" />
+        <MiniStat n="14" label="monthly givers" />
       </div>
       <div className="mt-2 rounded-xl bg-white shadow-soft p-2">
         <div className="flex justify-between text-[8px] font-bold">
@@ -596,6 +596,59 @@ export function ReportsScreen() {
         <BirdDoodle className="w-3.5 h-3.5 text-meadow-deep" />
         every number is one more friend home
       </p>
+    </BrowserFrame>
+  );
+}
+
+export function RadarScreen() {
+  return (
+    <BrowserFrame url="viatutela.pet/app/radar" className="vt-float">
+      <div className="space-y-1.5">
+        {[
+          ["🦋", "@mia.bsky", "We're finally looking to adopt a senior dog in Denver — where do we start?"],
+          ["👽", "u/plantdad · r/Austin", "First-time cat owner, ready to adopt. Shelter recommendations?"],
+        ].map(([icon, who, text]) => (
+          <div key={who as string} className="rounded-xl bg-white shadow-soft p-2">
+            <div className="flex items-center gap-1 text-[7px] font-bold text-charcoal-soft">
+              <span>{icon}</span>
+              <span>{who}</span>
+              <span className="ml-auto text-meadow-deep">2h ago</span>
+            </div>
+            <p className="mt-0.5 text-[8px] leading-snug">{text}</p>
+          </div>
+        ))}
+        <div className="rounded-xl bg-meadow/10 p-2 text-[8px]">
+          ✨ <em>"Hi! We're a small rescue nearby with three gentle seniors…"</em>
+          <span className="block mt-0.5 text-[7px] font-semibold text-charcoal-soft">
+            you post it from your own account — never a bot
+          </span>
+        </div>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+export function IntegrationsScreen() {
+  return (
+    <BrowserFrame url="viatutela.pet/app/settings/integrations" className="vt-float">
+      <div className="space-y-1.5">
+        {[
+          ["⚡ New application", "→ Slack #adoptions", "ok"],
+          ["⚡ Donation recorded", "→ Google Sheets", "ok"],
+          ["⚡ Adoption completed", "→ Mailchimp", "ok"],
+        ].map(([from, to, status]) => (
+          <div key={from as string} className="rounded-xl bg-white shadow-soft px-2 py-1.5 flex items-center gap-1.5 text-[8px] font-semibold">
+            <span>{from}</span>
+            <span className="text-charcoal-soft">{to}</span>
+            <span className="ml-auto rounded-full bg-meadow/20 text-meadow-deep px-1.5 text-[7px]">{status}</span>
+          </div>
+        ))}
+        <div className="rounded-xl bg-white shadow-soft px-2 py-1.5 text-[8px] font-semibold flex items-center gap-1.5">
+          <span className="rounded bg-charcoal text-cream px-1 font-mono text-[7px]">vt_live_…</span>
+          <span className="text-charcoal-soft">API key · read-only</span>
+          <span className="ml-auto text-[7px] text-charcoal-soft">20 recipes →</span>
+        </div>
+      </div>
     </BrowserFrame>
   );
 }

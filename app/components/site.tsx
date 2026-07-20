@@ -15,7 +15,7 @@ export function Logo({ className = "w-9 h-9" }: { className?: string }) {
 
 const SECTIONS = [
   { href: "/#spotlight", label: "Adoption pages" },
-  { href: "/find", label: "Adopt" },
+  // { href: "/find", label: "Adopt" }, — restore when findLaunched() flips (17+ states)
   { href: "/#impact", label: "Impact" },
   { href: "/#features", label: "Features" },
   { href: "/#savings", label: "Savings" },

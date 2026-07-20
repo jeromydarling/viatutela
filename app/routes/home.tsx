@@ -12,12 +12,14 @@ import {
   FosterScreen,
   GrantScreen,
   ImporterScreen,
+  IntegrationsScreen,
   LifecycleScreen,
   MarketingScreen,
   MatchScreen,
   NetworkScreen,
   PaperworkScreen,
   PortalScreen,
+  RadarScreen,
   ReportsScreen,
   ShareScreen,
   TriageScreen,
@@ -174,8 +176,18 @@ const FEATURE_TABS: { key: string; label: string; features: Feature[] }[] = [
     features: [
       {
         title: "Generosity, honored properly",
-        body: "Record gifts, run campaigns with goals and progress bars, and send thank-you receipts automatically. We never take a cent of your donations.",
+        body: "Take one-time and monthly gifts on your own donate page, powered by Stripe — donors are asked to cover card costs and our transparent 2%, so gifts reach you whole. Campaigns, goals, progress bars, and thank-you receipts included.",
         screen: DonationScreen,
+      },
+      {
+        title: "Plays well with everything you already use",
+        body: "Five instant webhooks, a read API, an official Zapier app, and a library of twenty ready-made recipes: applications into Slack, donations into your bookkeeping, new arrivals onto your Google Business Profile. Paste an ID, never your password — and revoke anything in one click.",
+        screen: IntegrationsScreen,
+      },
+      {
+        title: "Adopter Radar 📡",
+        body: "Real people on Bluesky and Reddit saying \"we're ready to adopt,\" surfaced to your team every few hours with an AI-drafted warm hello. You reply as yourself, from your own account — Tutela never auto-posts or messages anyone. And when the local paper needs a pet of the week, every profile has a one-click press kit.",
+        screen: RadarScreen,
       },
       {
         title: "Grant applications that write themselves",
@@ -230,6 +242,8 @@ const COMPARE_ROWS: [string, string, string, string, string, string][] = [
   ["AI matchmaker, triage, bios & marketing copilot", "Yes", "No", "No", "No", "No"],
   ["Foster + volunteer coordination", "Yes", "Add-on", "Limited", "Limited", "Yes (focus)"],
   ["Donor CRM + fundraising", "Yes", "Add-on", "Limited", "Add-on", "Limited"],
+  ["Online giving pages (one-time + monthly)", "Yes — disclosed 2%, donors cover it", "Yes (2.6% + processing)", "Via 24Pet checkout", "PayPal only", "No"],
+  ["Open API + webhooks + Zapier", "Yes — 20-recipe library", "Limited", "No", "API only", "Limited"],
   ["Reliable payments (deposits/refunds)", "Yes", "Yes", "Yes", "Basic", "Basic"],
   ["All-in-one (no stitching tools)", "Yes", "Mostly", "Mostly", "No (modular)", "No"],
 ];
