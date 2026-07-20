@@ -1,0 +1,91 @@
+name: Zapier app
+
+# Validates the Zapier CLI app on every change; pushes a new version to the
+# Zapier developer platform from main when the ZAPIER_DEPLOY_KEY secret is set
+# (Settings → Secrets and variables → Actions). First-time registration is
+# handled automatically and the resulting .zapierapprc is committed back.
+
+on:
+  push:
+    paths:
+      - "zapier/**"
+      - ".github/workflows/zapier.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zapier
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: zapier/package-lock.json
+      - run: npm ci
+      - run: npx jest
+      - run: npx zapier validate --without-style
+
+  push:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zapier
+    env:
+      ZAPIER_DEPLOY_KEY: ${{ secrets.ZAPIER_DEPLOY_KEY }}
+    steps:
+      - name: Explain skip when no deploy key
+        if: env.ZAPIER_DEPLOY_KEY == ''
+        run: |
+          echo "::notice::ZAPIER_DEPLOY_KEY secret is not set — skipping push."
+          echo "::notice::Get a deploy key from developer.zapier.com (Settings → Deploy Keys, or ~/.zapierrc after 'zapier login'), then add it as a repo secret named ZAPIER_DEPLOY_KEY."
+
+      - uses: actions/checkout@v4
+        if: env.ZAPIER_DEPLOY_KEY != ''
+      - uses: actions/setup-node@v4
+        if: env.ZAPIER_DEPLOY_KEY != ''
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: zapier/package-lock.json
+      - run: npm ci
+        if: env.ZAPIER_DEPLOY_KEY != ''
+
+      - name: Register app (first run only)
+        if: env.ZAPIER_DEPLOY_KEY != ''
+        run: |
+          if [ ! -f .zapierapprc ]; then
+            npx zapier register "Tutela" \
+              --desc "Shelter software that gets animals home — instant triggers for applications, adoptions, donations, animals, and volunteer shifts." \
+              --url "https://viatutela.pet" \
+              --audience private \
+              --category crm \
+              --role employee \
+              --no-subscribe \
+              --yes
+          else
+            echo "App already registered ($(cat .zapierapprc))."
+          fi
+
+      - name: Push version
+        if: env.ZAPIER_DEPLOY_KEY != ''
+        run: npx zapier push
+
+      - name: Commit .zapierapprc back (first run only)
+        if: env.ZAPIER_DEPLOY_KEY != ''
+        run: |
+          if ! git ls-files --error-unmatch .zapierapprc >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .zapierapprc
+            git commit -m "Zapier CI: record registered app id (.zapierapprc)"
+            git push
+          fi
