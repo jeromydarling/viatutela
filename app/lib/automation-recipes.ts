@@ -236,6 +236,19 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
+    slug: "new-animal-gbp-post",
+    title: "Post new friends to your Google Business Profile",
+    category: "Marketing",
+    trigger: "animal.created",
+    apps: ["Google Business Profile"],
+    what: "People searching \"animal shelter near me\" on Google Maps see your newest arrivals automatically.",
+    steps: [
+      "Add a Zapier Filter: only continue when is_public is 1.",
+      "Action: Google Business Profile → Create Post, summary \"Meet {{name}}! {{breed}} looking for a home\" with your adoption page as the button link.",
+      "This is the highest-intent free real estate on the internet for a shelter — almost nobody automates it.",
+    ],
+  },
+  {
     slug: "new-animal-partner-alert",
     title: "Alert partner rescues about specific intakes",
     category: "Marketing",

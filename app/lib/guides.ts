@@ -864,8 +864,8 @@ GUIDES.push(
 
 GUIDES.push({
   slug: "shelter-automation-recipes",
-  title: "Zapier Automations for Animal Shelters: 19 Recipes",
-  h1: "Automate the busywork: 19 ready-made recipes for shelters",
+  title: "Zapier Automations for Animal Shelters: 20 Recipes",
+  h1: "Automate the busywork: 20 ready-made recipes for shelters",
   description:
     "Connect your shelter software to Slack, Google Sheets, Mailchimp, Trello, and calendars with Zapier or Make — 19 concrete automation recipes, no code required.",
   category: "Playbooks",
@@ -916,6 +916,7 @@ GUIDES.push({
     { h2: "Marketing and office recipes" },
     {
       list: [
+        "New animal → Google Business Profile post: 'animal shelter near me' searchers on Google Maps see your newest arrivals — the highest-intent free real estate a shelter has.",
         "New animal → Buffer draft: arrivals queue as social drafts while the intake photo is fresh. A human still picks the photo and presses go.",
         "New animal → Discord: your most engaged supporters hear first — they're your fastest shares.",
         "New animal → partner alert: filter on breed and email the husky rescue automatically.",

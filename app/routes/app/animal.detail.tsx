@@ -11,6 +11,7 @@ import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
 import { notifyWaitlist } from "../../../workers/lib/waitlist";
 import { emitEvent } from "../../../workers/lib/integrations";
+import { notifyAdoptAlerts } from "../../../workers/lib/adopt-alerts";
 import { autoNewAnimal } from "../../../workers/lib/marketing-auto";
 import { extractVetRecords, fileToVisionImage, type OcrRecord, type VisionImage } from "../../../workers/lib/ai-vision";
 import {
@@ -128,6 +129,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     if (next === 1 && animal.status === "available") {
       // going live counts as an arrival: waitlist alerts + launch kit
       ctx.waitUntil(notifyWaitlist(env, user.org_id, String(animal.id), new URL(request.url).origin));
+      ctx.waitUntil(notifyAdoptAlerts(env, user.org_id, String(animal.id), new URL(request.url).origin));
       ctx.waitUntil(autoNewAnimal(env, user.org_id, String(animal.id)));
     }
     return {
@@ -595,6 +597,15 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
             >
               Public page ↗
             </Link>
+          )}
+          {Boolean(animal.is_public) && (
+            <a
+              href={`/api/press-kit/${orgSlug}/${animal.id}.zip`}
+              title="Press release, fact sheet, and photos — ready to email your local paper or TV station's 'pet of the week' segment"
+              className="rounded-full border-2 border-terracotta px-4 py-2 text-sm font-display font-semibold text-terracotta-deep hover:bg-terracotta hover:text-white transition-colors"
+            >
+              📰 Press kit
+            </a>
           )}
           <Form method="post">
             <input type="hidden" name="intent" value="toggle-public" />
