@@ -607,6 +607,17 @@ export default function AnimalDetail({ loaderData, actionData }: Route.Component
               📰 Press kit
             </a>
           )}
+          {Boolean(animal.is_public) && (
+            <a
+              href={`/api/booklet/${orgSlug}/${animal.id}.pdf`}
+              target="_blank"
+              rel="noreferrer"
+              title="A print-ready keepsake booklet — email it to the adopter or print it as a going-home gift"
+              className="rounded-full border-2 border-sunflower px-4 py-2 text-sm font-display font-semibold hover:bg-sunflower transition-colors"
+            >
+              📖 Booklet
+            </a>
+          )}
           <Form method="post">
             <input type="hidden" name="intent" value="toggle-public" />
             <button
