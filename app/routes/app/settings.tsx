@@ -1,6 +1,7 @@
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/settings";
 import { requireUser } from "../../lib/auth.server";
+import { US_STATES, isUsState } from "../../../workers/lib/adopt-alerts";
 import { newId, newToken } from "../../../workers/lib/ids";
 import { normalizePhone } from "../../../workers/lib/sms";
 import { seatLimit, PLANS } from "../../../workers/lib/pricing";
@@ -14,7 +15,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
   const [org, locations, team] = await Promise.all([
     env.DB.prepare(
-      `SELECT id, name, slug, plan, about, website, email, phone, address, sms_number FROM orgs WHERE id = ?`,
+      `SELECT id, name, slug, plan, about, website, email, phone, address, state, sms_number FROM orgs WHERE id = ?`,
     ).bind(user.org_id).first<Record<string, string | null>>(),
     env.DB.prepare(
       `SELECT l.*, (SELECT COUNT(*) FROM animals a WHERE a.location_id = l.id AND a.status NOT IN ('adopted','deceased','transferred')) in_care
@@ -128,10 +129,12 @@ export async function action({ context, request }: Route.ActionArgs) {
   const smsRaw = str("sms_number");
   const smsNumber = smsRaw ? normalizePhone(smsRaw) : null;
   if (smsRaw && !smsNumber) return { error: "That SMS number doesn't look right — use a full number like (555) 010-2211." };
+  const stateRaw = str("state")?.toUpperCase() ?? "";
+  const state = stateRaw && isUsState(stateRaw) ? stateRaw : null;
   await env.DB.prepare(
-    `UPDATE orgs SET name=?, about=?, website=?, email=?, phone=?, address=?, sms_number=? WHERE id=?`,
+    `UPDATE orgs SET name=?, about=?, website=?, email=?, phone=?, address=?, state=?, sms_number=? WHERE id=?`,
   )
-    .bind(name, str("about"), str("website"), str("email"), str("phone"), str("address"), smsNumber, user.org_id)
+    .bind(name, str("about"), str("website"), str("email"), str("phone"), str("address"), state, smsNumber, user.org_id)
     .run();
   return { ok: "Saved." };
 }
@@ -179,6 +182,16 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
           <label className="block">
             <span className="font-semibold text-sm">Address</span>
             <input name="address" defaultValue={org.address ?? ""} className={inputCls} />
+          </label>
+          <label className="block">
+            <span className="font-semibold text-sm">State</span>
+            <select name="state" defaultValue={(org as Record<string, string | null>).state ?? ""} className={inputCls}>
+              <option value="">Choose your state…</option>
+              {US_STATES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <span className="text-xs text-charcoal-soft">Powers the “near you” filter on Tutela's cross-shelter adoption search.</span>
           </label>
           <label className="block sm:col-span-2">
             <span className="font-semibold text-sm">📱 Text alerts number</span>

@@ -40,6 +40,7 @@ const NAV = [
   { to: "/app/website", label: "Website" },
   { to: "/app/brand", label: "Brand" },
   { to: "/app/marketing", label: "Marketing" },
+  { to: "/app/radar", label: "Radar" },
   { to: "/app/reports", label: "Reports" },
   { to: "/app/settings", label: "Settings" },
 ];

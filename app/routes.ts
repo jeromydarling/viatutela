@@ -28,6 +28,8 @@ export default [
   // shelter websites (block CMS)
   route("s/:slug/:pageSlug?", "routes/site.page.tsx"),
   route("donate/:slug", "routes/donate.tsx"),
+  route("find", "routes/find.tsx"),
+  route("find/unsubscribe/:token", "routes/find.unsub.tsx"),
 
   // staff app
   route("app", "routes/app/layout.tsx", [
@@ -46,6 +48,7 @@ export default [
     route("network", "routes/app/network.tsx"),
     route("brand", "routes/app/brand.tsx"),
     route("brand/guidelines", "routes/app/brand.guidelines.tsx"),
+    route("radar", "routes/app/radar.tsx"),
     route("marketing", "routes/app/marketing.tsx"),
     route("marketing/calendar", "routes/app/marketing.calendar.tsx"),
     route("marketing/:campaignId", "routes/app/marketing.campaign.tsx"),

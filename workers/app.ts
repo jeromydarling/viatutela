@@ -36,6 +36,7 @@ function anonCacheTtl(request: Request, url: URL): number {
   if (p.startsWith("/donate/") && !url.search.includes("thanks")) {
     return 60;
   }
+  if (p === "/find") return 60; // fresh arrivals should appear fast
   return 0;
 }
 
@@ -116,7 +117,7 @@ const handleFetch: ExportedHandlerFetchHandler<Env> = async (request, env, ctx) 
  * (shelter tenant domains get their own via routeTenantPath). */
 function marketingSeoFile(url: URL): Response | null {
   const MARKETING_PATHS = [
-    "/", "/import", "/signup", "/login", "/privacy", "/terms", "/guides",
+    "/", "/find", "/import", "/signup", "/login", "/privacy", "/terms", "/guides",
     ...GUIDES.map((g) => `/guides/${g.slug}`),
     "/guides/start-a-rescue",
     ...STATES.map((s) => `/guides/start-a-rescue/${s.slug}`),
@@ -173,6 +174,9 @@ const handleScheduled: ExportedHandlerScheduledHandler<Env> = async (event, env,
       // webhook deliveries whose backoff has elapsed get another try
       const { retryPendingDeliveries } = await import("./lib/integrations");
       ctx.waitUntil(retryPendingDeliveries(env));
+      // sweep open networks for people saying they want to adopt
+      const { sweepRadar } = await import("./lib/radar");
+      ctx.waitUntil(sweepRadar(env));
       return;
     }
     if (event.cron === "30 14 * * *") {

@@ -647,6 +647,97 @@ api.get("/share-kit/:slug/:file", async (c) => {
   });
 });
 
+// ---------- pet-of-the-week press kit (for local TV / newspapers) ----------
+
+api.get("/press-kit/:slug/:file", async (c) => {
+  const animalId = c.req.param("file").replace(/\.zip$/, "");
+  const org = await c.env.DB.prepare(
+    `SELECT id, name, slug, email, phone, address, website FROM orgs WHERE slug = ?`,
+  )
+    .bind(c.req.param("slug"))
+    .first<Record<string, string | null>>();
+  if (!org) return c.json({ error: "Not found" }, 404);
+  const animal = await c.env.DB.prepare(
+    `SELECT id, name, species, breed, sex, dob, description, bonded_group_id, intake_date FROM animals
+     WHERE id = ? AND org_id = ? AND is_public = 1`,
+  )
+    .bind(animalId, org.id)
+    .first<Record<string, unknown>>();
+  if (!animal) return c.json({ error: "Not found" }, 404);
+
+  const photos = await c.env.DB.prepare(
+    `SELECT r2_key FROM animal_photos WHERE animal_id = ? AND kind != 'video' ORDER BY created_at LIMIT 4`,
+  )
+    .bind(animal.id)
+    .all<{ r2_key: string }>();
+
+  const { zipSync, strToU8 } = await import("fflate");
+  const files: Record<string, Uint8Array> = {};
+  let budget = 25 * 1024 * 1024;
+  let i = 0;
+  for (const p of photos.results) {
+    const obj = await c.env.MEDIA.get(p.r2_key);
+    if (!obj) continue;
+    const buf = new Uint8Array(await obj.arrayBuffer());
+    if (buf.byteLength > budget) continue;
+    budget -= buf.byteLength;
+    i++;
+    const ext = p.r2_key.split(".").pop() ?? "jpg";
+    files[`photos/${String(animal.name).replace(/[^\w-]/g, "_")}-${i}.${ext}`] = buf;
+  }
+
+  const pageUrl = `${new URL(c.req.url).origin}/adopt/${org.slug}/${animal.id}`;
+  const name = String(animal.name);
+  const facts = [animal.breed ?? animal.species, animal.sex].filter(Boolean).join(", ");
+
+  files["press-release.txt"] = strToU8(
+    `FOR IMMEDIATE RELEASE
+
+${String(org.name).toUpperCase()} HOPES TO FIND A HOME FOR ${name.toUpperCase()} THIS WEEK
+
+${name}${facts ? ` (${facts})` : ""} is this week's featured friend at ${org.name}.
+${animal.bonded_group_id ? `${name} is part of a bonded pair — they will be adopted together.\n` : ""}
+${animal.description ? `${String(animal.description)}\n` : ""}
+${name}'s full profile, photos, and adoption application are at:
+${pageUrl}
+
+ABOUT ${String(org.name).toUpperCase()}
+${org.address ? `Located at ${org.address}. ` : ""}${org.website ? `More at ${org.website}. ` : ""}Every adoption opens a kennel for the next animal in need.
+
+MEDIA CONTACT
+${org.name}
+${org.email ?? ""}
+${org.phone ?? ""}
+
+Photos: print-quality images are included in this kit and may be used with credit to ${org.name}.
+`,
+  );
+  files["fact-sheet.txt"] = strToU8(
+    [
+      `Name: ${name}`,
+      `Species: ${animal.species ?? "—"}`,
+      `Breed: ${animal.breed ?? "—"}`,
+      `Sex: ${animal.sex ?? "—"}`,
+      animal.dob ? `Born: ${animal.dob}` : null,
+      animal.intake_date ? `In care since: ${animal.intake_date}` : null,
+      animal.bonded_group_id ? `Bonded pair: yes — adopted together` : null,
+      `Adoption page: ${pageUrl}`,
+      `Shelter: ${org.name}${org.address ? `, ${org.address}` : ""}`,
+    ]
+      .filter(Boolean)
+      .join("\n") + "\n",
+  );
+
+  const zipped = zipSync(files, { level: 6 });
+  return new Response(zipped.slice().buffer as ArrayBuffer, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${name.replace(/[^\w-]/g, "_")}-press-kit.zip"`,
+      "Cache-Control": "public, max-age=300",
+    },
+  });
+});
+
 // ---------- Petfinder-format public feed ----------
 
 api.get("/feeds/:slug/petfinder.csv", async (c) => {
