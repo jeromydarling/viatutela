@@ -1,9 +1,15 @@
-import { Form } from "react-router";
+import { Form, redirect } from "react-router";
 import type { Route } from "./+types/donations";
 import { requireUser } from "../../lib/auth.server";
 import { emitEvent } from "../../../workers/lib/integrations";
 import { newId } from "../../../workers/lib/ids";
 import { sendAppEmail } from "../../../workers/lib/email";
+import {
+  accountChargesEnabled,
+  createAccountLink,
+  createExpressAccount,
+  stripeAvailable,
+} from "../../../workers/lib/stripe";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Donations — Tutela" }];
@@ -11,7 +17,7 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { env, user } = await requireUser(context, request);
-  const [donations, campaigns, totals, topDonors, contacts] = await Promise.all([
+  const [donations, campaigns, totals, topDonors, contacts, orgRow] = await Promise.all([
     env.DB.prepare(
       `SELECT d.*, c.name contact_name, cp.name campaign_name
        FROM donations d
@@ -36,13 +42,43 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     ).bind(user.org_id).all<{ donor: string; total: number }>(),
     env.DB.prepare(`SELECT id, name FROM contacts WHERE org_id = ? ORDER BY name LIMIT 500`)
       .bind(user.org_id).all<{ id: string; name: string }>(),
+    env.DB.prepare(`SELECT slug, stripe_account_id, stripe_charges_enabled FROM orgs WHERE id = ?`)
+      .bind(user.org_id).first<{ slug: string; stripe_account_id: string | null; stripe_charges_enabled: number }>(),
   ]);
+
+  // back from Stripe onboarding: check status once so the card flips to
+  // "live" without an extra click
+  let chargesEnabled = Boolean(orgRow?.stripe_charges_enabled);
+  if (
+    new URL(request.url).searchParams.has("stripe_return") &&
+    orgRow?.stripe_account_id &&
+    !chargesEnabled &&
+    stripeAvailable(env)
+  ) {
+    try {
+      chargesEnabled = await accountChargesEnabled(env, orgRow.stripe_account_id);
+      if (chargesEnabled) {
+        await env.DB.prepare(`UPDATE orgs SET stripe_charges_enabled = 1 WHERE id = ?`)
+          .bind(user.org_id)
+          .run();
+      }
+    } catch {
+      // Stripe hiccup — the "Check status" button covers it
+    }
+  }
   return {
     donations: donations.results,
     campaigns: campaigns.results,
     totals: totals ?? { all_time: 0, last30: 0, ytd: 0 },
     topDonors: topDonors.results,
     contacts: contacts.results,
+    giving: {
+      stripeReady: stripeAvailable(env),
+      connected: Boolean(orgRow?.stripe_account_id),
+      live: chargesEnabled,
+      donateUrl: `${new URL(request.url).origin}/donate/${orgRow?.slug}`,
+      isDemo: Boolean(user.demo),
+    },
   };
 }
 
@@ -51,6 +87,43 @@ export async function action({ context, request }: Route.ActionArgs) {
   const f = await request.formData();
   const intent = String(f.get("intent"));
   const str = (k: string) => String(f.get(k) ?? "").trim() || null;
+
+  if (intent === "stripe-onboard" || intent === "stripe-refresh") {
+    if (user.demo) return { error: "The demo can look but not connect a real Stripe account. 🌻" };
+    if (!stripeAvailable(env)) return { error: "Stripe isn't configured on the platform yet." };
+    const org = await env.DB.prepare(`SELECT name, email, stripe_account_id FROM orgs WHERE id = ?`)
+      .bind(user.org_id)
+      .first<{ name: string; email: string | null; stripe_account_id: string | null }>();
+    if (!org) return { error: "Organization not found." };
+    try {
+      if (intent === "stripe-refresh" && org.stripe_account_id) {
+        const enabled = await accountChargesEnabled(env, org.stripe_account_id);
+        await env.DB.prepare(`UPDATE orgs SET stripe_charges_enabled = ? WHERE id = ?`)
+          .bind(enabled ? 1 : 0, user.org_id)
+          .run();
+        return enabled
+          ? { ok: "You're live! Share your donate page far and wide. 💚" }
+          : { error: "Stripe says onboarding isn't finished yet — tap “Finish Stripe setup” to continue where you left off." };
+      }
+      let accountId = org.stripe_account_id;
+      if (!accountId) {
+        accountId = await createExpressAccount(env, org.name, org.email);
+        await env.DB.prepare(`UPDATE orgs SET stripe_account_id = ? WHERE id = ?`)
+          .bind(accountId, user.org_id)
+          .run();
+      }
+      const base = new URL(request.url).origin;
+      const link = await createAccountLink(
+        env,
+        accountId,
+        `${base}/app/donations`,
+        `${base}/app/donations?stripe_return=1`,
+      );
+      return redirect(link);
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Stripe had a hiccup — try again in a minute." };
+    }
+  }
 
   if (intent === "record") {
     const amount = Number(f.get("amount"));
@@ -136,7 +209,7 @@ const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export default function Donations({ loaderData, actionData }: Route.ComponentProps) {
-  const { donations, campaigns, totals, topDonors, contacts } = loaderData;
+  const { donations, campaigns, totals, topDonors, contacts, giving } = loaderData;
 
   return (
     <div className="space-y-6">
@@ -153,6 +226,53 @@ export default function Donations({ loaderData, actionData }: Route.ComponentPro
           {actionData.error ?? actionData.ok}
         </p>
       )}
+
+      <section className="rounded-blob bg-white shadow-soft p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display font-semibold text-lg">Online giving {giving.live && "· live 💚"}</h2>
+            <p className="text-sm text-charcoal-soft max-w-xl">
+              {giving.live
+                ? "Donors can give one-time or monthly on your donate page. You're the recipient of record — receipts carry your name, payouts go straight to your bank."
+                : giving.connected
+                  ? "Your Stripe account is created but onboarding isn't finished — pick up where you left off."
+                  : "Take one-time and monthly donations on your own page. Donors are asked to cover the card fees and Tutela's 2% platform fee, so gifts reach you whole."}
+            </p>
+            {giving.live && (
+              <a href={giving.donateUrl} className="mt-1 inline-block text-sm font-semibold text-meadow-deep hover:underline break-all">
+                {giving.donateUrl} ↗
+              </a>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {!giving.stripeReady && !giving.isDemo ? (
+              <span className="text-sm font-semibold text-charcoal-soft rounded-full bg-sunflower-soft px-4 py-2">
+                Coming online soon — Stripe setup in progress
+              </span>
+            ) : giving.live ? (
+              <Form method="post">
+                <input type="hidden" name="intent" value="stripe-refresh" />
+                <button className="rounded-full bg-cream px-4 py-2 text-sm font-semibold hover:bg-sunflower-soft">Re-check status</button>
+              </Form>
+            ) : (
+              <>
+                <Form method="post">
+                  <input type="hidden" name="intent" value="stripe-onboard" />
+                  <button className="rounded-full bg-meadow text-white px-5 py-2.5 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow">
+                    {giving.connected ? "Finish Stripe setup" : "Set up online giving"}
+                  </button>
+                </Form>
+                {giving.connected && (
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="stripe-refresh" />
+                    <button className="rounded-full bg-cream px-4 py-2 text-sm font-semibold hover:bg-sunflower-soft">Check status</button>
+                  </Form>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-3 gap-4">
         {[

@@ -64,6 +64,9 @@ export function routeTenantPath(pathname: string, slug: string): TenantRoute {
   if (TENANT_PASSTHROUGH.some((p) => pathname.startsWith(p))) return { kind: "passthrough" };
   // public newsletter/application posts go through the site page action
   if (pathname === "/" ) return { kind: "rewrite", path: `/s/${slug}` };
+  if (pathname === "/donate" || pathname === "/donate/") {
+    return { kind: "rewrite", path: `/donate/${slug}` };
+  }
   // staff/platform surfaces are never served on shelter domains
   const RESERVED = new Set(["app", "login", "logout", "import", "s", "api"]);
   if (/^\/[a-z0-9-]+\/?$/.test(pathname)) {
