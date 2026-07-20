@@ -52,12 +52,13 @@ export async function loader({ context, request }: Route.LoaderArgs) {
         (SELECT COUNT(*) FROM pages WHERE org_id = ?1 AND status = 'published') published_pages,
         (SELECT COUNT(*) FROM pages WHERE org_id = ?1) total_pages,
         (SELECT brand_json IS NOT NULL FROM orgs WHERE id = ?1) brand_set,
+        (SELECT state IS NOT NULL FROM orgs WHERE id = ?1) state_set,
         (SELECT COUNT(*) FROM animals WHERE org_id = ?1 AND is_public = 1) public_animals`,
-    ).bind(org).first<{ published_pages: number; total_pages: number; brand_set: number; public_animals: number }>(),
+    ).bind(org).first<{ published_pages: number; total_pages: number; brand_set: number; state_set: number; public_animals: number }>(),
   ]);
 
   return {
-    setup: setup ?? { published_pages: 0, total_pages: 0, brand_set: 0, public_animals: 0 },
+    setup: setup ?? { published_pages: 0, total_pages: 0, brand_set: 0, state_set: 0, public_animals: 0 },
     orgSlug: user.slug,
     counts: counts ?? { animals: 0, available: 0, contacts: 0, adoptions: 0 },
     newApplications: apps.results,
@@ -110,7 +111,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
       done: counts.animals > 0,
       label: "Welcome your first friend",
       to: "/app/animals/new",
-      hint: "Add one animal — or snap intake photos and let AI draft the profile.",
+      hint: "Add one animal — or, coming from another system? The free importer at /import brings everyone over with their whole history, relationships intact.",
+    },
+    {
+      done: Boolean(setup.state_set),
+      label: "Tell us your state",
+      to: "/app/settings",
+      hint: "One dropdown in Settings — it connects your friends to adopters searching and setting alerts near you.",
     },
     {
       done: Boolean(setup.brand_set),
@@ -140,9 +147,14 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         <section className="rounded-blob bg-sunflower-soft/70 border-2 border-sunflower shadow-soft p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display font-semibold text-xl">🌻 Getting settled — {doneCount} of {steps.length}</h2>
-            <a href={`/adopt/${orgSlug}`} className="text-sm font-semibold text-meadow-deep hover:underline">
-              Peek at your public adoption page ↗
-            </a>
+            <div className="flex gap-3 text-sm font-semibold">
+              <Link to="/app/help" className="text-meadow-deep hover:underline">
+                🧭 New here? The Field Guide walks you through everything
+              </Link>
+              <a href={`/adopt/${orgSlug}`} className="text-meadow-deep hover:underline">
+                Your adoption page ↗
+              </a>
+            </div>
           </div>
           <div className="mt-3 h-2 rounded-full bg-white overflow-hidden">
             <div className="h-full bg-meadow rounded-full transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
