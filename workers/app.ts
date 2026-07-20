@@ -116,8 +116,10 @@ const handleFetch: ExportedHandlerFetchHandler<Env> = async (request, env, ctx) 
 /** robots.txt / sitemap.xml / llms.txt for the marketing site itself
  * (shelter tenant domains get their own via routeTenantPath). */
 function marketingSeoFile(url: URL): Response | null {
+  // NOTE: /find rejoins this list (and the marketing nav) at launch —
+  // findLaunched() in adopt-alerts.ts is the gate
   const MARKETING_PATHS = [
-    "/", "/find", "/import", "/signup", "/login", "/privacy", "/terms", "/guides",
+    "/", "/import", "/signup", "/login", "/privacy", "/terms", "/guides",
     ...GUIDES.map((g) => `/guides/${g.slug}`),
     "/guides/start-a-rescue",
     ...STATES.map((s) => `/guides/start-a-rescue/${s.slug}`),
@@ -141,9 +143,9 @@ function marketingSeoFile(url: URL): Response | null {
     return new Response(
       `# Tutela
 
-> The all-in-one platform for animal shelters, rescues, and fosters: animal management, adoption pages and applications, foster tracking, donor CRM, a website builder with custom domains, marketing tools, and AI assistance (matchmaking, application triage, bio writing, photo enhancement, grant drafting). Warm by design — animals are "friends" here.
+> The all-in-one platform for animal shelters, rescues, and fosters: animal management, adoption pages and applications, foster tracking, donor CRM with online giving, a website builder with custom domains, marketing tools, integrations (webhooks, read API, official Zapier app, calendar feeds), Adopter Radar (public adoption-intent posts surfaced for human replies), per-animal press kits, and AI assistance (matchmaking, application triage, bio writing, photo enhancement, grant drafting). Warm by design — animals are "friends" here.
 
-Pricing: Starter is $9/month plus $1 per adoption. Rescue is $39/month flat. Shelter Pro is $79/month flat. The migration importer is free and needs no account.
+Pricing: Starter is $9/month plus $1 per adoption. Rescue is $39/month flat. Shelter Pro is $79/month flat. Online giving carries a transparent 2% platform fee that donors are asked to cover. The migration importer is free and needs no account.
 
 ## Pages
 

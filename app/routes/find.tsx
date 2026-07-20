@@ -3,23 +3,31 @@ import type { Route } from "./+types/find";
 import { getEnv } from "../lib/auth.server";
 import { marketingMeta } from "../lib/seo";
 import { ageGroup } from "../../workers/lib/animal-filter";
-import { US_STATES, subscribeAdoptAlert } from "../../workers/lib/adopt-alerts";
+import { US_STATES, findLaunched, subscribeAdoptAlert } from "../../workers/lib/adopt-alerts";
 import { SiteHeader, SiteFooter } from "../components/site";
 import { BirdDoodle, CatDoodle, DogDoodle, PawDoodle } from "../components/doodles";
 
-export function meta(_: Route.MetaArgs) {
-  return marketingMeta({
+export function meta({ loaderData }: Route.MetaArgs) {
+  const out = marketingMeta({
     title: "Adopt a Pet Near You — Search Every Tutela Shelter",
     description:
       "One search across every shelter and rescue on Tutela: dogs, cats, and more waiting for homes. Set a free alert and we'll email you the moment your friend arrives.",
     path: "/find",
   });
+  // pre-launch: reachable by direct link for alert signups, invisible to search engines
+  if (!loaderData?.launched) out.push({ name: "robots", content: "noindex" });
+  return out;
 }
 
 const PAGE_SIZE = 60;
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const env = getEnv(context);
+  const launched = await findLaunched(env);
+  if (!launched) {
+    // demand capture only until shelters cover a third of the country
+    return { launched: false as const, animals: [], total: 0, speciesOptions: [], states: US_STATES };
+  }
   const url = new URL(request.url);
   const q = url.searchParams.get("q")?.trim().toLowerCase() ?? "";
   const species = url.searchParams.get("species")?.trim().toLowerCase() ?? "";
@@ -65,6 +73,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     : rows.results;
 
   return {
+    launched: true as const,
     animals: filtered.slice(0, PAGE_SIZE),
     total: filtered.length,
     speciesOptions: speciesRows.results.map((r) => r.s),
@@ -91,6 +100,7 @@ const selectCls = "rounded-xl border-2 border-cream bg-white px-3 py-2 text-sm";
 
 export default function Find({ loaderData, actionData }: Route.ComponentProps) {
   const { animals, total, speciesOptions, states } = loaderData;
+  const launched = "launched" in loaderData ? loaderData.launched : false;
   const [params] = useSearchParams();
   const a = actionData as { alert?: boolean; alertError?: string } | undefined;
 
@@ -101,12 +111,26 @@ export default function Find({ loaderData, actionData }: Route.ComponentProps) {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 text-center">
           <h1 className="text-3xl sm:text-4xl font-display font-semibold">Find your friend</h1>
           <p className="mt-2 text-white/90 text-lg">
-            One search across every shelter and rescue on Tutela — updated the moment a new friend arrives.
+            {launched
+              ? "One search across every shelter and rescue on Tutela — updated the moment a new friend arrives."
+              : "One search across every shelter on Tutela — opening as shelters across the country come aboard."}
           </p>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+        {!launched && (
+          <div className="rounded-blob bg-white shadow-soft p-8 text-center max-w-2xl mx-auto">
+            <p className="text-3xl">🐾</p>
+            <h2 className="mt-2 text-xl font-display font-semibold">Almost here</h2>
+            <p className="mt-2 text-charcoal-soft">
+              We're welcoming shelters and rescues across the country right now. The search opens once
+              friends from coast to coast are on board — set an alert below and you'll be first to meet them.
+            </p>
+          </div>
+        )}
+        {launched && (
+        <>
         <Form method="get" className="flex flex-wrap gap-2">
           <input
             name="q"
@@ -178,6 +202,8 @@ export default function Find({ loaderData, actionData }: Route.ComponentProps) {
             );
           })}
         </div>
+        </>
+        )}
 
         <section className="mt-12 rounded-blob bg-white shadow-soft p-6 sm:p-8 max-w-2xl mx-auto">
           <h2 className="text-xl font-display font-semibold text-center">Let your friend find you</h2>

@@ -23,6 +23,27 @@ export function isUsState(v: string): boolean {
   return (US_STATES as readonly string[]).includes(v);
 }
 
+/**
+ * The cross-shelter search stays out of public view until real shelters
+ * cover at least a third of the country — an empty or one-state search
+ * would undersell everyone. Alerts collect demand the whole time, and
+ * the page unlocks itself the day the network earns it.
+ */
+export const FIND_LAUNCH_STATES = 17;
+
+export async function findLaunched(env: Env): Promise<boolean> {
+  try {
+    const row = await env.DB.prepare(
+      `SELECT COUNT(DISTINCT o.state) n FROM orgs o
+       WHERE o.demo = 0 AND o.state IS NOT NULL
+         AND EXISTS (SELECT 1 FROM animals a WHERE a.org_id = o.id AND a.is_public = 1 AND a.status = 'available')`,
+    ).first<{ n: number }>();
+    return (row?.n ?? 0) >= FIND_LAUNCH_STATES;
+  } catch {
+    return false;
+  }
+}
+
 export interface AdoptAlert {
   id: string;
   email: string;

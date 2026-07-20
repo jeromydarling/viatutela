@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { US_STATES, isUsState, matchesAlert } from "../adopt-alerts";
+import { FIND_LAUNCH_STATES, US_STATES, isUsState, matchesAlert } from "../adopt-alerts";
 import { isAdoptionIntent } from "../radar";
 
 describe("matchesAlert", () => {
@@ -34,6 +34,10 @@ describe("matchesAlert", () => {
     expect(US_STATES.length).toBe(51); // 50 + DC
     expect(isUsState("CO")).toBe(true);
     expect(isUsState("XX")).toBe(false);
+  });
+
+  it("the /find launch gate requires a third of the country", () => {
+    expect(FIND_LAUNCH_STATES).toBe(17); // ceil(50 / 3)
   });
 });
 
