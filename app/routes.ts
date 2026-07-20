@@ -12,6 +12,7 @@ export default [
   route("guides/start-a-rescue", "routes/guides.states.tsx"),
   route("guides/start-a-rescue/:state", "routes/guides.state.tsx"),
   route("guides/:slug", "routes/guides.article.tsx"),
+  route("contact", "routes/contact.tsx"),
   route("privacy", "routes/privacy.tsx"),
   route("terms", "routes/terms.tsx"),
   route("join/:token", "routes/join.tsx"),

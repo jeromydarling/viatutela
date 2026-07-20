@@ -121,6 +121,7 @@ export function SiteFooter() {
           <Link to="/import" className="hover:text-charcoal">Free importer</Link>
           <Link to="/guides" className="hover:text-charcoal">Guides</Link>
           <a href="/#pricing" className="hover:text-charcoal">Pricing</a>
+          <Link to="/contact" className="hover:text-charcoal">Contact</Link>
           <Link to="/privacy" className="hover:text-charcoal">Privacy</Link>
           <Link to="/terms" className="hover:text-charcoal">Terms</Link>
         </div>

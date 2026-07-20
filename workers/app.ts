@@ -26,7 +26,7 @@ function anonCacheTtl(request: Request, url: URL): number {
   if (cookie.includes("vt_session") || cookie.includes("vt_import_session")) return 0;
   if (url.search.includes("preview")) return 0;
   const p = url.pathname;
-  if (p === "/" || p === "/import" || p === "/login" || p === "/signup" || p === "/privacy" || p === "/terms" || p.startsWith("/guides")) {
+  if (p === "/" || p === "/import" || p === "/login" || p === "/signup" || p === "/contact" || p === "/privacy" || p === "/terms" || p.startsWith("/guides")) {
     return 300;
   }
   if (p.startsWith("/adopt/") || p.startsWith("/s/") || p.startsWith("/a/") || p.startsWith("/api/feeds/")) {
@@ -119,7 +119,7 @@ function marketingSeoFile(url: URL): Response | null {
   // NOTE: /find rejoins this list (and the marketing nav) at launch —
   // findLaunched() in adopt-alerts.ts is the gate
   const MARKETING_PATHS = [
-    "/", "/import", "/signup", "/login", "/privacy", "/terms", "/guides",
+    "/", "/import", "/signup", "/login", "/contact", "/privacy", "/terms", "/guides",
     ...GUIDES.map((g) => `/guides/${g.slug}`),
     "/guides/start-a-rescue",
     ...STATES.map((s) => `/guides/start-a-rescue/${s.slug}`),
