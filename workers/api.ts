@@ -930,6 +930,12 @@ api.post("/stripe/webhook", async (c) => {
   const obj = event.data?.object ?? {};
 
   try {
+    // platform subscription billing (customer pays Tutela) — checked first;
+    // returns true and short-circuits when it owns the event
+    const { handleSubscriptionEvent } = await import("./lib/subscription");
+    if (await handleSubscriptionEvent(c.env, event)) {
+      return c.json({ received: true });
+    }
     if (event.type === "checkout.session.completed" && obj.mode === "payment") {
       await recordStripeDonation(c, {
         orgId: String(obj.metadata?.org_id ?? ""),

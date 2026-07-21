@@ -62,6 +62,7 @@ export default [
     route("help", "routes/app/help.tsx"),
     route("help/:slug", "routes/app/help.article.tsx"),
     route("settings", "routes/app/settings.tsx"),
+    route("settings/billing", "routes/app/billing.tsx"),
     route("settings/integrations", "routes/app/integrations.tsx"),
     route("settings/integrations/recipes", "routes/app/integrations.recipes.tsx"),
   ]),
