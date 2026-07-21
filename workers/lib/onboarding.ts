@@ -34,6 +34,7 @@ export async function seedNewOrg(
   env: Env,
   args: { orgId: string; orgName: string; slug: string; email: string; name: string | null },
 ): Promise<void> {
+  const appOrigin = (env as unknown as { APP_ORIGIN?: string }).APP_ORIGIN ?? "https://viatutela.pet";
   try {
     await createStarterPages(env, args.orgId, args.orgName, args.slug);
     const stmts = STARTER_TASKS.map((title, i) =>
@@ -48,6 +49,18 @@ export async function seedNewOrg(
       );
     }
     await env.DB.batch(stmts);
+    // an immediate hello — the drip picks up from day 1
+    await sendAppEmail(env, {
+      to: args.email,
+      subject: `Welcome to Tutela, ${args.orgName} 🌻`,
+      heading: `Your workspace is ready`,
+      paragraphs: [
+        `Hi${args.name ? ` ${args.name}` : ""} — ${args.orgName} is all set up on Tutela.`,
+        "We've drafted starter website pages and a getting-settled checklist so the nest is never empty. Sign in whenever you're ready and make it yours.",
+        "Coming from other software? The free importer brings every animal, adopter, and record over with their relationships intact — no re-typing.",
+      ],
+      cta: { label: "Open your workspace", url: `${appOrigin}/app` },
+    });
   } catch (err) {
     console.log(`[seed new org failed] ${err instanceof Error ? err.message : err}`);
   }

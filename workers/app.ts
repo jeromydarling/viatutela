@@ -26,9 +26,10 @@ function anonCacheTtl(request: Request, url: URL): number {
   if (cookie.includes("vt_session") || cookie.includes("vt_import_session")) return 0;
   if (url.search.includes("preview")) return 0;
   const p = url.pathname;
-  if (p === "/" || p === "/import" || p === "/login" || p === "/signup" || p === "/contact" || p === "/privacy" || p === "/terms" || p.startsWith("/guides")) {
+  if (p === "/" || p === "/import" || p === "/login" || p === "/signup" || p === "/forgot" || p === "/contact" || p === "/privacy" || p === "/terms" || p.startsWith("/guides")) {
     return 300;
   }
+  if (p.startsWith("/reset/")) return 0; // token pages must never be cached
   if (p.startsWith("/adopt/") || p.startsWith("/s/") || p.startsWith("/a/") || p.startsWith("/api/feeds/")) {
     return 60;
   }
@@ -192,6 +193,8 @@ const handleScheduled: ExportedHandlerScheduledHandler<Env> = async (event, env,
       );
       const { pruneOldDeliveries } = await import("./lib/integrations");
       ctx.waitUntil(pruneOldDeliveries(env));
+      const { pruneExpiredResets } = await import("./lib/password-reset");
+      ctx.waitUntil(pruneExpiredResets(env));
       return;
     }
     const { sendMedicalDigests } = await import("./lib/digest");

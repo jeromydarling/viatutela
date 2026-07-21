@@ -4,6 +4,7 @@ import { requireUser } from "../../lib/auth.server";
 import { US_STATES, isUsState } from "../../../workers/lib/adopt-alerts";
 import { newId, newToken } from "../../../workers/lib/ids";
 import { normalizePhone } from "../../../workers/lib/sms";
+import { sessionTokenFromRequest } from "../../../workers/lib/auth";
 import { seatLimit, PLANS } from "../../../workers/lib/pricing";
 import { sendAppEmail } from "../../../workers/lib/email";
 
@@ -43,6 +44,33 @@ export async function action({ context, request }: Route.ActionArgs) {
   const f = await request.formData();
   const intent = String(f.get("intent") ?? "org");
   const str = (k: string) => String(f.get(k) ?? "").trim() || null;
+
+  if (intent === "change-password") {
+    if (user.demo) return { error: "The demo account's password is fixed. 🌻" };
+    const current = String(f.get("current_password") ?? "");
+    const next = String(f.get("new_password") ?? "");
+    if (next.length < 8) return { error: "New password needs at least 8 characters." };
+    const row = await env.DB.prepare(`SELECT password_hash, password_salt FROM users WHERE id = ?`)
+      .bind(user.user_id)
+      .first<{ password_hash: string | null; password_salt: string | null }>();
+    const { verifyPassword } = await import("../../../workers/lib/password");
+    if (!row?.password_hash || !row.password_salt || !(await verifyPassword(current, row.password_hash, row.password_salt))) {
+      return { error: "That current password doesn't match." };
+    }
+    const { hashPassword } = await import("../../../workers/lib/password");
+    const { hash, salt } = await hashPassword(next);
+    const origin = new URL(request.url).origin;
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?`)
+        .bind(hash, salt, user.user_id),
+      // keep THIS session, drop all others — a password change logs out other devices
+      env.DB.prepare(`DELETE FROM sessions WHERE user_id = ? AND token != ?`)
+        .bind(user.user_id, sessionTokenFromRequest(request)),
+    ]);
+    const { sendPasswordChangedNotice } = await import("../../../workers/lib/password-reset");
+    await sendPasswordChangedNotice(env, user.email, user.org_name, origin, false);
+    return { ok: "Password changed — other devices have been signed out." };
+  }
 
   if (intent === "email-self-test") {
     const { sendAppEmailDetailed } = await import("../../../workers/lib/email");
@@ -307,6 +335,21 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
         >
           Manage billing →
         </Link>
+      </section>
+
+      <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">
+        <h2 className="font-display font-semibold text-lg">Your password</h2>
+        <p className="text-sm text-charcoal-soft">
+          Change it anytime. We'll email you a confirmation and sign out your other devices.
+        </p>
+        <Form method="post" className="grid sm:grid-cols-2 gap-2 max-w-lg">
+          <input type="hidden" name="intent" value="change-password" />
+          <input name="current_password" type="password" autoComplete="current-password" placeholder="Current password" className={`${inputCls} sm:col-span-2`} />
+          <input name="new_password" type="password" autoComplete="new-password" minLength={8} placeholder="New password (8+ characters)" className={`${inputCls} sm:col-span-2`} />
+          <button className="rounded-full bg-meadow text-white px-5 py-2.5 text-sm font-display font-semibold shadow-soft sm:col-span-2 sm:w-fit">
+            Change password
+          </button>
+        </Form>
       </section>
 
       <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">

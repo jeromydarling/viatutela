@@ -25,6 +25,12 @@ export async function getAuthedUser(env: Env, request: Request): Promise<AuthedU
   return row ?? null;
 }
 
+/** Pull the raw session token from a request's cookie, or "" if absent. */
+export function sessionTokenFromRequest(request: Request): string {
+  const match = (request.headers.get("cookie") ?? "").match(new RegExp(`${AUTH_COOKIE}=([a-f0-9]{48})`));
+  return match ? match[1] : "";
+}
+
 export function sessionCookie(token: string, maxAge = 30 * 24 * 3600): string {
   return `${AUTH_COOKIE}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
 }

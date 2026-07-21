@@ -19,7 +19,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const env = getEnv(context);
   const user = await getAuthedUser(env, request);
   if (user) throw redirect("/app");
-  return null;
+  return { justReset: new URL(request.url).searchParams.get("reset") === "1" };
 }
 
 export async function action({ context, request }: Route.ActionArgs) {
@@ -59,7 +59,7 @@ export async function action({ context, request }: Route.ActionArgs) {
   return redirect("/app", { headers: { "Set-Cookie": sessionCookie(token) } });
 }
 
-export default function Login() {
+export default function Login({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>();
   const nav = useNavigation();
   return (
@@ -69,6 +69,11 @@ export default function Login() {
         <div className="rounded-blob bg-white shadow-lift p-8">
           <Logo className="w-16 h-16 mx-auto" />
           <h1 className="mt-2 text-3xl font-display font-semibold text-center">Welcome back</h1>
+          {loaderData?.justReset && (
+            <p className="mt-4 rounded-2xl bg-meadow/15 text-meadow-deep px-4 py-2.5 text-sm font-semibold text-center">
+              Password updated — sign in with your new one. 🔑
+            </p>
+          )}
           <Form method="post" className="mt-6 space-y-4">
             <label className="block">
               <span className="font-semibold text-sm">Email</span>
@@ -103,6 +108,11 @@ export default function Login() {
               {nav.state !== "idle" ? "Opening the door…" : "Sign in"}
             </button>
           </Form>
+          <p className="mt-3 text-center text-sm">
+            <Link to="/forgot" className="font-semibold text-charcoal-soft hover:text-charcoal hover:underline">
+              Forgot your password?
+            </Link>
+          </p>
           <p className="mt-4 text-center text-sm text-charcoal-soft">
             New here?{" "}
             <Link to="/signup" className="font-semibold text-meadow-deep hover:underline">
