@@ -297,6 +297,19 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
       </section>
 
       <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">
+        <h2 className="font-display font-semibold text-lg">Billing</h2>
+        <p className="text-sm text-charcoal-soft">
+          Your plan, adoption usage this month, and payment method.
+        </p>
+        <Link
+          to="/app/settings/billing"
+          className="inline-block rounded-full bg-meadow/10 text-meadow-deep px-6 py-3 font-display font-semibold shadow-soft hover:shadow-lift transition-shadow"
+        >
+          Manage billing →
+        </Link>
+      </section>
+
+      <section className="rounded-blob bg-white shadow-soft p-6 space-y-3">
         <h2 className="font-display font-semibold text-lg">Email delivery</h2>
         <p className="text-sm text-charcoal-soft">
           Application confirmations, adoption alerts, and receipts all ride on email. One click checks

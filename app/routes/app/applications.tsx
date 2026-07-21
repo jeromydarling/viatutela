@@ -10,6 +10,7 @@ import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 import { sendSms } from "../../../workers/lib/sms";
 import { emitEvent } from "../../../workers/lib/integrations";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
+import { billingGate } from "../../../workers/lib/subscription";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Tutela" }];
@@ -123,6 +124,9 @@ export async function action({ context, request }: Route.ActionArgs) {
   }
 
   if (intent === "approve") {
+    // billing gate (no-op until platform billing is switched on)
+    const gate = await billingGate(env, user.org_id);
+    if (!gate.allowed) return { error: gate.reason };
     // create/find the adopter as a contact, record the adoption, mark the animal
     const stmts: D1PreparedStatement[] = [
       env.DB.prepare(

@@ -9,6 +9,7 @@ import { compactAnimal, summarizeNotes, writeBio, type BioPack, type HandoffPack
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
+import { billingGate } from "../../../workers/lib/subscription";
 import { notifyWaitlist } from "../../../workers/lib/waitlist";
 import { emitEvent } from "../../../workers/lib/integrations";
 import { notifyAdoptAlerts } from "../../../workers/lib/adopt-alerts";
@@ -129,6 +130,12 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       )
         .bind(animal.id, user.org_id)
         .first();
+      // billing gate applies only to the NEW adoption record; the status
+      // change itself already saved. If gated, note it without a record.
+      const gate = existing ? { allowed: true } : await billingGate(env, user.org_id);
+      if (!gate.allowed) {
+        return { ok: `Saved. ${gate.reason}` };
+      }
       if (!existing) {
         const adoptionId = newId("ad");
         await env.DB.batch([
@@ -432,6 +439,8 @@ export async function action({ context, request, params }: Route.ActionArgs) {
   }
 
   if (intent === "record-adoption") {
+    const gate = await billingGate(env, user.org_id);
+    if (!gate.allowed) return { error: gate.reason };
     const contactId = str("contact_id");
     const adoptionId = newId("ad");
     await env.DB.batch([

@@ -62,7 +62,7 @@ export class StripeError extends Error {
   }
 }
 
-async function stripeRequest<T = Record<string, unknown>>(
+export async function stripeRequest<T = Record<string, unknown>>(
   env: Env,
   method: "GET" | "POST",
   path: string,

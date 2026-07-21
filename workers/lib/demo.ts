@@ -275,7 +275,9 @@ export async function resetDemoData(env: Env, _origin: string): Promise<void> {
   wipe.push(
     env.DB.prepare(
       `UPDATE orgs SET nav_json = ?, brand_json = ?, seo_json = ?, ics_token = NULL,
-         stripe_account_id = NULL, stripe_charges_enabled = 0 WHERE id = ?`,
+         stripe_account_id = NULL, stripe_charges_enabled = 0,
+         stripe_customer_id = NULL, subscription_status = 'none',
+         billing_method_on_file = 0, stripe_subscription_id = NULL WHERE id = ?`,
     ).bind(
       JSON.stringify(NAV),
       JSON.stringify(BRAND),
