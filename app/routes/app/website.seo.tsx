@@ -1,8 +1,10 @@
 import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/website.seo";
+import { useState } from "react";
 import { requireUser } from "../../lib/auth.server";
 import { parseSeo } from "../../lib/site.server";
 import { TRACKER_FIELDS, validateTracking } from "../../../workers/lib/tracking";
+import { AUDIT_GROUPS, runAudit, scoreAudit, sortChecks, type AuditCheck, type CheckStatus } from "../../../workers/lib/seo-audit";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "SEO & Search Checkup — Tutela" }];
@@ -16,33 +18,60 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     .bind(user.org_id)
     .first<{ slug: string; seo_json: string | null; custom_domain: string | null; domain_status: string | null }>();
 
-  const [pagesNoMeta, publishedPages, animalsNoPhoto, animalsNoBio] = await Promise.all([
+  const [pageStats, animalStats, photoAlt] = await Promise.all([
     env.DB.prepare(
-      `SELECT id, slug, title FROM pages WHERE org_id = ? AND status = 'published'
-       AND (meta_description IS NULL OR meta_description = '') LIMIT 20`,
-    ).bind(user.org_id).all<{ id: string; slug: string; title: string }>(),
+      `SELECT
+         COUNT(*) published,
+         SUM(CASE WHEN slug = 'home' THEN 1 ELSE 0 END) home,
+         SUM(CASE WHEN meta_description IS NULL OR meta_description = '' THEN 1 ELSE 0 END) no_meta,
+         SUM(CASE WHEN length(COALESCE(meta_title, title)) > 60 THEN 1 ELSE 0 END) long_title,
+         SUM(CASE WHEN length(meta_description) > 160 THEN 1 ELSE 0 END) long_meta,
+         SUM(CASE WHEN (hero_image_url IS NULL OR hero_image_url = '') THEN 1 ELSE 0 END) no_hero
+       FROM pages WHERE org_id = ? AND status = 'published'`,
+    ).bind(user.org_id).first<{ published: number; home: number; no_meta: number; long_title: number; long_meta: number; no_hero: number }>(),
     env.DB.prepare(
-      `SELECT COUNT(*) n FROM pages WHERE org_id = ? AND status = 'published'`,
+      `SELECT
+         COUNT(*) adoptable,
+         SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM animal_photos p WHERE p.animal_id = a.id) THEN 1 ELSE 0 END) no_photo,
+         SUM(CASE WHEN description IS NULL OR length(description) < 40 THEN 1 ELSE 0 END) no_bio
+       FROM animals a WHERE org_id = ? AND is_public = 1 AND status = 'available'`,
+    ).bind(user.org_id).first<{ adoptable: number; no_photo: number; no_bio: number }>(),
+    env.DB.prepare(
+      `SELECT COUNT(*) n FROM animal_photos p
+       JOIN animals a ON a.id = p.animal_id
+       WHERE a.org_id = ? AND a.is_public = 1 AND p.kind != 'video'
+         AND (p.alt_text IS NULL OR p.alt_text = '')`,
     ).bind(user.org_id).first<{ n: number }>(),
-    env.DB.prepare(
-      `SELECT id, name FROM animals a WHERE org_id = ? AND is_public = 1 AND status = 'available'
-       AND NOT EXISTS (SELECT 1 FROM animal_photos p WHERE p.animal_id = a.id) LIMIT 20`,
-    ).bind(user.org_id).all<{ id: string; name: string }>(),
-    env.DB.prepare(
-      `SELECT id, name FROM animals WHERE org_id = ? AND is_public = 1 AND status = 'available'
-       AND (description IS NULL OR length(description) < 40) LIMIT 20`,
-    ).bind(user.org_id).all<{ id: string; name: string }>(),
   ]);
+
+  const seo = parseSeo(org?.seo_json ?? null);
+  const auditInput = {
+    visible: seo.visible,
+    googleVerify: Boolean(seo.google_verify),
+    bingVerify: Boolean(seo.bing_verify),
+    defaultOgImage: Boolean(seo.og_image),
+    publishedPages: pageStats?.published ?? 0,
+    hasHomePage: (pageStats?.home ?? 0) > 0,
+    pagesMissingMeta: pageStats?.no_meta ?? 0,
+    pagesLongTitle: pageStats?.long_title ?? 0,
+    pagesLongMeta: pageStats?.long_meta ?? 0,
+    pagesNoSocialImage: pageStats?.no_hero ?? 0,
+    adoptableTotal: animalStats?.adoptable ?? 0,
+    animalsNoPhoto: animalStats?.no_photo ?? 0,
+    animalsNoBio: animalStats?.no_bio ?? 0,
+    photosNoAlt: photoAlt?.n ?? 0,
+    domainActive: org?.domain_status === "active" && Boolean(org?.custom_domain),
+    domainPending: Boolean(org?.custom_domain) && org?.domain_status !== "active",
+  };
+  const checks = sortChecks(runAudit(auditInput));
 
   return {
     slug: org?.slug ?? "",
-    seo: parseSeo(org?.seo_json ?? null),
+    seo,
+    checks,
+    score: scoreAudit(checks),
     domain: org?.custom_domain ?? null,
     domainStatus: org?.domain_status ?? null,
-    pagesNoMeta: pagesNoMeta.results,
-    publishedPages: publishedPages?.n ?? 0,
-    animalsNoPhoto: animalsNoPhoto.results,
-    animalsNoBio: animalsNoBio.results,
   };
 }
 
@@ -74,19 +103,52 @@ export async function action({ context, request }: Route.ActionArgs) {
 
 const inputCls = "rounded-xl border-2 border-cream bg-cream px-3 py-2 text-sm focus:border-meadow outline-none";
 
-function Check({ pass, label, children }: { pass: boolean; label: string; children?: React.ReactNode }) {
+const STATUS_STYLE: Record<CheckStatus, { icon: string; badge: string }> = {
+  warn: { icon: "⚠", badge: "bg-terracotta/15 text-terracotta-deep" },
+  suggest: { icon: "💡", badge: "bg-sky/15 text-sky-deep" },
+  pass: { icon: "✓", badge: "bg-meadow/20 text-meadow-deep" },
+};
+
+function ReviewRow({ check }: { check: AuditCheck }) {
+  const [open, setOpen] = useState(check.status === "warn");
+  const s = STATUS_STYLE[check.status];
   return (
-    <li className="flex gap-3 py-3 border-t border-cream first:border-t-0">
-      <span className={`mt-0.5 w-6 h-6 flex-none rounded-full flex items-center justify-center text-sm font-bold ${pass ? "bg-meadow/20 text-meadow-deep" : "bg-terracotta/20 text-terracotta-deep"}`}>
-        {pass ? "✓" : "!"}
-      </span>
-      <div className="min-w-0">
-        <div className="font-semibold text-sm">{label}</div>
-        {!pass && children && <div className="text-sm text-charcoal-soft mt-0.5">{children}</div>}
-      </div>
-    </li>
+    <div className="border-t border-cream first:border-t-0">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-3 py-3 text-left"
+        aria-expanded={open}
+      >
+        <span className={`w-7 h-7 flex-none rounded-full flex items-center justify-center text-sm font-bold ${s.badge}`}>
+          {s.icon}
+        </span>
+        <span className={`flex-1 font-semibold text-sm ${check.status === "pass" ? "text-charcoal-soft" : ""}`}>
+          {check.title}
+        </span>
+        <span className="text-charcoal-soft text-xs">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="pl-10 pb-3 -mt-1 text-sm text-charcoal-soft">
+          {check.detail}
+          {check.fix && (
+            <div className="mt-2">
+              <Link to={check.fix.to} className="font-semibold text-meadow-deep hover:underline">
+                {check.fix.label} →
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
+
+const GRADE_COLOR: Record<string, string> = {
+  Excellent: "text-meadow-deep",
+  Good: "text-meadow-deep",
+  "Needs work": "text-terracotta-deep",
+  "Getting started": "text-terracotta-deep",
+};
 
 export default function SeoCheckup({ loaderData, actionData }: Route.ComponentProps) {
   const d = loaderData;
@@ -165,51 +227,39 @@ export default function SeoCheckup({ loaderData, actionData }: Route.ComponentPr
         </section>
 
         <section className="rounded-blob bg-white shadow-soft p-6">
-          <h2 className="font-display font-semibold text-lg">Search Checkup</h2>
-          <ul className="mt-2">
-            <Check pass={d.seo.visible} label="Site is visible to search engines">
-              Turn visibility on above when you're ready to launch.
-            </Check>
-            <Check pass={Boolean(d.seo.google_verify)} label="Google Search Console verified">
-              Paste the meta-tag value above, then submit your sitemap. It's free and takes five minutes.
-            </Check>
-            <Check pass={d.publishedPages > 0} label={`Website has published pages (${d.publishedPages})`}>
-              <Link to="/app/website" className="font-semibold text-meadow-deep hover:underline">Publish your site →</Link>
-            </Check>
-            <Check pass={d.pagesNoMeta.length === 0} label="Published pages all have meta descriptions">
-              {d.pagesNoMeta.map((p) => (
-                <Link key={p.id} to={`/app/website/pages/${p.id}`} className="mr-2 font-semibold text-meadow-deep hover:underline">
-                  {p.title} →
-                </Link>
-              ))}
-              <span className="block text-xs mt-1">Tip: the ✨ AI button on each page drafts these for you.</span>
-            </Check>
-            <Check pass={d.animalsNoPhoto.length === 0} label="Every adoptable friend has a photo">
-              {d.animalsNoPhoto.map((an) => (
-                <Link key={an.id} to={`/app/animals/${an.id}`} className="mr-2 font-semibold text-meadow-deep hover:underline">
-                  {an.name} →
-                </Link>
-              ))}
-              <span className="block text-xs mt-1">Animals with photos get dramatically more clicks — and adopted faster.</span>
-            </Check>
-            <Check pass={d.animalsNoBio.length === 0} label="Every adoptable friend has a real bio">
-              {d.animalsNoBio.map((an) => (
-                <Link key={an.id} to={`/app/animals/${an.id}`} className="mr-2 font-semibold text-meadow-deep hover:underline">
-                  {an.name} →
-                </Link>
-              ))}
-              <span className="block text-xs mt-1">The ✨ AI bio writer on each profile turns two facts into a great one.</span>
-            </Check>
-            <Check pass={Boolean(d.domain && d.domainStatus === "active")} label="Custom domain connected">
-              <Link to="/app/website/domain" className="font-semibold text-meadow-deep hover:underline">
-                {d.domain ? `${d.domain} is ${d.domainStatus ?? "pending"} →` : "Connect your own domain →"}
-              </Link>
-            </Check>
-          </ul>
-          <p className="mt-3 text-xs text-charcoal-soft">
-            Local SEO in one line: correct shelter info + fresh content (blog drafts in Marketing) + local links (press
-            releases in Marketing). The studios feed all three.
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display font-semibold text-lg">Search &amp; AI Review</h2>
+            <div className="text-right">
+              <div className={`text-3xl font-display font-bold leading-none ${GRADE_COLOR[d.score.grade] ?? "text-charcoal"}`}>
+                {d.score.percent}%
+              </div>
+              <div className="text-xs font-semibold text-charcoal-soft">{d.score.grade}</div>
+            </div>
+          </div>
+          <div className="mt-2 h-2 rounded-full bg-cream overflow-hidden">
+            <div className="h-full bg-meadow rounded-full transition-all" style={{ width: `${d.score.percent}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-charcoal-soft">
+            A live review of your public website — what search engines and AI assistants see. Fix the
+            orange items first; the rest is handled for you.
           </p>
+
+          <div className="mt-4 space-y-5">
+            {AUDIT_GROUPS.map((group) => {
+              const rows = d.checks.filter((c) => c.group === group);
+              if (!rows.length) return null;
+              return (
+                <div key={group}>
+                  <h3 className="text-xs font-display font-semibold uppercase tracking-wide text-charcoal-soft">{group}</h3>
+                  <div className="mt-1">
+                    {rows.map((c) => (
+                      <ReviewRow key={c.id} check={c} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
       </div>
     </div>

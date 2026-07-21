@@ -401,7 +401,7 @@ export const HELP: HelpArticle[] = [
     summary: "The getting-found checklist, search-engine verification, and adding GA4/Meta Pixel/Plausible the safe way.",
     blocks: [
       {
-        p: "[Website → SEO](/app/website/seo) is two things: a settings panel and an honest checklist of what actually affects getting found — published pages, meta descriptions, photos and bios on every adoptable friend, a connected domain.",
+        p: "[Website → SEO](/app/website/seo) is two things: a settings panel and a live Search & AI Review — a graded audit of your public site (with a score) covering what search engines AND AI assistants see. It groups everything into Findability, Page quality, Content & accessibility, and AI & performance; fix the orange items first, the rest is handled for you. Each finding expands with a plain explanation and a one-tap link to the fix.",
       },
       {
         h2: "Analytics without the scary paste-this-code step",
