@@ -29,9 +29,10 @@ describe("routeTenantPath", () => {
     expect(routeTenantPath("/assets/entry.js", "sunny").kind).toBe("passthrough");
     expect(routeTenantPath("/a/an_123", "sunny").kind).toBe("passthrough");
   });
-  it("emits tenant sitemap and robots", () => {
+  it("emits tenant sitemap, robots, and llms", () => {
     expect(routeTenantPath("/sitemap.xml", "sunny").kind).toBe("sitemap");
     expect(routeTenantPath("/robots.txt", "sunny").kind).toBe("robots");
+    expect(routeTenantPath("/llms.txt", "sunny").kind).toBe("llms");
   });
   it("blocks the staff app and private surfaces so sessions stay per-tenant", () => {
     expect(routeTenantPath("/app", "sunny").kind).toBe("blocked");

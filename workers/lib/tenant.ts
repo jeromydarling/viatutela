@@ -55,12 +55,14 @@ export type TenantRoute =
   | { kind: "passthrough" }
   | { kind: "sitemap" }
   | { kind: "robots" }
+  | { kind: "llms" }
   | { kind: "blocked" };
 
 /** Decide how a request path on a tenant host is served. */
 export function routeTenantPath(pathname: string, slug: string): TenantRoute {
   if (pathname === "/sitemap.xml") return { kind: "sitemap" };
   if (pathname === "/robots.txt") return { kind: "robots" };
+  if (pathname === "/llms.txt") return { kind: "llms" };
   if (TENANT_PASSTHROUGH.some((p) => pathname.startsWith(p))) return { kind: "passthrough" };
   // public newsletter/application posts go through the site page action
   if (pathname === "/" ) return { kind: "rewrite", path: `/s/${slug}` };
@@ -113,5 +115,46 @@ export async function tenantSitemap(env: Env, tenant: Tenant, origin: string): P
 export function tenantRobots(origin: string): Response {
   return new Response(`User-agent: *\nAllow: /\nDisallow: /a/\nSitemap: ${origin}/sitemap.xml\n`, {
     headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=3600" },
+  });
+}
+
+/** A plain-language markdown summary for AI assistants (llms.txt convention). */
+export async function tenantLlms(env: Env, tenant: Tenant, origin: string): Promise<Response> {
+  const org = await env.DB.prepare(
+    `SELECT name, about, email, phone, address FROM orgs WHERE id = ?`,
+  )
+    .bind(tenant.orgId)
+    .first<{ name: string; about: string | null; email: string | null; phone: string | null; address: string | null }>();
+  const animals = await env.DB.prepare(
+    `SELECT name, species, breed FROM animals WHERE org_id = ? AND is_public = 1 AND status = 'available'
+     ORDER BY created_at DESC LIMIT 25`,
+  )
+    .bind(tenant.orgId)
+    .all<{ name: string; species: string | null; breed: string | null }>();
+  const name = org?.name ?? tenant.slug;
+
+  const lines = [
+    `# ${name}`,
+    "",
+    `> ${org?.about?.trim() || `${name} is an animal shelter helping companion animals find loving homes.`}`,
+    "",
+    "## Adopt",
+    "",
+    `- [Adoptable animals](${origin}/adopt/${tenant.slug}): every friend currently looking for a home`,
+    `- [Donate](${origin}/donate/${tenant.slug}): support the shelter's work`,
+  ];
+  if (animals.results.length) {
+    lines.push("", "## Friends currently available", "");
+    for (const a of animals.results) {
+      const desc = [a.breed ?? a.species].filter(Boolean).join("");
+      lines.push(`- ${a.name}${desc ? ` — ${desc}` : ""}`);
+    }
+  }
+  const contact = [org?.email, org?.phone, org?.address].filter(Boolean).join(" · ");
+  if (contact) lines.push("", "## Contact", "", contact);
+  lines.push("");
+
+  return new Response(lines.join("\n"), {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" },
   });
 }
