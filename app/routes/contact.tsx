@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/contact";
 import { getEnv } from "../lib/auth.server";
@@ -29,6 +30,34 @@ export async function action({ context, request }: Route.ActionArgs) {
     return { error: "We need your name, a real email, and a message — that's all." };
   }
 
+  // form-timing trap: humans take a few seconds to fill three fields; a
+  // stamp that's PRESENT but sub-2s is a bot. A missing stamp (no-JS, or
+  // a cached prefetch) is NOT penalized — the content scorer covers those.
+  const renderedAt = Number(f.get("rendered_at") ?? "0");
+  const tooFast = renderedAt > 0 && Date.now() - renderedAt < 2000;
+
+  // per-IP rate limit: a person sends one message, not ten
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  let overLimit = false;
+  try {
+    const key = `contact_rl:${ip}:${Math.floor(Date.now() / 3_600_000)}`;
+    const n = Number((await env.CONFIG.get(key)) ?? "0") + 1;
+    overLimit = n > 3;
+    await env.CONFIG.put(key, String(n), { expirationTtl: 3600 });
+  } catch {
+    // KV hiccup never blocks a real message
+  }
+
+  const { isSpam, scoreSpam } = await import("../../workers/lib/spam");
+  const spam = scoreSpam({ name, email, message });
+
+  // Silently accept spam/bot traffic (same "thanks!" as a human) so bots
+  // never learn they were filtered — but send nothing.
+  if (tooFast || overLimit || spam.score >= 3 || isSpam({ name, email, message })) {
+    console.log(`[contact spam dropped] ip=${ip} score=${spam.score} reasons=[${spam.reasons.join("; ")}] fast=${tooFast} rl=${overLimit}`);
+    return { ok: true };
+  }
+
   await sendAppEmail(env, {
     to: CONTACT_EMAIL,
     subject: `Tutela contact form: ${name}`,
@@ -47,6 +76,12 @@ const inputCls = "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-
 
 export default function Contact({ actionData }: Route.ComponentProps) {
   const a = actionData as { ok?: boolean; error?: string } | undefined;
+  // stamp the real per-visitor load time on the client (the page HTML is
+  // edge-cached, so a server value would be stale for everyone)
+  const stampRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (stampRef.current) stampRef.current.value = String(Date.now());
+  }, []);
 
   return (
     <div className="min-h-screen bg-cream">
@@ -78,6 +113,7 @@ export default function Contact({ actionData }: Route.ComponentProps) {
               <p className="rounded-2xl bg-terracotta/15 text-terracotta-deep px-4 py-2.5 font-semibold">{a.error}</p>
             )}
             <input name="website" className="hidden" tabIndex={-1} autoComplete="off" />
+            <input ref={stampRef} type="hidden" name="rendered_at" defaultValue="" />
             <label className="block">
               <span className="font-semibold text-sm">Your name *</span>
               <input name="name" required maxLength={120} className={inputCls} />
