@@ -173,7 +173,7 @@ export async function createDonationCheckout(env: Env, input: DonationCheckoutIn
 
 // ---------- webhook verification (Stripe-Signature v1 scheme) ----------
 
-async function hmacHex(secret: string, message: string): Promise<string> {
+export async function hmacHex(secret: string, message: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),

@@ -921,57 +921,133 @@ api.post("/stripe/webhook", async (c) => {
   const valid = await verifyStripeSignature(c.env, payload, c.req.header("stripe-signature") ?? null);
   if (!valid) return c.json({ error: "bad signature" }, 400);
 
-  let event: { type?: string; account?: string; data?: { object?: Record<string, any> } };
+  let event: StripeEvent;
   try {
     event = JSON.parse(payload);
   } catch {
     return c.json({ error: "bad payload" }, 400);
   }
-  const obj = event.data?.object ?? {};
 
   try {
-    // platform subscription billing (customer pays Tutela) — checked first;
-    // returns true and short-circuits when it owns the event
-    const { handleSubscriptionEvent } = await import("./lib/subscription");
-    if (await handleSubscriptionEvent(c.env, event)) {
-      return c.json({ received: true });
-    }
-    if (event.type === "checkout.session.completed" && obj.mode === "payment") {
-      await recordStripeDonation(c, {
-        orgId: String(obj.metadata?.org_id ?? ""),
-        sessionId: String(obj.id ?? ""),
-        totalCents: Number(obj.amount_total ?? 0),
-        coverCents: Number(obj.metadata?.cover_cents ?? 0),
-        email: obj.customer_details?.email ? String(obj.customer_details.email) : null,
-        name: obj.customer_details?.name ? String(obj.customer_details.name) : null,
-        recurring: false,
-      });
-    } else if (event.type === "invoice.paid") {
-      const meta =
-        obj.subscription_details?.metadata ??
-        obj.parent?.subscription_details?.metadata ??
-        obj.lines?.data?.[0]?.metadata ??
-        {};
-      await recordStripeDonation(c, {
-        orgId: String(meta.org_id ?? ""),
-        sessionId: String(obj.id ?? ""), // invoice id — one donation row per billing cycle
-        totalCents: Number(obj.amount_paid ?? 0),
-        coverCents: Number(meta.cover_cents ?? 0),
-        email: obj.customer_email ? String(obj.customer_email) : null,
-        name: obj.customer_name ? String(obj.customer_name) : null,
-        recurring: true,
-      });
-    } else if (event.type === "account.updated" && obj.id) {
-      await c.env.DB.prepare(`UPDATE orgs SET stripe_charges_enabled = ? WHERE stripe_account_id = ?`)
-        .bind(obj.charges_enabled ? 1 : 0, String(obj.id))
-        .run();
-    }
+    await handleStripeEvent(event, c.env, c.executionCtx);
   } catch (err) {
     // Log and 200 anyway: Stripe retries on non-2xx, and a poison event
     // must not block the queue. Idempotency comes from stripe_session_id.
     console.log(`[stripe webhook] ${event.type}: ${err instanceof Error ? err.message : err}`);
   }
   return c.json({ received: true });
+});
+
+type StripeEvent = { type?: string; account?: string; data?: { object?: Record<string, any> } };
+
+/**
+ * Post-verification Stripe event dispatch. Shared by the direct webhook
+ * (/api/stripe/webhook, Stripe-Signature verified) and the CROS federation
+ * receiver (/api/stripe/federation-in, hub HMAC verified) so the two paths
+ * cannot drift. Throws on handler failure — each caller decides how to
+ * translate that into a response.
+ */
+async function handleStripeEvent(event: StripeEvent, env: Env, executionCtx: unknown): Promise<void> {
+  const obj = event.data?.object ?? {};
+  const c = { env, executionCtx };
+
+  // platform subscription billing (customer pays Tutela) — checked first;
+  // returns true and short-circuits when it owns the event
+  const { handleSubscriptionEvent } = await import("./lib/subscription");
+  if (await handleSubscriptionEvent(env, event)) {
+    return;
+  }
+  if (event.type === "checkout.session.completed" && obj.mode === "payment") {
+    await recordStripeDonation(c, {
+      orgId: String(obj.metadata?.org_id ?? ""),
+      sessionId: String(obj.id ?? ""),
+      totalCents: Number(obj.amount_total ?? 0),
+      coverCents: Number(obj.metadata?.cover_cents ?? 0),
+      email: obj.customer_details?.email ? String(obj.customer_details.email) : null,
+      name: obj.customer_details?.name ? String(obj.customer_details.name) : null,
+      recurring: false,
+    });
+  } else if (event.type === "invoice.paid") {
+    const meta =
+      obj.subscription_details?.metadata ??
+      obj.parent?.subscription_details?.metadata ??
+      obj.lines?.data?.[0]?.metadata ??
+      {};
+    await recordStripeDonation(c, {
+      orgId: String(meta.org_id ?? ""),
+      sessionId: String(obj.id ?? ""), // invoice id — one donation row per billing cycle
+      totalCents: Number(obj.amount_paid ?? 0),
+      coverCents: Number(meta.cover_cents ?? 0),
+      email: obj.customer_email ? String(obj.customer_email) : null,
+      name: obj.customer_name ? String(obj.customer_name) : null,
+      recurring: true,
+    });
+  } else if (event.type === "account.updated" && obj.id) {
+    await env.DB.prepare(`UPDATE orgs SET stripe_charges_enabled = ? WHERE stripe_account_id = ?`)
+      .bind(obj.charges_enabled ? 1 : 0, String(obj.id))
+      .run();
+  }
+}
+
+// ---------- CROS federation Stripe receiver ----------
+//
+// The CROS hub receives all Stripe events centrally and forwards them
+// per-app as a JSON envelope signed with a shared secret
+// (FEDERATION_STRIPE_SECRET). The unwrapped event goes through the exact
+// same handleStripeEvent the direct webhook uses.
+
+const FEDERATION_SLUG = "tutela";
+
+api.post("/stripe/federation-in", async (c) => {
+  // Raw body first — the signature covers the exact bytes.
+  const payload = await c.req.text();
+
+  const secret = (c.env as unknown as { FEDERATION_STRIPE_SECRET?: string }).FEDERATION_STRIPE_SECRET?.trim();
+  if (!secret) {
+    // Fail closed: an unsigned write path into donations must not exist.
+    return c.json({ ok: false, error: "federation_not_configured" }, 500);
+  }
+
+  const header = c.req.header("X-CROS-Federation-Signature");
+  if (!header) return c.json({ ok: false, error: "missing_federation_signature" }, 400);
+
+  const { hmacHex } = await import("./lib/stripe");
+  const expected = await hmacHex(secret, payload);
+  const given = header.trim().toLowerCase();
+  // timing-safe comparison
+  let diff = given.length === expected.length ? 0 : 1;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ (given.charCodeAt(i) || 0);
+  if (diff !== 0) return c.json({ ok: false, error: "invalid_federation_signature" }, 400);
+
+  // Only after verification do we look inside the envelope.
+  let envelope: {
+    hub_event_id?: string;
+    satellite_app?: string;
+    stripe_event?: StripeEvent;
+    delivered_at?: string;
+  };
+  try {
+    envelope = JSON.parse(payload);
+  } catch {
+    return c.json({ ok: false, error: "bad_payload" }, 400);
+  }
+  const stripeEvent = envelope?.stripe_event;
+  if (!stripeEvent || typeof stripeEvent !== "object" || Array.isArray(stripeEvent)) {
+    return c.json({ ok: false, error: "missing_stripe_event" }, 400);
+  }
+  if (envelope.satellite_app !== undefined && envelope.satellite_app !== FEDERATION_SLUG) {
+    return c.json({ ok: false, error: "wrong_satellite" }, 400);
+  }
+
+  try {
+    await handleStripeEvent(stripeEvent, c.env, c.executionCtx);
+  } catch (err) {
+    console.log(
+      `[stripe federation-in] ${stripeEvent.type}: ${err instanceof Error ? err.message : err}`,
+    );
+    return c.json({ ok: false, error: "handler_failed" }, 502);
+  }
+  return c.json({ ok: true, received: true, hub_event_id: envelope.hub_event_id ?? null });
 });
 
 async function recordStripeDonation(
