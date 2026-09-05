@@ -410,6 +410,11 @@ api.post("/import/:jobId/claim", async (c) => {
 
   const promoted = await promoteImport(c.env.DB, job.id as string, orgId);
 
+  const { trackEvent } = await import("./lib/telemetry");
+  c.executionCtx.waitUntil(
+    trackEvent(c.env, { orgId, userId, event: "signup", meta: { via: "importer", animals: promoted.animals } }),
+  );
+
   const origin = new URL(c.req.url).origin;
   c.executionCtx.waitUntil(
     sendAppEmail(c.env, {

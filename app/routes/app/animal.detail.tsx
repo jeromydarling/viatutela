@@ -9,6 +9,7 @@ import { compactAnimal, summarizeNotes, writeBio, type BioPack, type HandoffPack
 import { autoAdoption } from "../../../workers/lib/marketing-auto";
 import { scheduleFollowups } from "../../../workers/lib/lifecycle";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
+import { trackMilestone } from "../../../workers/lib/telemetry";
 import { billingGate } from "../../../workers/lib/subscription";
 import { notifyWaitlist } from "../../../workers/lib/waitlist";
 import { emitEvent } from "../../../workers/lib/integrations";
@@ -149,6 +150,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
         ctx.waitUntil(autoAdoption(env, user.org_id, String(animal.id)));
         ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
         ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
+        ctx.waitUntil(trackMilestone(env, user.org_id, "first_adoption"));
         ctx.waitUntil(
           emitEvent(env, ctx, user.org_id, "adoption.created", {
             id: adoptionId,
@@ -460,6 +462,7 @@ export async function action({ context, request, params }: Route.ActionArgs) {
     ctx.waitUntil(autoAdoption(env, user.org_id, String(animal.id)));
     ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
     ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
+    ctx.waitUntil(trackMilestone(env, user.org_id, "first_adoption"));
     ctx.waitUntil(
       emitEvent(env, ctx, user.org_id, "adoption.created", {
         id: adoptionId,

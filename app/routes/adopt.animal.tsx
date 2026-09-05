@@ -120,6 +120,10 @@ export async function action({ context, request, params }: Route.ActionArgs) {
       interest,
     )
     .run();
+  {
+    const { trackMilestone } = await import("../../workers/lib/telemetry");
+    ctx.waitUntil(trackMilestone(env, org.id, "first_application"));
+  }
 
   const animal = await env.DB.prepare(`SELECT name FROM animals WHERE id = ?`)
     .bind(params.animalId)
