@@ -456,7 +456,10 @@ export const HELP: HelpArticle[] = [
     summary: "Real people publicly saying 'we want to adopt' — surfaced for you to answer as yourself.",
     blocks: [
       {
-        p: "Every few hours, [Radar](/app/radar) sweeps public posts on Bluesky and Reddit for people saying they're ready to adopt, filtered to weed out the false positives. Filter by your city or interests, and when someone sounds nearby, reply — as yourself, from your own account.",
+        p: "Radar is opt-in and off by default. Once turned on in [Radar](/app/radar), every few hours it sweeps public posts on Bluesky and Reddit for people saying they're ready to adopt, filtered to weed out the false positives. Filter by your city or interests, and when someone sounds nearby, reply — as yourself, from your own account.",
+      },
+      {
+        p: "Every shelter on Tutela sees the same public feed, so each post shows how many other shelters have already replied — a plain-sight courtesy so a stranger who mentioned wanting a dog doesn't get contacted by a dozen rescues at once.",
       },
       {
         h2: "Using it well",

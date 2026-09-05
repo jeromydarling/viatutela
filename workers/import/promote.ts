@@ -7,9 +7,24 @@
 
 import { newId } from "../lib/ids";
 
+export function normalizeEmail(email: string | null | undefined): string | null {
+  const t = (email ?? "").trim().toLowerCase();
+  return t && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t) ? t : null;
+}
+
+export function splitRoles(roles: string | null | undefined): Set<string> {
+  return new Set(
+    (roles ?? "")
+      .split(",")
+      .map((r) => r.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
 export interface PromoteResult {
   animals: number;
   contacts: number;
+  contactsMerged: number;
   medical: number;
   adoptions: number;
   photos: number;
@@ -20,7 +35,7 @@ export async function promoteImport(
   jobId: string,
   orgId: string,
 ): Promise<PromoteResult> {
-  const result: PromoteResult = { animals: 0, contacts: 0, medical: 0, adoptions: 0, photos: 0 };
+  const result: PromoteResult = { animals: 0, contacts: 0, contactsMerged: 0, medical: 0, adoptions: 0, photos: 0 };
 
   // ---- animals ----
   const animals = await db
@@ -60,17 +75,76 @@ export async function promoteImport(
     for (let i = 0; i < stmts.length; i += 50) await db.batch(stmts.slice(i, i + 50));
   }
 
-  // ---- contacts ----
+  // ---- contacts, deduped by normalized email ----
+  // Real shelter exports repeat the same person: an adopter who later
+  // fosters, a donor who eventually adopts, the same family across
+  // several years. Without this, each appearance becomes a separate
+  // contact — the exact "botched migration" failure that erodes trust
+  // fastest, since it silently fragments someone's whole history.
   const contacts = await db
-    .prepare(`SELECT * FROM staging_contacts WHERE job_id = ?`)
+    .prepare(`SELECT * FROM staging_contacts WHERE job_id = ? ORDER BY row_num ASC`)
     .bind(jobId)
     .all<Record<string, unknown>>();
-  const contactMap = new Map<string, string>();
-  {
-    const stmts: D1PreparedStatement[] = [];
-    for (const c of contacts.results) {
+  const contactMap = new Map<string, string>(); // staging id -> real id
+  interface MergedContact {
+    id: string;
+    sourceKey: string | null;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    roles: Set<string>;
+  }
+  const byEmail = new Map<string, MergedContact>();
+  const withoutEmail: { stagingId: string; row: Record<string, unknown> }[] = [];
+
+  for (const c of contacts.results) {
+    const email = normalizeEmail(c.email as string | null);
+    const roles = splitRoles(c.roles as string | null);
+    if (!email) {
+      withoutEmail.push({ stagingId: c.id as string, row: c });
+      continue;
+    }
+    const existing = byEmail.get(email);
+    if (existing) {
+      result.contactsMerged++;
+      contactMap.set(c.id as string, existing.id);
+      for (const r of roles) existing.roles.add(r);
+      // fill in whatever the earlier appearance was missing
+      if (!existing.name && c.name) existing.name = c.name as string;
+      if (!existing.phone && c.phone) existing.phone = c.phone as string;
+      if (!existing.address && c.address) existing.address = c.address as string;
+    } else {
       const id = newId("ct");
       contactMap.set(c.id as string, id);
+      byEmail.set(email, {
+        id,
+        sourceKey: (c.source_key as string) ?? null,
+        name: (c.name as string) ?? "",
+        email: c.email as string | null,
+        phone: (c.phone as string) ?? null,
+        address: (c.address as string) ?? null,
+        roles,
+      });
+    }
+  }
+
+  {
+    const stmts: D1PreparedStatement[] = [];
+    for (const c of byEmail.values()) {
+      stmts.push(
+        db
+          .prepare(
+            `INSERT INTO contacts (id, org_id, source_key, name, email, phone, address, roles)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .bind(c.id, orgId, c.sourceKey, c.name || "Unknown", c.email, c.phone, c.address, [...c.roles].join(",") || null),
+      );
+      result.contacts++;
+    }
+    for (const { stagingId, row: c } of withoutEmail) {
+      const id = newId("ct");
+      contactMap.set(stagingId, id);
       stmts.push(
         db
           .prepare(

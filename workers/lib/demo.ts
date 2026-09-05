@@ -48,8 +48,8 @@ export async function ensureDemoOrg(env: Env): Promise<void> {
   const { hash, salt } = await hashPassword(DEMO_PASSWORD);
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO orgs (id, slug, name, plan, demo, about, email, phone, address, nav_json, brand_json, seo_json)
-       VALUES (?, ?, 'Sunny Meadow Rescue', 'pro', 1, ?, 'hello@sunnymeadow.example', '(555) 010-7387', '412 Meadowlark Lane, Larkspur, CO', ?, ?, ?)`,
+      `INSERT INTO orgs (id, slug, name, plan, demo, about, email, phone, address, nav_json, brand_json, seo_json, radar_enabled)
+       VALUES (?, ?, 'Sunny Meadow Rescue', 'pro', 1, ?, 'hello@sunnymeadow.example', '(555) 010-7387', '412 Meadowlark Lane, Larkspur, CO', ?, ?, ?, 1)`,
     ).bind(
       ORG,
       DEMO_SLUG,

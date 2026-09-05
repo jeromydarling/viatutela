@@ -101,6 +101,13 @@ async function fetchReddit(query: string): Promise<RadarCandidate[]> {
 
 /** Cron sweep: fetch, filter for intent, store new posts, prune old ones. */
 export async function sweepRadar(env: Env): Promise<void> {
+  // opt-in feature — don't hit Bluesky/Reddit at all if nobody's turned it on
+  const anyEnabled = await env.DB.prepare(`SELECT 1 FROM orgs WHERE radar_enabled = 1 LIMIT 1`).first();
+  if (!anyEnabled) {
+    await env.DB.prepare(`DELETE FROM radar_posts WHERE fetched_at < datetime('now', '-30 days')`).run();
+    return;
+  }
+
   const candidates: RadarCandidate[] = [];
   for (const q of RADAR_QUERIES) {
     try {
