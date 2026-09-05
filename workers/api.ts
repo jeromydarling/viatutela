@@ -418,6 +418,11 @@ api.post("/import/:jobId/claim", async (c) => {
       heading: `Welcome to Tutela, ${org_name.trim()}`,
       paragraphs: [
         `Every one of your ${promoted.animals} friend${promoted.animals === 1 ? "" : "s"} made it across safely — records, relationships, bonded pairs and all.`,
+        ...(promoted.contactsMerged > 0
+          ? [
+              `We also noticed ${promoted.contactsMerged} ${promoted.contactsMerged === 1 ? "person" : "people"} showed up more than once in your export (a repeat adopter, a donor who later fostered) and quietly merged them into one contact each — nobody's history got split up.`,
+            ]
+          : []),
         `Your workspace is ready whenever you are. Move in at your own pace; we'll carry any more boxes you find.`,
       ],
       cta: { label: "Open your workspace", url: `${origin}/app` },
