@@ -25,6 +25,7 @@ function anonCacheTtl(request: Request, url: URL): number {
   const cookie = request.headers.get("cookie") ?? "";
   if (cookie.includes("vt_session") || cookie.includes("vt_import_session")) return 0;
   if (url.search.includes("preview")) return 0;
+  if (url.search.includes("note=")) return 0; // /contact?note= prefill must always render fresh, per-visitor
   const p = url.pathname;
   if (p === "/" || p === "/import" || p === "/login" || p === "/signup" || p === "/forgot" || p === "/contact" || p === "/privacy" || p === "/terms" || p.startsWith("/guides")) {
     return 300;

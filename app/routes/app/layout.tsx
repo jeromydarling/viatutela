@@ -1,4 +1,4 @@
-import { Form, Link, NavLink, Outlet } from "react-router";
+import { Form, Link, NavLink, Outlet, useLocation } from "react-router";
 import type { Route } from "./+types/layout";
 import { requireUser } from "../../lib/auth.server";
 import { Logo } from "../../components/site";
@@ -36,12 +36,18 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   return { user, newApps: counts?.new_apps ?? 0 };
 }
 
-const NAV = [
+// The day-to-day core: what a new, possibly overwhelmed volunteer
+// coordinator needs to see first. Everything else still exists — it's
+// one click away under "More" — but doesn't compete for first-glance
+// attention on a 15-item flat nav.
+const CORE_NAV = [
   { to: "/app", label: "Dashboard", end: true },
   { to: "/app/animals", label: "Animals" },
   { to: "/app/people", label: "People" },
   { to: "/app/applications", label: "Applications" },
   { to: "/app/fosters", label: "Fosters" },
+];
+const MORE_NAV = [
   { to: "/app/volunteers", label: "Volunteers" },
   { to: "/app/donations", label: "Donations" },
   { to: "/app/grants", label: "Grants" },
@@ -50,13 +56,38 @@ const NAV = [
   { to: "/app/brand", label: "Brand" },
   { to: "/app/marketing", label: "Marketing" },
   { to: "/app/radar", label: "Radar" },
+];
+const UTIL_NAV = [
   { to: "/app/reports", label: "Reports" },
   { to: "/app/settings", label: "Settings" },
   { to: "/app/help", label: "Help" },
 ];
 
+function navPill(item: { to: string; label: string; end?: boolean }, newApps: number) {
+  return (
+    <NavLink
+      key={item.to}
+      to={item.to}
+      end={item.end}
+      prefetch="intent"
+      className={({ isActive }) =>
+        `whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+          isActive ? "bg-sunflower text-charcoal" : "text-charcoal-soft hover:bg-sunflower-soft"
+        }`
+      }
+    >
+      {item.label}
+      {item.label === "Applications" && newApps > 0 && (
+        <span className="ml-1.5 rounded-full bg-terracotta text-white text-xs px-1.5 py-0.5">{newApps}</span>
+      )}
+    </NavLink>
+  );
+}
+
 export default function AppLayout({ loaderData }: Route.ComponentProps) {
   const { user, newApps } = loaderData;
+  const location = useLocation();
+  const inMore = MORE_NAV.some((item) => location.pathname.startsWith(item.to));
   return (
     <div className="min-h-screen flex flex-col">
       {Boolean(user.demo) && (
@@ -84,27 +115,36 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
             </Form>
           </div>
         </div>
-        <nav className="mx-auto max-w-7xl px-4 sm:px-6 flex gap-1 overflow-x-auto pb-2 -mt-1">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              prefetch="intent"
-              className={({ isActive }) =>
-                `whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                  isActive ? "bg-sunflower text-charcoal" : "text-charcoal-soft hover:bg-sunflower-soft"
-                }`
-              }
+        <nav className="mx-auto max-w-7xl px-4 sm:px-6 flex items-center gap-1 overflow-x-auto pb-2 -mt-1">
+          {CORE_NAV.map((item) => navPill(item, newApps))}
+          <details className="relative group">
+            <summary
+              className={`list-none cursor-pointer whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-colors select-none ${
+                inMore ? "bg-sunflower text-charcoal" : "text-charcoal-soft hover:bg-sunflower-soft"
+              }`}
             >
-              {item.label}
-              {item.label === "Applications" && newApps > 0 && (
-                <span className="ml-1.5 rounded-full bg-terracotta text-white text-xs px-1.5 py-0.5">
-                  {newApps}
-                </span>
-              )}
-            </NavLink>
-          ))}
+              More ▾
+            </summary>
+            <div className="absolute left-0 top-full mt-1 z-50 flex flex-col gap-0.5 rounded-2xl bg-white shadow-lift p-2 min-w-[10rem]">
+              {MORE_NAV.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  prefetch="intent"
+                  className={({ isActive }) =>
+                    `whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${
+                      isActive ? "bg-sunflower text-charcoal" : "text-charcoal-soft hover:bg-sunflower-soft"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          </details>
+          <span className="ml-auto flex items-center gap-1">
+            {UTIL_NAV.map((item) => navPill(item, newApps))}
+          </span>
         </nav>
       </header>
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-8">

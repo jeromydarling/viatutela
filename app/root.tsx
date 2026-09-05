@@ -6,6 +6,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -48,6 +49,7 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const location = useLocation();
   let message = "Oops!";
   let details = "Something unexpected happened. It's not you, it's us.";
   let stack: string | undefined;
@@ -75,12 +77,27 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       />
       <h1 className="text-6xl font-display font-semibold text-charcoal">{message}</h1>
       <p className="max-w-md text-lg text-charcoal-soft">{details}</p>
-      <Link
-        to="/"
-        className="rounded-full bg-sunflower px-6 py-3 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"
-      >
-        Take me home
-      </Link>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <Link
+          to="/"
+          className="rounded-full bg-sunflower px-6 py-3 font-display font-semibold text-charcoal shadow-soft hover:shadow-lift transition-shadow"
+        >
+          Take me home
+        </Link>
+        {!is404 && (
+          <Link
+            to={`/contact?note=${encodeURIComponent(`I hit an error on ${location.pathname}: `)}`}
+            className="rounded-full border-2 border-terracotta px-6 py-3 font-display font-semibold text-terracotta-deep hover:bg-terracotta hover:text-white transition-colors"
+          >
+            Tell a real person right now →
+          </Link>
+        )}
+      </div>
+      {!is404 && (
+        <p className="max-w-md text-sm text-charcoal-soft">
+          This one's on us, not you — and we read every message ourselves.
+        </p>
+      )}
       {stack && (
         <pre className="w-full max-w-3xl p-4 overflow-x-auto text-left text-xs bg-white rounded-2xl">
           <code>{stack}</code>

@@ -18,6 +18,13 @@ export function meta(_: Route.MetaArgs) {
   });
 }
 
+export async function loader({ request }: Route.LoaderArgs) {
+  // supports a prefilled message, e.g. from the error page's "tell a real
+  // person right now" link — capped short so it can't be abused as a text dump
+  const note = new URL(request.url).searchParams.get("note")?.slice(0, 300) ?? "";
+  return { note };
+}
+
 export async function action({ context, request }: Route.ActionArgs) {
   const env = getEnv(context);
   const f = await request.formData();
@@ -74,8 +81,9 @@ export async function action({ context, request }: Route.ActionArgs) {
 
 const inputCls = "mt-1 w-full rounded-xl border-2 border-cream bg-cream px-4 py-2.5 focus:border-meadow outline-none";
 
-export default function Contact({ actionData }: Route.ComponentProps) {
+export default function Contact({ loaderData, actionData }: Route.ComponentProps) {
   const a = actionData as { ok?: boolean; error?: string } | undefined;
+  const note = loaderData?.note ?? "";
   // stamp the real per-visitor load time on the client (the page HTML is
   // edge-cached, so a server value would be stale for everyone)
   const stampRef = useRef<HTMLInputElement>(null);
@@ -124,7 +132,7 @@ export default function Contact({ actionData }: Route.ComponentProps) {
             </label>
             <label className="block">
               <span className="font-semibold text-sm">Your message *</span>
-              <textarea name="message" required rows={6} maxLength={4000} className={inputCls} />
+              <textarea name="message" required rows={6} maxLength={4000} defaultValue={note} className={inputCls} />
             </label>
             <button className="w-full rounded-full bg-meadow text-white py-3 font-display font-semibold text-lg shadow-soft hover:shadow-lift transition-shadow">
               Send it our way
