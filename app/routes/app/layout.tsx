@@ -4,7 +4,16 @@ import { requireUser } from "../../lib/auth.server";
 import { Logo } from "../../components/site";
 
 export async function loader({ context, request }: Route.LoaderArgs) {
-  const { env, user } = await requireUser(context, request);
+  const { env, ctx, user } = await requireUser(context, request);
+  // usage telemetry: which screens orgs actually reach, so a quiet org
+  // is diagnosable later instead of a mystery (skip the demo — its
+  // traffic is prospects kicking tires, not a real org's usage pattern)
+  if (!user.demo) {
+    const { trackEvent } = await import("../../../workers/lib/telemetry");
+    ctx.waitUntil(
+      trackEvent(env, { orgId: user.org_id, userId: user.user_id, event: "page_view", path: new URL(request.url).pathname }),
+    );
+  }
   // one round trip: the badge count, plus (for demo sessions) the health
   // numbers the self-heal needs — a demo must never render empty
   const counts = await env.DB.prepare(

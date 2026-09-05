@@ -57,6 +57,8 @@ export async function action({ context, request }: Route.ActionArgs) {
 
   // the nest is never empty: starter site drafts, a to-do list, the drip
   ctx.waitUntil(seedNewOrg(env, { orgId, orgName, slug, email, name: name || null }));
+  const { trackEvent } = await import("../../workers/lib/telemetry");
+  ctx.waitUntil(trackEvent(env, { orgId, userId, event: "signup" }));
 
   return redirect("/app", { headers: { "Set-Cookie": sessionCookie(token) } });
 }

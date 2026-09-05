@@ -82,6 +82,10 @@ export async function action({ context, request }: Route.ActionArgs) {
   }
   // off the request path: launch kit + waitlist alerts for new public friends
   ctx.waitUntil(autoNewAnimal(env, user.org_id, id));
+  {
+    const { trackMilestone } = await import("../../../workers/lib/telemetry");
+    ctx.waitUntil(trackMilestone(env, user.org_id, "first_animal"));
+  }
   ctx.waitUntil(notifyWaitlist(env, user.org_id, id, new URL(request.url).origin));
   ctx.waitUntil(notifyAdoptAlerts(env, user.org_id, id, new URL(request.url).origin));
   ctx.waitUntil(

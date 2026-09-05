@@ -11,6 +11,7 @@ import { sendSms } from "../../../workers/lib/sms";
 import { emitEvent } from "../../../workers/lib/integrations";
 import { recordAdoptionUsage } from "../../../workers/lib/billing";
 import { billingGate } from "../../../workers/lib/subscription";
+import { trackMilestone } from "../../../workers/lib/telemetry";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Applications — Tutela" }];
@@ -171,6 +172,7 @@ export async function action({ context, request }: Route.ActionArgs) {
       ctx.waitUntil(autoAdoption(env, user.org_id, String(app.animal_id)));
       ctx.waitUntil(scheduleFollowups(env, user.org_id, adoptionId));
       ctx.waitUntil(recordAdoptionUsage(env, user.org_id, adoptionId));
+      ctx.waitUntil(trackMilestone(env, user.org_id, "first_adoption"));
       ctx.waitUntil(
         emitEvent(env, ctx, user.org_id, "adoption.created", {
           id: adoptionId,
